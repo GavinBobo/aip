@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
+All rights reserved.
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Auto-Ontology 部署方案（使用公司现有 PostgreSQL）
 
 > 适用场景：数据库用公司已经有的 PostgreSQL 实例，不自建、不用仓库里 `docker-compose.yml`

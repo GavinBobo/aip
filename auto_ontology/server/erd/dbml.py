@@ -54,19 +54,46 @@ class DbmlParseError(ValueError):
 def _strip_comment(line: str) -> str:
     """Drop a ``//`` comment, ignoring one inside a single-quoted string."""
     in_quote = False
-    for index, char in enumerate(line):
+    index = 0
+    while index < len(line):
+        char = line[index]
+        if in_quote and char == "\\":
+            # The next character is escaped, so ``\'`` must not close the
+            # string (see ``note: 'customer\'s id'``).
+            index += 2
+            continue
         if char == "'":
             in_quote = not in_quote
         elif not in_quote and char == "/" and line[index : index + 2] == "//":
             return line[:index]
+        index += 1
     return line
 
 
 def _unquote(value: str) -> str:
     value = value.strip()
     if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
-        return value[1:-1]
+        inner = value[1:-1]
+        return inner.replace("\\'", "'").replace("\\n", "\n").replace("\\\\", "\\")
     return value
+
+
+def _escape_text(value: str) -> str:
+    """Escape free text for a single-quoted DBML string.
+
+    Notes are typed by an operator, so they routinely contain an apostrophe
+    ("customer's id") or a line break. Emitted raw, either one ends the string
+    early and makes the document unreadable for dbdiagram and the ``dbml`` CLI,
+    which is the whole point of the export.
+    """
+    return (
+        str(value)
+        .replace("\\", "\\\\")
+        .replace("'", "\\'")
+        .replace("\r\n", "\n")
+        .replace("\r", "\n")
+        .replace("\n", "\\n")
+    )
 
 
 def _quote_identifier(value: str) -> str:
@@ -115,7 +142,13 @@ def _split_settings(raw: str) -> list[str]:
     parts: list[str] = []
     current: list[str] = []
     in_quote: bool = False
-    for char in raw:
+    index = 0
+    while index < len(raw):
+        char = raw[index]
+        if in_quote and char == "\\":
+            current.append(raw[index : index + 2])
+            index += 2
+            continue
         if char == "'":
             in_quote = not in_quote
             current.append(char)
@@ -124,6 +157,7 @@ def _split_settings(raw: str) -> list[str]:
             current = []
         else:
             current.append(char)
+        index += 1
     if current:
         parts.append("".join(current))
     return [part.strip() for part in parts if part.strip()]
@@ -426,7 +460,7 @@ def export_dbml(
             if column.get("is_nullable") is False:
                 settings.append("not null")
             if column.get("note"):
-                settings.append(f"note: '{column['note']}'")
+                settings.append(f"note: '{_escape_text(column['note'])}'")
             suffix = f" [{', '.join(settings)}]" if settings else ""
             lines.append(
                 f"  {_quote_identifier(column['name'])} "
@@ -440,7 +474,7 @@ def export_dbml(
                 if index.get("unique"):
                     settings.append("unique")
                 if index.get("name"):
-                    settings.append(f"name: '{index['name']}'")
+                    settings.append(f"name: '{_escape_text(index['name'])}'")
                 columns = ", ".join(
                     _quote_identifier(column) for column in index["columns"]
                 )
@@ -448,7 +482,7 @@ def export_dbml(
                 lines.append(f"    ({columns}){suffix}")
             lines.append("  }")
         if node.get("note"):
-            lines.append(f"  Note: '{node['note']}'")
+            lines.append(f"  Note: '{_escape_text(node['note'])}'")
         lines.append("}")
         lines.append("")
 

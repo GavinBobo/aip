@@ -168,3 +168,34 @@ def test_indexes_are_parsed_and_exported() -> None:
 
     again, _, _ = parse_dbml(exported)
     assert again[0]["indexes"] == nodes[0]["indexes"]
+
+
+def test_notes_with_quotes_and_newlines_survive_export_and_import() -> None:
+    """An operator's note is free text, so the export has to escape it.
+
+    Emitted raw, ``customer's id`` closes the DBML string early and the
+    document is rejected by dbdiagram / the ``dbml`` CLI.
+    """
+    nodes = [
+        {
+            "name": "public.customers",
+            "columns": [
+                {"name": "id", "data_type": "bigint", "note": "customer's id"},
+            ],
+            "indexes": [
+                {"name": "ix's index", "columns": ["id"], "unique": False},
+            ],
+            "note": "first line\nsecond's line",
+        }
+    ]
+
+    exported = export_dbml(nodes, [])
+    assert "note: 'customer\\'s id'" in exported
+    assert "name: 'ix\\'s index'" in exported
+    assert "Note: 'first line\\nsecond\\'s line'" in exported
+
+    parsed, _, warnings = parse_dbml(exported)
+    assert warnings == []
+    assert parsed[0]["note"] == "first line\nsecond's line"
+    assert parsed[0]["columns"][0]["note"] == "customer's id"
+    assert parsed[0]["indexes"][0]["name"] == "ix's index"

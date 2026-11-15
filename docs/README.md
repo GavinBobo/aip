@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
+All rights reserved.
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # docs 索引
 
 这个目录只放**给人读的文档**和**生成物**。接口的唯一权威是 `openapi/`，代码约定写在仓库根的 `CLAUDE.md`，对外发布的 agent skills 在 `skills/`。

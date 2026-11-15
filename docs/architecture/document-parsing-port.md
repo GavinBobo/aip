@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
+All rights reserved.
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # 文档解析功能移植（OXR → Auto-Ontology）
 
 > 任务：把 OXR（SoMark 的文档解析模型）的解析能力搬进 Auto-Ontology，

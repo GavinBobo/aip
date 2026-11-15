@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
+# All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 """CPU-only OpenAI-compatible gateway for the OXR-1.0 model.
 
 The upstream project ships OXR as a vLLM out-of-tree plugin, which only runs on

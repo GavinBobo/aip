@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
+# All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 """Picture blocks: write the crop somewhere the answer can point at.
 
 OXR emitted a bare filesystem path (``outputs/<doc>/imgs/0_3.png``) unless its

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
+All rights reserved.
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # ER 画布实施计划
 
 > **执行方式：** 本仓库不是 git 仓库，无法按任务提交；按任务顺序执行并用命令验证。

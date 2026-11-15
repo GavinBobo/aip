@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
+# All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 """Page-level overlap cleanup after recognition and formula-number expansion.
 
 Uses original layout evidence for Picture/Chemical parents and final reading

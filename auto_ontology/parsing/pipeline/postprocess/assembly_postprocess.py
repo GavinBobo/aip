@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
+# All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 from typing import List
 from auto_ontology.parsing.pipeline.models import Block, BlockType
 from auto_ontology.parsing.pipeline.postprocess.formula_postprocess import (

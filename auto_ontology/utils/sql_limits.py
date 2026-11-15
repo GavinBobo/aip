@@ -58,8 +58,46 @@ def with_row_limit(sql: str, limit: int, dialect: str | None = None) -> str:
             return stripped
 
     if _LIMIT_RE.search(stripped):
-        return stripped
-    return f"{stripped} LIMIT {limit}"
+        # The word can appear in a literal or a comment (``WHERE name = 'limit'``)
+        # while the statement is still unbounded, so confirm it is a real clause
+        # before trusting it. Text sqlglot cannot parse keeps the old
+        # "already limited" assumption rather than doubling up a clause.
+        if _has_limit_clause(stripped, normalized):
+            return stripped
+    clause = f"LIMIT {limit}"
+    if _ends_in_line_comment(stripped):
+        # ``SELECT ... -- note`` would swallow an inline clause, leaving the
+        # query unbounded; a new line ends the comment first.
+        return f"{stripped}\n{clause}"
+    return f"{stripped} {clause}"
+
+
+def _has_limit_clause(sql: str, dialect: str) -> bool:
+    """True when *sql* really carries a ``LIMIT``/``TOP``/``FETCH`` bound."""
+    try:
+        tree = sqlglot.parse_one(sql, dialect=dialect or None)
+    except Exception:
+        return True
+    # sqlglot puts ``LIMIT``, ``TOP`` and ``OFFSET ... FETCH`` all in ``limit``.
+    return tree.args.get("limit") is not None
+
+
+def _ends_in_line_comment(sql: str) -> bool:
+    """True when the last line of *sql* ends inside a ``--`` comment."""
+    last = sql.rsplit("\n", 1)[-1]
+    in_quote = False
+    index = 0
+    while index < len(last):
+        char = last[index]
+        if in_quote and char == "\\":
+            index += 2
+            continue
+        if char == "'":
+            in_quote = not in_quote
+        elif not in_quote and last[index : index + 2] == "--":
+            return True
+        index += 1
+    return False
 
 
 __all__ = ["with_row_limit"]

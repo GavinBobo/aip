@@ -49,3 +49,23 @@ def test_tsql_statement_sqlglot_cannot_parse_is_left_alone() -> None:
     sql = "SELECT FROM WHERE"
 
     assert with_row_limit(sql, 10, "tsql") == sql
+
+
+def test_the_word_limit_in_a_literal_still_gets_a_row_limit() -> None:
+    """``'limit'`` in a predicate is not a ``LIMIT`` clause.
+
+    The probe queries built here must stay bounded; a plain substring check
+    treated this statement as already limited and ran it unbounded.
+    """
+    sql = "SELECT * FROM t WHERE name = 'limit'"
+
+    assert with_row_limit(sql, 10, "postgres") == f"{sql} LIMIT 10"
+
+
+def test_a_limit_inside_a_comment_does_not_hide_an_unbounded_query() -> None:
+    sql = "SELECT * FROM t -- no limit here"
+
+    limited = with_row_limit(sql, 10, "snowflake")
+
+    # Appending on the same line would put LIMIT inside the comment.
+    assert limited == f"{sql}\nLIMIT 10"

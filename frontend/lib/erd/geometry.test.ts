@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+	CARD_BODY_PADDING,
 	CARD_COLUMN_NOTE_HEIGHT,
 	CARD_HEADER_HEIGHT,
 	CARD_NOTE_HEIGHT,
@@ -44,7 +45,9 @@ describe('card geometry', () => {
 		const noted = { ...node([column('a')]), note: '核心看板指标' };
 
 		expect(cardHeaderHeight(noted)).toBe(CARD_HEADER_HEIGHT + CARD_NOTE_HEIGHT);
-		expect(columnTop(noted, 0)).toBe(CARD_HEADER_HEIGHT + CARD_NOTE_HEIGHT);
+		expect(columnTop(noted, 0)).toBe(
+			CARD_HEADER_HEIGHT + CARD_NOTE_HEIGHT + CARD_BODY_PADDING,
+		);
 		expect(nodeHeight(noted)).toBe(
 			CARD_HEADER_HEIGHT + CARD_NOTE_HEIGHT + CARD_ROW_HEIGHT + 6,
 		);
@@ -61,9 +64,9 @@ describe('card geometry', () => {
 
 	it('stacks rows so later rows start below an alias', () => {
 		const table = node([column('a', 'first'), column('b')]);
-		expect(columnTop(table, 0)).toBe(CARD_HEADER_HEIGHT);
+		expect(columnTop(table, 0)).toBe(CARD_HEADER_HEIGHT + CARD_BODY_PADDING);
 		expect(columnTop(table, 1)).toBe(
-			CARD_HEADER_HEIGHT + CARD_ROW_HEIGHT + CARD_COLUMN_NOTE_HEIGHT,
+			CARD_HEADER_HEIGHT + CARD_BODY_PADDING + CARD_ROW_HEIGHT + CARD_COLUMN_NOTE_HEIGHT,
 		);
 	});
 
@@ -79,7 +82,9 @@ describe('card geometry', () => {
 		const table = node([column('a', 'alias')]);
 		const port = columnPort(table, 'a', 'right');
 		expect(port.x).toBe(100 + CARD_WIDTH);
-		expect(port.y).toBe(50 + CARD_HEADER_HEIGHT + CARD_ROW_HEIGHT / 2);
+		expect(port.y).toBe(
+			50 + CARD_HEADER_HEIGHT + CARD_BODY_PADDING + CARD_ROW_HEIGHT / 2,
+		);
 	});
 
 	it('falls back to the card centre for table-level and collapsed anchors', () => {

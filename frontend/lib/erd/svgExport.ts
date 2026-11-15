@@ -136,7 +136,7 @@ export const buildSvgDiagram = (
 		);
 		if (!node.collapsed && node.note) {
 			parts.push(
-				`<text x="10" y="${CARD_HEADER_HEIGHT + 11}" font-family="system-ui, sans-serif" font-size="9" fill="#a1a1aa">${escapeXml(
+				`<text x="10" y="${CARD_HEADER_HEIGHT + 2}" font-family="system-ui, sans-serif" font-size="9" fill="#a1a1aa">${escapeXml(
 					clipLine(node.note),
 				)}</text>`,
 			);

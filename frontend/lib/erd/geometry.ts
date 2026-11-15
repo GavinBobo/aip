@@ -11,7 +11,9 @@ export const CARD_ROW_HEIGHT = 24;
 /** Extra height a column row grows by when it carries an alias. */
 export const CARD_COLUMN_NOTE_HEIGHT = 15;
 /** Extra header height a table note adds under the table name. */
-export const CARD_NOTE_HEIGHT = 16;
+export const CARD_NOTE_HEIGHT = 10;
+/** Padding between the header rule and the first column row (the card's body). */
+export const CARD_BODY_PADDING = 2;
 export const CARD_FOOTER_PADDING = 6;
 
 export const MIN_ZOOM = 0.2;
@@ -30,7 +32,9 @@ export const columnRowHeight = (column: ErdColumn): number =>
 
 /** Distance from the card's top edge to the top of a column row. */
 export const columnTop = (node: ErdNode, index: number): number => {
-	let top = cardHeaderHeight(node);
+	// The rows sit inside a padded body, so a port computed from the header
+	// alone lands two pixels above the row it belongs to.
+	let top = cardHeaderHeight(node) + CARD_BODY_PADDING;
 	const last = Math.min(index, node.columns.length);
 	for (let position = 0; position < last; position++) {
 		top += columnRowHeight(node.columns[position]);

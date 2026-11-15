@@ -162,7 +162,9 @@ export const TableCard = ({
 			</div>
 			{!node.collapsed && node.note && (
 				<p
-					className="truncate pl-[26px] pr-1 text-[10px] leading-none text-zinc-400 dark:text-zinc-500"
+					// Pulled up into the slack under the title: the 36px title row
+					// leaves ~11px of air, and the note belongs right under the name.
+					className="-mt-1.5 truncate pl-[26px] pr-1 text-[10px] leading-none text-zinc-400 dark:text-zinc-500"
 					title={node.note}
 				>
 					{node.note}

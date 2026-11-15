@@ -1,0 +1,186 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
+# All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# =====================================================================
+# Secrets / local configuration
+# =====================================================================
+# Real env files never leave the machine. The example file is the only
+# env file that belongs in the repo (placeholders only, no credentials).
+.env
+.env.*
+!.env.example
+!.env.*.example
+.envrc
+
+# Keys, certificates, keystores
+*.pem
+*.p8
+*.pub
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+
+# =====================================================================
+# Python
+# =====================================================================
+.venv/
+venv/
+env.bak/
+**/__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Tool caches: regenerated on every run, never shared.
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# =====================================================================
+# Node / Next.js / pnpm
+# =====================================================================
+node_modules/
+.pnpm-store/
+.next/
+out/
+.turbo/
+.vercel
+*.tsbuildinfo
+.eslintcache
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =====================================================================
+# Local data and runtime state
+# =====================================================================
+# DuckDB / SQLite databases are rebuilt from source SQL or from the live
+# deployment; the text fixtures stay tracked.
+*.duckdb
+*.duckdb.wal
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+pgdata/
+
+# Launcher logs and generated reports from dev_tools/start-dev.ps1
+/logs/
+/outputs/
+*.log
+
+# Server-side file drop for the Excel / CSV wizard. Keep the folder and
+# its README; data files belong to the deployment, not the repository.
+/shared/*
+!/shared/README.md
+
+# Local OpenMetadata evaluation environment (Docker volume + rendered
+# configs with secrets); scratch state, never commit.
+openmetadata-eval/
+
+# Generated SQLite fixture DBs — built from the vendored .sql by
+# dev_tools.fixtures.build_sqlite_fixtures; the SQL is the source of truth.
+dev_tools/fixtures/sql/*.sqlite
+
+# =====================================================================
+# Editors / IDE
+# =====================================================================
+# Keep the shared launch config; everything else is machine-specific.
+.vscode/*
+!.vscode/launch.json
+.idea/
+*.iml
+.fleet/
+.history/
+*.swp
+*.swo
+*~
+
+# =====================================================================
+# Agent / tooling state
+# =====================================================================
+.cursor/
+.cursorignore
+.claude/
+.codex/
+.aider*
+.cache/
+
+# =====================================================================
+# OS noise
+# =====================================================================
+.DS_Store
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.Spotlight-V100
+.Trashes
+
+# =====================================================================
+# Misc local artefacts
+# =====================================================================
+*.bak
+*.orig
+*.rej
+*.tmp
+*.temp
+
+# =====================================================================
+# Local-only working files (personal scratch, creds, deploy scripts)
+# Machine-specific or secret: never part of the shared repository.
+# =====================================================================
+/COOKBOOK.MD
+/DATABRICKS_SSA_REPORT.md
+/databricks.txt
+/databricks_creds.txt
+/helm.sh
+/helm.sh.bak
+/index.html
+/kdc_ca1/
+/push.sh
+/snowflake_sso.txt
+/spider2_snowflake.txt
+/temp.txt
+/vectors_wiki.py
+/vectors_wiki_load.py
+
+# One-off deploy helpers written for a single host/checkout.
+/dev_tools/deploy_gsf_host.sh
+/dev_tools/deploy_gsf_k3s.sh
+/dev_tools/deploy_server.sh
+/dev_tools/deploy_to_dev_server.sh
+/dev_tools/generate_openapi_html.py
+
+# Design notes that are local scratch rather than shared documentation.
+/docs/blob-storage-plan.md
+/docs/profiling-catalog-qualification-fix.md
+
+# Local dev-only evaluation tooling and admin UI state.
+dev_tools/evaluation/
+dev_tools/pgadmin/
+
+# Upstream exclusion kept as-is: needs a live PostgreSQL it doesn't own.
+auto_ontology/tests/test_postgres_connector.py

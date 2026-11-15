@@ -1,0 +1,19 @@
+<!--
+SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
+All rights reserved.
+SPDX-License-Identifier: Apache-2.0
+-->
+<svg
+	viewBox="0 0 24 24"
+	fill="none"
+	stroke="currentColor"
+	stroke-width="1.7"
+	stroke-linecap="round"
+	stroke-linejoin="round"
+	aria-hidden="true"
+>
+	<path d="M6 2.75h7l5 5V21a1.25 1.25 0 0 1-1.25 1.25H6A1.25 1.25 0 0 1 4.75 21V4A1.25 1.25 0 0 1 6 2.75Z" />
+	<path d="M13 2.75v5h5" />
+	<path d="M7.75 11.5h8.5v7h-8.5z" />
+	<path d="M7.75 15h8.5M12 11.5v7" />
+</svg>

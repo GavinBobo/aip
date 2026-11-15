@@ -10,6 +10,7 @@ columns and references, and nothing about where they were drawn.
 
 from __future__ import annotations
 import json
+import math
 import re
 from typing import Any
 from fastapi import APIRouter, HTTPException, Query
@@ -40,6 +41,28 @@ def _catalog_table_ids(table_ids: list[str]) -> set[str]:
         select(s.catalog_table.c.id).where(s.catalog_table.c.id.in_(table_ids))
     )
     return {row["id"] for row in rows}
+
+
+def _coordinate(
+    value: Any, field: str, name: str, warnings: list[str]
+) -> float:
+    """A node's *field* position, or 0 when the document's value is unusable.
+
+    The document is user-supplied, so ``"x": "left"`` has to become a warning
+    rather than a ``ValueError`` out of ``float()`` — that reached the client as
+    a 500 and made the import look like a server fault.
+    """
+    if value is None:
+        return 0.0
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        warnings.append(f"table {name!r}: {field} {value!r} is not a number; using 0")
+        return 0.0
+    if not math.isfinite(number):
+        warnings.append(f"table {name!r}: {field} {value!r} is not finite; using 0")
+        return 0.0
+    return number
 
 
 def _normalise_import_nodes(
@@ -73,15 +96,27 @@ def _normalise_import_nodes(
             table_id = None
         if not table_id and key in existing and existing[key].get("table_id"):
             table_id = existing[key]["table_id"]
+        columns = raw.get("columns")
+        if columns is not None and not isinstance(columns, list):
+            warnings.append(
+                f"table {name!r}: columns must be a list, the value was ignored"
+            )
+            columns = None
+        indexes = raw.get("indexes")
+        if indexes is not None and not isinstance(indexes, list):
+            warnings.append(
+                f"table {name!r}: indexes must be a list, the value was ignored"
+            )
+            indexes = None
         nodes.append(
             {
                 "name": name,
                 "table_id": table_id,
-                "x": float(raw.get("x", 0)),
-                "y": float(raw.get("y", 0)),
+                "x": _coordinate(raw.get("x"), "x", name, warnings),
+                "y": _coordinate(raw.get("y"), "y", name, warnings),
                 "collapsed": bool(raw.get("collapsed", False)),
-                "columns": raw.get("columns") or None,
-                "indexes": raw.get("indexes") or None,
+                "columns": columns or None,
+                "indexes": indexes or None,
                 "note": raw.get("note"),
             }
         )

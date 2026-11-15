@@ -112,6 +112,48 @@ def test_the_job_store_records_the_lifecycle() -> None:
     asyncio.run(scenario())
 
 
+def test_finished_jobs_are_evicted_so_the_store_does_not_grow_forever() -> None:
+    """``forget`` has no caller; a long-lived API must still bound the store.
+
+    Each entry holds the parsed outputs, so an unbounded dictionary is a memory
+    leak that only shows up after days of use.
+    """
+
+    async def scenario() -> None:
+        store = MemoryTaskStore(max_jobs=3)
+        for index in range(3):
+            await store.create(f"done-{index}", f"{index}.pdf")
+            await store.set_success(f"done-{index}", {"result": {"outputs": {}}})
+
+        await store.create("running", "running.pdf")
+        await store.set_processing("running")
+        await store.create("new", "new.pdf")
+
+        assert await store.get("done-0") is None
+        assert await store.get("done-1") is None
+        # The newest finished job survives; only the oldest are dropped.
+        assert await store.get("done-2") is not None
+        assert (await store.get("running"))["status"] == "processing"
+        assert (await store.get("new"))["status"] == "queuing"
+
+    asyncio.run(scenario())
+
+
+def test_a_store_full_of_running_jobs_keeps_them_and_accepts_the_new_one() -> None:
+    async def scenario() -> None:
+        store = MemoryTaskStore(max_jobs=2)
+        for index in range(2):
+            await store.create(f"run-{index}", None)
+            await store.set_processing(f"run-{index}")
+
+        await store.create("third", None)
+
+        assert (await store.get("run-0"))["status"] == "processing"
+        assert (await store.get("third"))["status"] == "queuing"
+
+    asyncio.run(scenario())
+
+
 def test_a_started_job_is_referenced_until_it_finishes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

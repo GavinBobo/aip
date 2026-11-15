@@ -90,8 +90,6 @@ export const buildSvgDiagram = (
 	const byId = new Map(nodes.map((node) => [node.id, node]));
 	const parts: string[] = [];
 
-	parts.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="#fafafa"/>`);
-
 	for (const relationship of relationships) {
 		const source = byId.get(relationship.source_node_id);
 		const target = byId.get(relationship.target_node_id);
@@ -187,6 +185,10 @@ export const buildSvgDiagram = (
 
 	const svg = [
 		`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
+		// The background is in viewport coordinates. Inside the translated group
+		// it would start at ``padding - minX``, so any node dragged left of (or
+		// above) the origin shifted the sheet and left a blank strip.
+		`<rect x="0" y="0" width="${width}" height="${height}" fill="#fafafa"/>`,
 		`<g transform="translate(${-minX + padding}, ${-minY + padding})">`,
 		...parts,
 		'</g>',

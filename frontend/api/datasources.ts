@@ -12,6 +12,7 @@ import type {
 	NodePatch,
 	NodeUpdateResponse,
 	PageParams,
+	ResponseWithError,
 	ResponseWithCount,
 	SchemasResponse,
 } from './types';
@@ -38,8 +39,14 @@ export const datasources = {
 		const promise = requests
 			.get<SchemasResponse>(`schemas/${dbId}`)
 			.then((res): ApiResponse<Schema[]> => {
+				// `/schemas/{db_id}` answers with a literal `null` when the database's
+				// schema has no tables yet — `fetch_schemas_for_database` documents
+				// that as "absent", and the route is typed `SchemasPayload | None`.
+				// Reading `.error` off it crashed the data tree for such a database.
+				const body = res as unknown as SchemasResponse | null;
+				if (body == null) return { data: [], count: 0 };
 				if (res.error) return res as unknown as ApiResponse<Schema[]>;
-				const raw = res as unknown as SchemasResponse;
+				const raw = body;
 				const schemas: Schema[] = raw.schemas.map((s) => ({ ...s, tables: [] }));
 				return { data: schemas, count: raw.schemas_count };
 			})
@@ -116,5 +123,11 @@ export const datasources = {
 
 	/** Update mutable properties of any catalog node (Database, Schema, Table, or Column). */
 	updateNode: (nodeId: string, patch: NodePatch) =>
-		requests.patch<NodeUpdateResponse>(`nodes/${nodeId}`, patch),
+		requests.patch<NodeUpdateResponse>(`nodes/${nodeId}`, patch).then((res) => {
+			// Same shape as `/schemas/{db_id}`: the route is typed
+			// `NodeUpdateResult | None` and answers `null` for an id no node
+			// carries, while every caller reads `.error` off the result.
+			const body = res as ResponseWithError<NodeUpdateResponse> | null;
+			return body ?? ({ error: true } as ResponseWithError<NodeUpdateResponse>);
+		}),
 };

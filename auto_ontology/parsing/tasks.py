@@ -43,12 +43,29 @@ def _build_task_payload(task_id: str, file_name: str | None) -> dict[str, Any]:
 class MemoryTaskStore:
     """A tiny asyncio-guarded dict of task payloads."""
 
-    def __init__(self) -> None:
+    def __init__(self, max_jobs: int = 200) -> None:
         self._store: dict[str, dict[str, Any]] = {}
         self._lock = asyncio.Lock()
+        self._max_jobs = max(1, int(max_jobs))
 
     async def create(self, task_id: str, file_name: str | None = None) -> None:
         async with self._lock:
+            # Nothing calls ``forget`` in normal use, so a finished job would
+            # otherwise hold its parsed outputs for the lifetime of the process.
+            # Drop the oldest *finished* entries first; a queued or running job
+            # is never evicted just to make room.
+            while len(self._store) >= self._max_jobs:
+                finished = next(
+                    (
+                        key
+                        for key, payload in self._store.items()
+                        if payload["status"] in {"success", "failed"}
+                    ),
+                    None,
+                )
+                if finished is None:
+                    break
+                del self._store[finished]
             self._store[task_id] = _build_task_payload(task_id, file_name)
 
     async def set_processing(self, task_id: str) -> None:

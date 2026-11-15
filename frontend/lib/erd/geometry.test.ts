@@ -7,8 +7,10 @@ import { describe, expect, it } from 'vitest';
 import {
 	CARD_COLUMN_NOTE_HEIGHT,
 	CARD_HEADER_HEIGHT,
+	CARD_NOTE_HEIGHT,
 	CARD_ROW_HEIGHT,
 	CARD_WIDTH,
+	cardHeaderHeight,
 	columnPort,
 	columnRowHeight,
 	columnTop,
@@ -38,6 +40,18 @@ const node = (columns: ErdColumn[], collapsed = false): ErdNode => ({
 });
 
 describe('card geometry', () => {
+	it('reserves a header line for the table note, unless the card is collapsed', () => {
+		const noted = { ...node([column('a')]), note: '核心看板指标' };
+
+		expect(cardHeaderHeight(noted)).toBe(CARD_HEADER_HEIGHT + CARD_NOTE_HEIGHT);
+		expect(columnTop(noted, 0)).toBe(CARD_HEADER_HEIGHT + CARD_NOTE_HEIGHT);
+		expect(nodeHeight(noted)).toBe(
+			CARD_HEADER_HEIGHT + CARD_NOTE_HEIGHT + CARD_ROW_HEIGHT + 6,
+		);
+		// A collapsed card is the compact header only: no note line, no rows.
+		expect(cardHeaderHeight({ ...noted, collapsed: true })).toBe(CARD_HEADER_HEIGHT);
+	});
+
 	it('grows a row by exactly the alias height when a column has one', () => {
 		expect(columnRowHeight(column('a'))).toBe(CARD_ROW_HEIGHT);
 		expect(columnRowHeight(column('a', 'alias'))).toBe(

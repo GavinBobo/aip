@@ -8,6 +8,7 @@ import {
 	CARD_HEADER_HEIGHT,
 	CARD_ROW_HEIGHT,
 	CARD_WIDTH,
+	cardHeaderHeight,
 	columnPort,
 	columnTop,
 	edgeSides,
@@ -47,6 +48,10 @@ const escapeXml = (value: string) =>
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;')
 		.replace(/"/g, '&quot;');
+
+/** Rough width budget for one line of 9px sans text inside a card. */
+const clipLine = (value: string, max = 44): string =>
+	value.length > max ? `${value.slice(0, max - 1)}…` : value;
 
 export type SvgDiagram = {
 	svg: string;
@@ -120,14 +125,22 @@ export const buildSvgDiagram = (
 
 	for (const node of nodes) {
 		const heightOfNode = nodeHeight(node);
+		const headerHeight = cardHeaderHeight(node);
 		parts.push(
 			`<g transform="translate(${node.x}, ${node.y})">`,
 			`<rect width="${CARD_WIDTH}" height="${heightOfNode}" rx="8" fill="#ffffff" stroke="#d4d4d8"/>`,
-			`<path d="M0 8 a8 8 0 0 1 8 -8 H${CARD_WIDTH - 8} a8 8 0 0 1 8 8 V${CARD_HEADER_HEIGHT} H0 Z" fill="#f4f4f5"/>`,
+			`<path d="M0 8 a8 8 0 0 1 8 -8 H${CARD_WIDTH - 8} a8 8 0 0 1 8 8 V${headerHeight} H0 Z" fill="#f4f4f5"/>`,
 			`<text x="10" y="${CARD_HEADER_HEIGHT / 2 + 4}" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#18181b">${escapeXml(
 				node.name,
 			)}</text>`,
 		);
+		if (!node.collapsed && node.note) {
+			parts.push(
+				`<text x="10" y="${CARD_HEADER_HEIGHT + 11}" font-family="system-ui, sans-serif" font-size="9" fill="#a1a1aa">${escapeXml(
+					clipLine(node.note),
+				)}</text>`,
+			);
+		}
 		if (node.table_id == null) {
 			parts.push(
 				`<text x="${CARD_WIDTH - 10}" y="${CARD_HEADER_HEIGHT / 2 + 4}" text-anchor="end" font-family="system-ui, sans-serif" font-size="9" fill="#b45309">virtual</text>`,

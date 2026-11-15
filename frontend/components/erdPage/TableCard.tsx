@@ -14,6 +14,7 @@ import {
 	CARD_HEADER_HEIGHT,
 	CARD_ROW_HEIGHT,
 	CARD_WIDTH,
+	cardHeaderHeight,
 	columnRowHeight,
 } from '@/lib/erd/geometry';
 import type { ErdNode } from '@/types/erd';
@@ -70,58 +71,50 @@ export const TableCard = ({
 			left: node.x,
 			top: node.y,
 			width: CARD_WIDTH,
-			minHeight: CARD_HEADER_HEIGHT,
+			minHeight: cardHeaderHeight(node),
 		}}
 	>
 		<div
-			className={`flex items-center gap-1.5 rounded-t-lg border-b border-zinc-200 bg-zinc-50 px-2 dark:border-zinc-700 dark:bg-zinc-800 ${
+			className={`flex flex-col rounded-t-lg border-b border-zinc-200 bg-zinc-50 px-2 dark:border-zinc-700 dark:bg-zinc-800 ${
 				readOnly ? '' : 'cursor-grab active:cursor-grabbing'
 			}`}
-			style={{ height: CARD_HEADER_HEIGHT }}
+			style={{ height: cardHeaderHeight(node) }}
 			onPointerDown={(event) => {
 				if (!readOnly) onHeaderPointerDown(event, node.id);
 			}}
 			title={node.table_id ? t('Drag to move') : t('Virtual table (not in the catalog)')}
 		>
-			<button
-				type="button"
-				className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-secondary hover:bg-zinc-200 dark:hover:bg-zinc-700"
-				onPointerDown={(event) => event.stopPropagation()}
-				onClick={() => onToggleCollapse(node.id)}
-				aria-label={node.collapsed ? t('Expand table') : t('Collapse table')}
-			>
-				<CollapseIcon collapsed={node.collapsed} />
-			</button>
-			<span
-				className="min-w-0 flex-1 truncate text-[13px] font-semibold text-heading dark:text-zinc-100"
-				title={node.name}
-			>
-				{node.name}
-			</span>
-			{node.table_id == null && (
-				<span className="shrink-0 rounded bg-amber-100 px-1 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-					{t('virtual')}
-				</span>
-			)}
-			{node.note && (
-				<span
-					className="shrink-0 text-[11px] text-secondary dark:text-zinc-400"
-					title={node.note}
-					aria-label={t('Table note')}
+			<div className="flex items-center gap-1.5" style={{ height: CARD_HEADER_HEIGHT }}>
+				<button
+					type="button"
+					className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-secondary hover:bg-zinc-200 dark:hover:bg-zinc-700"
+					onPointerDown={(event) => event.stopPropagation()}
+					onClick={() => onToggleCollapse(node.id)}
+					aria-label={node.collapsed ? t('Expand table') : t('Collapse table')}
 				>
-					▤
-				</span>
-			)}
-			{node.indexes.length > 0 && (
+					<CollapseIcon collapsed={node.collapsed} />
+				</button>
 				<span
-					className="shrink-0 rounded bg-zinc-100 px-1 text-[10px] text-secondary dark:bg-zinc-800 dark:text-zinc-400"
-					title={t('{0} index(es)', { 0: String(node.indexes.length) })}
+					className="min-w-0 flex-1 truncate text-[13px] font-semibold text-heading dark:text-zinc-100"
+					title={node.name}
 				>
-					⚏{node.indexes.length}
+					{node.name}
 				</span>
-			)}
-			{!readOnly && (
-				<span className="opacity-0 transition-opacity group-hover:opacity-100">
+				{node.table_id == null && (
+					<span className="shrink-0 rounded bg-amber-100 px-1 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+						{t('virtual')}
+					</span>
+				)}
+				{node.indexes.length > 0 && (
+					<span
+						className="shrink-0 rounded bg-zinc-100 px-1 text-[10px] text-secondary dark:bg-zinc-800 dark:text-zinc-400"
+						title={t('{0} index(es)', { 0: String(node.indexes.length) })}
+					>
+						⚏{node.indexes.length}
+					</span>
+				)}
+				{!readOnly && (
+					<span className="opacity-0 transition-opacity group-hover:opacity-100">
 					<Button
 						theme={ButtonTheme.IconNeutral}
 						size={Size.SMALL}
@@ -164,7 +157,16 @@ export const TableCard = ({
 							<path d="M4 4l8 8M12 4l-8 8" strokeWidth="1.6" strokeLinecap="round" />
 						</svg>
 					</Button>
-				</span>
+					</span>
+				)}
+			</div>
+			{!node.collapsed && node.note && (
+				<p
+					className="truncate pl-[26px] pr-1 text-[10px] leading-none text-zinc-400 dark:text-zinc-500"
+					title={node.note}
+				>
+					{node.note}
+				</p>
 			)}
 		</div>
 		{!node.collapsed && (

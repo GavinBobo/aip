@@ -36,12 +36,12 @@ services:
     depends_on:
       - postgres
 
-  auto-ontology:
+  all-ontology:
     build:
       context: .
       dockerfile: Dockerfile
-    image: auto-ontology:latest
-    container_name: auto-ontology
+    image: all-ontology:latest
+    container_name: all-ontology
     restart: unless-stopped
     ports:
       - "3001:3001"
@@ -60,10 +60,10 @@ services:
       postgres:
         condition: service_started
       # Without this the backend starts before Alembic has run and 500s
-      # (UndefinedTable) on every catalog call. auto-ontology-migrate waits for
+      # (UndefinedTable) on every catalog call. all-ontology-migrate waits for
       # `service_healthy`, a stronger gate than this service's
       # `service_started`, so the backend would otherwise always win the race.
-      auto-ontology-migrate:
+      all-ontology-migrate:
         condition: service_completed_successfully
       ingestion-service:
         condition: service_started
@@ -72,8 +72,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: auto-ontology:latest
-    container_name: auto-ontology-ingestion-service
+    image: all-ontology:latest
+    container_name: all-ontology-ingestion-service
     restart: unless-stopped
     command: ["ingestion_service"]
     ports:
@@ -100,7 +100,7 @@ services:
     depends_on:
       postgres:
         condition: service_started
-      auto-ontology-migrate:
+      all-ontology-migrate:
         condition: service_completed_successfully
 
   # One-shot Job: apply the backend's Alembic migrations, which own the
@@ -109,12 +109,12 @@ services:
   # `frontend`, and Alembic's autogenerate is filtered to its own so it can
   # never propose dropping a Prisma table. Ordering between the two does not
   # matter.
-  auto-ontology-migrate:
+  all-ontology-migrate:
     build:
       context: .
       dockerfile: Dockerfile
-    image: auto-ontology:latest
-    container_name: auto-ontology-migrate
+    image: all-ontology:latest
+    container_name: all-ontology-migrate
     env_file:
       - .env
     environment:
@@ -136,9 +136,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        PYTHON_API_URL: ${PYTHON_API_URL:-http://auto-ontology:3001}
-    image: auto-ontology-frontend:latest
-    container_name: auto-ontology-frontend-migrate
+        PYTHON_API_URL: ${PYTHON_API_URL:-http://all-ontology:3001}
+    image: all-ontology-frontend:latest
+    container_name: all-ontology-frontend-migrate
     working_dir: /app/migrate
     env_file:
       - .env
@@ -151,27 +151,27 @@ services:
       postgres:
         condition: service_healthy
 
-  auto-ontology-frontend:
+  all-ontology-frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        PYTHON_API_URL: ${PYTHON_API_URL:-http://auto-ontology:3001}
-    image: auto-ontology-frontend:latest
-    container_name: auto-ontology-frontend
+        PYTHON_API_URL: ${PYTHON_API_URL:-http://all-ontology:3001}
+    image: all-ontology-frontend:latest
+    container_name: all-ontology-frontend
     restart: unless-stopped
     ports:
       - "3010:3010"
     env_file:
       - .env
     environment:
-      PYTHON_API_URL: ${PYTHON_API_URL:-http://auto-ontology:3001}
+      PYTHON_API_URL: ${PYTHON_API_URL:-http://all-ontology:3001}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
     depends_on:
       # Healthy (not just started): the frontend's seed-admin syncs the admin
       # user to the backend at boot and fails if :3001 isn't accepting yet.
-      auto-ontology:
+      all-ontology:
         condition: service_healthy
       frontend-migrate:
         condition: service_completed_successfully

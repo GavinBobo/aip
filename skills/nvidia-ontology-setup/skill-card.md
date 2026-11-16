@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 ## Description: <br>
-Set up or troubleshoot the Auto Ontology runtime, covering Helm (the official install), Docker Compose, developer setup, and MCP connection to an existing deployment. <br>
+Set up or troubleshoot the All Ontology runtime, covering Helm (the official install), Docker Compose, developer setup, and MCP connection to an existing deployment. <br>
 
 This skill is ready for commercial/non-commercial use. <br>
 
@@ -15,7 +15,7 @@ NVIDIA <br>
 ### License/Terms of Use: <br>
 Apache 2.0 <br>
 ## Use Case: <br>
-Developers and platform engineers use this skill to install Auto Ontology with the published Helm chart or Docker Compose, run developer workflows, connect a source database, verify readiness, and connect an MCP client to a deployment that is already running. <br>
+Developers and platform engineers use this skill to install All Ontology with the published Helm chart or Docker Compose, run developer workflows, connect a source database, verify readiness, and connect an MCP client to a deployment that is already running. <br>
 
 ### Deployment Geography for Use: <br>
 Global <br>
@@ -31,9 +31,9 @@ Risk: Review before execution as proposals could introduce incorrect or misleadi
 Mitigation: Review and scan skill before deployment. <br>
 
 ## Reference(s): <br>
-- [Auto Ontology setup troubleshooting](references/troubleshooting.md) <br>
+- [All Ontology setup troubleshooting](references/troubleshooting.md) <br>
 - [runtime-contract.yaml](assets/runtime-contract.yaml) <br>
-- [Table-level scope guarantee (NVIDIA/auto-ontology#255)](https://github.com/NVIDIA/auto-ontology/issues/255) <br>
+- [Table-level scope guarantee (NVIDIA/all-ontology#255)](https://github.com/NVIDIA/all-ontology/issues/255) <br>
 
 
 ## Skill Output: <br>

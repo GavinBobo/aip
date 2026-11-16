@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": "query-eval-001-mcp-first",
-      "prompt": "How should my coding agent ask Auto Ontology how many open orders we have?",
+      "prompt": "How should my coding agent ask All Ontology how many open orders we have?",
       "expected_output": "If MCP is connected, use the handshake tools in order: check_readiness, search_terms, check_answerable, ask_question. Do not jump straight to ask_question. Do not copy a frozen tool table if the handshake list differs.",
       "assertions": [
         "Prefers MCP when available",
@@ -16,7 +16,7 @@
     {
       "id": "query-eval-002-no-fastapi-public",
       "prompt": "I'll POST questions to http://localhost:3001/api/chat/completions with a conversation_id from our partner app.",
-      "expected_output": "Do not expose or call FastAPI :3001 from a partner app. Public clients use the Next.js gateway on the web origin (:3010). FastAPI trusts x-auto-ontology-user-id and does not independently verify it. conversation_id on a direct FastAPI call requires that internal header.",
+      "expected_output": "Do not expose or call FastAPI :3001 from a partner app. Public clients use the Next.js gateway on the web origin (:3010). FastAPI trusts x-all-ontology-user-id and does not independently verify it. conversation_id on a direct FastAPI call requires that internal header.",
       "assertions": [
         "Directs the caller to the Next.js gateway, not FastAPI :3001",
         "Explains that FastAPI is a trusted internal boundary",
@@ -28,7 +28,7 @@
     {
       "id": "query-eval-003-conversation-409",
       "prompt": "As an authenticated user with chat:use and conversation:write, I send two overlapping POSTs to /api/chat/completions with the same conversation_id. What happens?",
-      "expected_output": "The second request returns 409 Conversation in progress. Wait for [DONE] on the SSE stream before sending the next turn. conversation_id is scoped to the authenticated Auto Ontology user.",
+      "expected_output": "The second request returns 409 Conversation in progress. Wait for [DONE] on the SSE stream before sending the next turn. conversation_id is scoped to the authenticated All Ontology user.",
       "assertions": [
         "Names 409 Conversation in progress",
         "Requires waiting for [DONE] before the next turn",
@@ -39,12 +39,12 @@
     },
     {
       "id": "query-eval-004-sso-vs-api-token",
-      "prompt": "AI-Q already has the user's NVIDIA SSO JWT. Should it also mint an Auto Ontology API token to call chat?",
-      "expected_output": "No extra Auto Ontology token is required. Auto Ontology accepts the SSO id token as Authorization: Bearer, verifies issuer/signature/expiry, and does not check audience (aud is AI-Q's client id). The token must map to an existing Auto Ontology user (email, then SSO subject). An Auto Ontology API token is for scripts that cannot present SSO.",
+      "prompt": "AI-Q already has the user's NVIDIA SSO JWT. Should it also mint an All Ontology API token to call chat?",
+      "expected_output": "No extra All Ontology token is required. All Ontology accepts the SSO id token as Authorization: Bearer, verifies issuer/signature/expiry, and does not check audience (aud is AI-Q's client id). The token must map to an existing All Ontology user (email, then SSO subject). An All Ontology API token is for scripts that cannot present SSO.",
       "assertions": [
         "Uses the SSO bearer as the AI-Q credential",
-        "Does not require minting an Auto Ontology API token for AI-Q",
-        "Notes audience is not checked and an Auto Ontology user must already exist"
+        "Does not require minting an All Ontology API token for AI-Q",
+        "Notes audience is not checked and an All Ontology user must already exist"
       ],
       "expected_skill": "nvidia-ontology-query",
       "expected_script": null
@@ -56,19 +56,19 @@
       "assertions": [
         "States there is no MCP catalog-browser for raw schemas",
         "Points at describe_table / search_terms / ask_question",
-        "Does not recommend listing information_schema via Auto Ontology MCP"
+        "Does not recommend listing information_schema via All Ontology MCP"
       ],
       "expected_skill": "nvidia-ontology-query",
       "expected_script": null
     },
     {
       "id": "query-eval-006-cuopt-not-in-repo",
-      "prompt": "Wire Auto Ontology to cuOpt so chat answers become a vehicle routing job.",
-      "expected_output": "This repository has no cuOpt bridge. Auto Ontology returns answers, SQL, and rows; a partner agent may feed numbers into cuOpt using cuopt-* skills. Do not claim Auto Ontology solves routing or LPs.",
+      "prompt": "Wire All Ontology to cuOpt so chat answers become a vehicle routing job.",
+      "expected_output": "This repository has no cuOpt bridge. All Ontology returns answers, SQL, and rows; a partner agent may feed numbers into cuOpt using cuopt-* skills. Do not claim All Ontology solves routing or LPs.",
       "assertions": [
         "States there is no in-repo cuOpt integration",
-        "Allows a partner-wired hop from Auto Ontology rows to cuOpt",
-        "Does not invent an Auto Ontology routing API"
+        "Allows a partner-wired hop from All Ontology rows to cuOpt",
+        "Does not invent an All Ontology routing API"
       ],
       "expected_skill": "nvidia-ontology-query",
       "expected_script": null

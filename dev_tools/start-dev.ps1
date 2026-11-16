@@ -4,7 +4,7 @@ All rights reserved.
 SPDX-License-Identifier: Apache-2.0
 
 .SYNOPSIS
-    Start the Auto-Ontology development stack natively (no application containers).
+    Start the All-Ontology development stack natively (no application containers).
 
 .DESCRIPTION
     Brings up, in order and only once:
@@ -12,7 +12,7 @@ SPDX-License-Identifier: Apache-2.0
       1. Postgres            Docker container `postgres` (the only containerised piece)
       2. FastAPI backend     .venv python -m uvicorn, --reload, 127.0.0.1:3001
       3. Ingestion service   .venv python -m all_ontology.ingestion_service, 3002
-      4. Next.js frontend    pnpm dev, 3000
+      4. Next.js frontend    pnpm dev, 3010
 
     Each step waits for the previous one to actually answer before the next
     starts, so the "connection timeout expired / schema revision unreadable"
@@ -67,10 +67,10 @@ if (Test-Path -LiteralPath $pidsFile) {
 
 $backendUrl = 'http://127.0.0.1:3001/api/health'
 $ingestUrl = 'http://127.0.0.1:3002/health/live'
-$frontendUrl = 'http://localhost:3000/login'
+$frontendUrl = 'http://localhost:3010/login'
 
 Write-Host ''
-Write-Host 'Auto-Ontology - native dev stack' -ForegroundColor White
+Write-Host 'All-Ontology - native dev stack' -ForegroundColor White
 Write-Host "repo: $repo" -ForegroundColor DarkGray
 Write-Host ''
 
@@ -208,21 +208,21 @@ if ($NoIngestion) {
 }
 
 # --------------------------------------------------------------------------- #
-# 4. Next.js frontend (port 3000)
+# 4. Next.js frontend (port 3010)
 # --------------------------------------------------------------------------- #
 $frontendPid = 0
 if ($NoFrontend) {
     Write-Warn 'skipping frontend (-NoFrontend)'
 } else {
-    Write-Step 'frontend (Next.js, localhost:3000)'
-    $owner = Get-PortOwner -Port 3000
+    Write-Step 'frontend (Next.js, localhost:3010)'
+    $owner = Get-PortOwner -Port 3010
     $frontendStatus = if ($owner) { Get-HttpStatus -Url $frontendUrl } else { 0 }
     $reusable = $owner -and
         (Test-ProjectCmdLine -CommandLine $owner.CommandLine -RepoRoot $repo) -and
         ($frontendStatus -ge 200 -and $frontendStatus -lt 400)
 
     if ($Force -or -not $reusable) {
-        if ($owner) { [void](Clear-PortListeners -RepoRoot $repo -Ports @(3000)) }
+        if ($owner) { [void](Clear-PortListeners -RepoRoot $repo -Ports @(3010)) }
     } else {
         $recorded = if ($previous) { [int]$previous.frontend } else { 0 }
         $frontendPid = Resolve-ComponentPid -OwnerPid $owner.Pid -RecordedPid $recorded -RepoRoot $repo
@@ -230,8 +230,8 @@ if ($NoFrontend) {
     }
 
     if ($frontendPid -eq 0) {
-        if (Get-PortOwner -Port 3000) {
-            Write-Fail 'port 3000 is still busy after cleanup - free it and retry'
+        if (Get-PortOwner -Port 3010) {
+            Write-Fail 'port 3010 is still busy after cleanup - free it and retry'
             exit 1
         }
 		# `pnpm build` leaves a production `.next` behind, and `next dev` then
@@ -259,7 +259,7 @@ if ($NoFrontend) {
         $frontend = Start-LoggedProcess -FilePath $pnpm.Source -WorkingDirectory $frontendDir -Name 'frontend' -LogDir $logs -Arguments @('dev')
         Write-Host "  ..  starting (pid $($frontend.Pid)), first compile can take a minute" -ForegroundColor DarkGray
         if (-not (Wait-HttpStatus -Url $frontendUrl -TimeoutSec $FrontendTimeoutSec -Accept @(200) -ProcessId $frontend.Pid)) {
-            Write-Fail 'frontend did not answer on http://localhost:3000/login'
+            Write-Fail 'frontend did not answer on http://localhost:3010/login'
             Show-LogTail -Path $frontend.StdErr -Lines 30
             Show-LogTail -Path $frontend.StdOut -Lines 20
             exit 1
@@ -287,7 +287,7 @@ $adminPassword = Get-DotEnvValue -Path (Join-Path $repo '.env') -Key 'ALL_ONTOLO
 Write-Host ''
 Write-Host '  dev stack is up' -ForegroundColor Green
 Write-Host ''
-Write-Host '    frontend   http://localhost:3000'
+Write-Host '    frontend   http://localhost:3010'
 Write-Host '    api        http://127.0.0.1:3001/api/health'
 if ($ingestPid -gt 0) { Write-Host '    ingestion  http://127.0.0.1:3002/health/live' }
 if ($adminEmail) { Write-Host "    sign in    $adminEmail / $adminPassword" }

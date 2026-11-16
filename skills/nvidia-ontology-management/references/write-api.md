@@ -6,8 +6,8 @@ SPDX-License-Identifier: Apache-2.0
 
 # Ontology write API (index)
 
-Canonical request/response shapes: `docs/openapi/auto-ontology-api.json`. Do not paste
-schemas here. Permissions are `x-auto-ontology-permissions` on each operation.
+Canonical request/response shapes: `docs/openapi/all-ontology-api.json`. Do not paste
+schemas here. Permissions are `x-all-ontology-permissions` on each operation.
 
 Call the **Next.js** origin (`APP_URL`, local `:3010`), not FastAPI `:3001`.
 
@@ -60,7 +60,7 @@ through compilation, ingest, or model import.
 
 | Method | Path | Permission | Notes |
 | --- | --- | --- | --- |
-| POST | `/api/model/export` | `modelInterchange:export` | JSON body `ExportRequest`: catalog database **IDs** in `databases` (empty = all), `format` `auto_ontology` \| `ossie`. Response is YAML. |
+| POST | `/api/model/export` | `modelInterchange:export` | JSON body `ExportRequest`: catalog database **IDs** in `databases` (empty = all), `format` `all_ontology` \| `ossie`. Response is YAML. |
 | POST | `/api/model/import` | `modelInterchange:import` | YAML import; request forms and query parameters are in the OpenAPI spec. Pitfall: `replace` defaults to true, so confirm with the user before importing over existing definitions. |
 
 For mutation and publication safeguards, use

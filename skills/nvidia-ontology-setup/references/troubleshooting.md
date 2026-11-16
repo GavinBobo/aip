@@ -4,7 +4,7 @@ All rights reserved.
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# Auto Ontology setup troubleshooting
+# All Ontology setup troubleshooting
 
 Read this before searching the web. Redact secrets before sharing command
 output.
@@ -40,7 +40,7 @@ ingestion service and the backend.
 
 ## Connections: UI vs `CONNECTION_STRINGS` vs Vault
 
-Auto Ontology resolves source databases from two places:
+All Ontology resolves source databases from two places:
 
 1. Connections added in the UI. Credentials are stored in plaintext on the
    catalog row unless Vault is fully configured.
@@ -55,18 +55,18 @@ ignored with a warning and falls back to plaintext. `VAULT_AUTH_MOUNT` and
 
 ## MCP client cannot discover how to sign in
 
-`$AUTO_ONTOLOGY_API_URL/.well-known/oauth-authorization-server` must return JSON
+`$ALL_ONTOLOGY_API_URL/.well-known/oauth-authorization-server` must return JSON
 (`200`). A redirect to the login page means the deployment predates that
 route — run the frontend from the checkout (`pnpm dev`).
 
-`AUTO_ONTOLOGY_API_URL` is the **web app**, default `http://localhost:3010`, not
+`ALL_ONTOLOGY_API_URL` is the **web app**, default `http://localhost:3010`, not
 FastAPI `:3001`.
 
 ## Sign-in or MCP login fails although discovery works
 
 Users, sessions, API keys, and the MCP OAuth tables live in the Prisma
 `frontend` schema, synced by the `frontend-migrate` job, not by the backend's
-`auto-ontology-migrate`. Read its log even if it exited 0; it has finished
+`all-ontology-migrate`. Read its log even if it exited 0; it has finished
 without an error before while leaving MCP login broken:
 
 - Compose: `docker compose logs frontend-migrate`
@@ -76,12 +76,12 @@ without an error before while leaving MCP login broken:
 
 The MCP server advertised the address it bound to, and the client reached it
 under a different spelling of the same host — almost always `127.0.0.1`
-versus `localhost`. Set `AUTO_ONTOLOGY_MCP_PUBLIC_URL` to the URL the client uses, or
-leave `AUTO_ONTOLOGY_MCP_HOST` unset.
+versus `localhost`. Set `ALL_ONTOLOGY_MCP_PUBLIC_URL` to the URL the client uses, or
+leave `ALL_ONTOLOGY_MCP_HOST` unset.
 
 ## "This request carried no signed-in session"
 
-The grant expired or was revoked in Auto Ontology. Sign in again from the MCP client.
+The grant expired or was revoked in All Ontology. Sign in again from the MCP client.
 There is no server-side token to paste; do not try to configure one.
 
 ## `ask_question` returned an empty answer, with no SQL and no error
@@ -95,7 +95,7 @@ credential.
 If the deployment is ready, the question's vocabulary is the problem —
 `search_terms` for the nouns in it.
 
-## "Auto Ontology cannot answer right now"
+## "All Ontology cannot answer right now"
 
 Usually the semantic layer was never compiled; confirm with
 `check_readiness` or `GET /api/semantic-compilation/status`. It also appears

@@ -3,15 +3,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # ---------------------------------------------------------------------------
-# Auto Ontology MCP server image
+# All Ontology MCP server image
 # ---------------------------------------------------------------------------
-# Build (from /mcp):  docker build -t auto-ontology-mcp:latest .
+# Build (from /mcp):  docker build -t all-ontology-mcp:latest .
 # Run:                docker run --rm -p 3003:3003 \
-#                         -e AUTO_ONTOLOGY_API_URL=https://auto_ontology.example.com \
-#                         -e AUTO_ONTOLOGY_MCP_PUBLIC_URL=https://mcp.example.com \
-#                         auto-ontology-mcp:latest
+#                         -e ALL_ONTOLOGY_API_URL=https://all-ontology.example.com \
+#                         -e ALL_ONTOLOGY_MCP_PUBLIC_URL=https://mcp.example.com \
+#                         all-ontology-mcp:latest
 #
-# Separate from the FastAPI image: auto-ontology-mcp talks to Auto Ontology over HTTP and must
+# Separate from the FastAPI image: all-ontology-mcp talks to All Ontology over HTTP and must
 # not pull the backend's database drivers or model stack.
 # ---------------------------------------------------------------------------
 
@@ -52,7 +52,7 @@ RUN curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" \
 WORKDIR /app
 
 COPY pyproject.toml uv.lock README.md ./
-COPY auto_ontology_mcp/ ./auto_ontology_mcp/
+COPY all_ontology_mcp/ ./all_ontology_mcp/
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv python install "${PYTHON_VERSION}" \
@@ -66,8 +66,8 @@ FROM $BASE_IMG:$BASE_IMG_TAG AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:${PATH}" \
-    AUTO_ONTOLOGY_MCP_HOST=0.0.0.0 \
-    AUTO_ONTOLOGY_MCP_PORT=3003
+    ALL_ONTOLOGY_MCP_HOST=0.0.0.0 \
+    ALL_ONTOLOGY_MCP_PORT=3003
 
 # The pinned base image predates later Ubuntu security fixes (libssl3, gpgv,
 # ...), so apply them before installing anything on top.
@@ -77,24 +77,24 @@ RUN apt-get update \
         ca-certificates \
         tini \
  && rm -rf /var/lib/apt/lists/* \
- && groupadd --system --gid 1000 auto_ontology \
- && useradd  --system --uid 1000 --gid auto_ontology --home /app --shell /usr/sbin/nologin auto_ontology
+ && groupadd --system --gid 1000 all_ontology \
+ && useradd  --system --uid 1000 --gid all_ontology --home /app --shell /usr/sbin/nologin all_ontology
 
 WORKDIR /app
 
 COPY --from=builder /opt/python /opt/python
 COPY --from=builder /opt/venv /opt/venv
-COPY --from=builder --chown=auto_ontology:auto_ontology /app /app
+COPY --from=builder --chown=all_ontology:all_ontology /app /app
 
 # License and attribution files (OSRB): see CONTAINER_THIRD_PARTY_NOTICES.md.
 COPY LICENSE THIRD_PARTY_NOTICES.md CONTAINER_THIRD_PARTY_NOTICES.md OPEN_SOURCE_NOTICE /licenses/
 
-USER auto_ontology
+USER all_ontology
 
 EXPOSE 3003
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD python -c "import socket,os,sys; p=int(os.environ.get('AUTO_ONTOLOGY_MCP_PORT','3003')); s=socket.create_connection(('127.0.0.1',p),3); s.close()"
+    CMD python -c "import socket,os,sys; p=int(os.environ.get('ALL_ONTOLOGY_MCP_PORT','3003')); s=socket.create_connection(('127.0.0.1',p),3); s.close()"
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["auto-ontology-mcp"]
+CMD ["all-ontology-mcp"]

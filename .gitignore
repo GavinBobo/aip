@@ -2,161 +2,101 @@
 # All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-# =====================================================================
-# Secrets / local configuration
-# =====================================================================
-# Real env files never leave the machine. The example file is the only
-# env file that belongs in the repo (placeholders only, no credentials).
-.env
-.env.*
-!.env.example
-!.env.*.example
-.envrc
+# python
+.venv/
+**/__pycache__/
+# Local tool caches: regenerated on every run, never shared.
+.pytest_cache/
+.ruff_cache/
 
-# Keys, certificates, keystores
+# Build artefacts (e.g. all-ontology-mcp wheels from `uv build`)
+dist/
+*.egg-info/
+
+
+# dependencies
+node_modules
+
+# pnpm
+.pnpm-store/
+
+# testing
+/coverage
+all_ontology/tests/test_postgres_connector.py
+
+# misc
+.DS_Store
 *.pem
 *.p8
 *.pub
-*.key
-*.crt
-*.p12
-*.pfx
-*.jks
-id_rsa
-id_rsa.*
-id_ed25519
-id_ed25519.*
 
-# =====================================================================
-# Python
-# =====================================================================
-.venv/
-venv/
-env.bak/
-**/__pycache__/
-*.py[cod]
-*.so
-*.egg
-*.egg-info/
-.eggs/
-build/
-dist/
-
-# Tool caches: regenerated on every run, never shared.
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-.pyre/
-.tox/
-.nox/
-.coverage
-.coverage.*
-coverage.xml
-htmlcov/
-
-# =====================================================================
-# Node / Next.js / pnpm
-# =====================================================================
-node_modules/
-.pnpm-store/
-.next/
-out/
-.turbo/
-.vercel
-*.tsbuildinfo
-.eslintcache
-pnpm-debug.log*
+# debug
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# =====================================================================
-# Local data and runtime state
-# =====================================================================
-# DuckDB / SQLite databases are rebuilt from source SQL or from the live
-# deployment; the text fixtures stay tracked.
-*.duckdb
-*.duckdb.wal
-*.sqlite
-*.sqlite3
-*.db
-*.db-journal
-*.db-wal
-*.db-shm
-pgdata/
-
-# Launcher logs and generated reports from dev_tools/start-dev.ps1
+# local dev scratch: launcher logs (dev_tools/start-dev.ps1) and UI screenshots
 /logs/
 /outputs/
-*.log
 
-# Server-side file drop for the Excel / CSV wizard. Keep the folder and
-# its README; data files belong to the deployment, not the repository.
-/shared/*
-!/shared/README.md
+# local env files
+.env*.local
+.env
 
-# Local OpenMetadata evaluation environment (Docker volume + rendered
-# configs with secrets); scratch state, never commit.
-openmetadata-eval/
+# DuckDB database files
+*.duckdb
+*.duckdb.wal
 
-# Generated SQLite fixture DBs — built from the vendored .sql by
-# dev_tools.fixtures.build_sqlite_fixtures; the SQL is the source of truth.
-dev_tools/fixtures/sql/*.sqlite
 
-# =====================================================================
-# Editors / IDE
-# =====================================================================
-# Keep the shared launch config; everything else is machine-specific.
+.env.docker
+
+
+# IDE config (keep launch.json tracked)
 .vscode/*
 !.vscode/launch.json
-.idea/
-*.iml
-.fleet/
-.history/
-*.swp
-*.swo
-*~
 
-# =====================================================================
-# Agent / tooling state
-# =====================================================================
+# Cursor debug logs
 .cursor/
 .cursorignore
-.claude/
-.codex/
-.aider*
+
+# Cache
 .cache/
 
-# =====================================================================
-# OS noise
-# =====================================================================
-.DS_Store
-._*
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-.Spotlight-V100
-.Trashes
+# Evaluation tooling (local dev-only)
+dev_tools/evaluation/
 
-# =====================================================================
-# Misc local artefacts
-# =====================================================================
-*.bak
-*.orig
-*.rej
-*.tmp
-*.temp
+# Local OpenMetadata evaluation environment (Docker volume + rendered configs
+# with secrets); local scratch state, never commit.
+openmetadata-eval/
 
-# =====================================================================
-# Local-only working files (personal scratch, creds, deploy scripts)
-# Machine-specific or secret: never part of the shared repository.
-# =====================================================================
+# Claude Code's local agent-memory/session state — machine-specific, never commit.
+.claude/projects/
+dev_tools/pgadmin/
+
+# Generated SQLite fixture DBs — built from the vendored .sql by
+# dev_tools.fixtures.build_sqlite_fixtures; text is the source of truth, not the blob.
+dev_tools/fixtures/sql/*.sqlite
+
+# Local minikube deploy helper. Machine-specific by nature — it names one
+# checkout's paths and reads API keys from the environment — so it stays out of
+# the repo rather than shipping one developer's setup to everyone.
+helm.sh
+
+# Local, untracked working files (scratch notes, creds, deploy scripts, WIP)
 /COOKBOOK.MD
 /DATABRICKS_SSA_REPORT.md
 /databricks.txt
 /databricks_creds.txt
-/helm.sh
+
+# Local server-side file drop for the Excel / CSV wizard. Keep the folder and
+# its README; data files belong to the deployment, not the repository.
+/shared/*
+!/shared/README.md
+/dev_tools/deploy_gsf_host.sh
+/dev_tools/deploy_gsf_k3s.sh
+/dev_tools/deploy_server.sh
+/dev_tools/deploy_to_dev_server.sh
+/dev_tools/generate_openapi_html.py
+/docs/blob-storage-plan.md
+/docs/profiling-catalog-qualification-fix.md
 /helm.sh.bak
 /index.html
 /kdc_ca1/
@@ -166,21 +106,3 @@ $RECYCLE.BIN/
 /temp.txt
 /vectors_wiki.py
 /vectors_wiki_load.py
-
-# One-off deploy helpers written for a single host/checkout.
-/dev_tools/deploy_gsf_host.sh
-/dev_tools/deploy_gsf_k3s.sh
-/dev_tools/deploy_server.sh
-/dev_tools/deploy_to_dev_server.sh
-/dev_tools/generate_openapi_html.py
-
-# Design notes that are local scratch rather than shared documentation.
-/docs/blob-storage-plan.md
-/docs/profiling-catalog-qualification-fix.md
-
-# Local dev-only evaluation tooling and admin UI state.
-dev_tools/evaluation/
-dev_tools/pgadmin/
-
-# Upstream exclusion kept as-is: needs a live PostgreSQL it doesn't own.
-auto_ontology/tests/test_postgres_connector.py

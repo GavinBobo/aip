@@ -14,9 +14,9 @@ import pytest
 from fastmcp import Client, FastMCP
 from fastmcp.exceptions import ToolError
 
-from auto_ontology_mcp import readiness
-from auto_ontology_mcp.config import DEFAULT_SPEC_PATH, Settings
-from auto_ontology_mcp.readiness import (
+from all_ontology_mcp import readiness
+from all_ontology_mcp.config import DEFAULT_SPEC_PATH, Settings
+from all_ontology_mcp.readiness import (
     CONNECTIONS_PATH,
     DATABASES_PATH,
     STATUS_PATH,
@@ -34,7 +34,7 @@ _ONE_DATABASE = {"data": [{"id": "d1", "name": "dw"}], "count": 1}
 
 def _settings() -> Settings:
     return Settings(
-        api_url="http://auto_ontology.test",
+        api_url="http://all_ontology.test",
         spec_path=DEFAULT_SPEC_PATH,
         host="127.0.0.1",
         port=3003,

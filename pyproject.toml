@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [project]
-name = "auto-ontology-server"
+name = "all-ontology-server"
 version = "1.2.0"
 requires-python = ">=3.12,<3.14"
 dependencies = [
@@ -24,7 +24,7 @@ dependencies = [
     # `heavydb/version.py` does `import importlib_metadata` -- the backport, not
     # the stdlib `importlib.metadata` -- but pyheavydb does not declare it. It
     # used to arrive transitively; an upgrade dropped whatever was carrying it
-    # and every `import auto_ontology.connectors` started failing at collection. Declared
+    # and every `import all_ontology.connectors` started failing at collection. Declared
     # here so the next upgrade cannot take it away again.
     "importlib-metadata>=8.7.1",
     "python-dotenv>=1.2.3",
@@ -49,7 +49,7 @@ dependencies = [
     "pure-sasl>=0.6.2",
     "pyjks>=20.0.0",
     "trino>=0.339.0",
-    # The embedding client (auto_ontology/utils/embedding.py). Pinned to the
+    # The embedding client (all_ontology/utils/embedding.py). Pinned to the
     # version nemo-gym 0.6.0 declares, so this matches the ontology-sql-eval
     # harness.
     "openai==2.44.0",
@@ -82,7 +82,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["auto_ontology"]
+packages = ["all_ontology"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
@@ -129,12 +129,12 @@ line-length = 88
 select = ["E4", "E7", "E9", "F"]
 
 [tool.ruff.lint.per-file-ignores]
-# `auto_ontology/parsing/pipeline/_vendor/xycut_plus_plus.py` is a third-party
+# `all_ontology/parsing/pipeline/_vendor/xycut_plus_plus.py` is a third-party
 # algorithm (XY-Cut++) carried over from OXR byte for byte. Reformatting or
 # "fixing" it would make the next upstream sync a manual merge of a 1800-line
 # file, for findings that are cosmetic in code we do not own. The rest of the
 # ported package is held to the same rules as the rest of this repo.
-"auto_ontology/parsing/pipeline/_vendor/*" = ["E7", "F841"]
+"all_ontology/parsing/pipeline/_vendor/*" = ["E7", "F841"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

@@ -4,24 +4,24 @@ All rights reserved.
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# Contributing to Auto-Ontology
+# Contributing to All-Ontology
 
 **This project does not accept external pull requests.** Code changes
-are made by the Auto-Ontology maintainer team. Integration requests and bug
+are made by the All-Ontology maintainer team. Integration requests and bug
 reports are welcome as GitHub issues; to integrate a platform, application, or
 storage provider, use the
-[integration request](https://github.com/NVIDIA/auto-ontology/issues/new?template=integration.yml)
+[integration request](https://github.com/NVIDIA/all-ontology/issues/new?template=integration.yml)
 template. This matches the [Integrate with us](README.md#integrate-with-us)
 section of the README.
 
 **Do not report security vulnerabilities through GitHub issues.** See
 [SECURITY.md](SECURITY.md) for NVIDIA's coordinated disclosure process.
 
-The rest of this file is for the Auto-Ontology maintainers.
+The rest of this file is for the All-Ontology maintainers.
 
 ## Development Setup
 
-Auto-Ontology uses [uv](https://docs.astral.sh/uv/) for Python dependency management:
+All-Ontology uses [uv](https://docs.astral.sh/uv/) for Python dependency management:
 
 ```bash
 uv sync                # install dependencies
@@ -46,4 +46,4 @@ See the `Makefile` (`make help`) for build and migration targets, and
 
 ## License
 
-Auto-Ontology is licensed under the [Apache License 2.0](LICENSE).
+All-Ontology is licensed under the [Apache License 2.0](LICENSE).

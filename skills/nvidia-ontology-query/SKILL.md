@@ -1,7 +1,7 @@
 ---
 name: nvidia-ontology-query
 description: >-
-  Query Auto Ontology and validate generated SQL, rows, and
+  Query All Ontology and validate generated SQL, rows, and
   answers. Use for MCP or REST access, readiness, authentication, conversations,
   and grounded questions.
 license: Apache-2.0
@@ -22,17 +22,17 @@ All rights reserved.
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# Auto Ontology grounded queries
+# All Ontology grounded queries
 
 ## Purpose
 
-Query the current Auto Ontology implementation from an agent without prescribing a
+Query the current All Ontology implementation from an agent without prescribing a
 harness, SDK, or LangGraph template. Typed workflow artifacts, statuses, gates,
 and handoffs are in [runtime-contract.yaml](assets/runtime-contract.yaml).
 
 ## Prerequisites
 
-Use a running Auto Ontology deployment and an authenticated MCP or REST client. If Auto Ontology is
+Use a running All Ontology deployment and an authenticated MCP or REST client. If All Ontology is
 not running, use `nvidia-ontology-setup` first.
 
 ## Limitations
@@ -52,7 +52,7 @@ browser. Hand mutations and publication to `nvidia-ontology-management`.
 ## Prefer MCP for reads
 
 When the harness speaks MCP, use it. The **handshake tool list** is the live
-source of truth (`mcp/auto_ontology_mcp/tools.py`). Do not copy a tool table into the
+source of truth (`mcp/all_ontology_mcp/tools.py`). Do not copy a tool table into the
 session; if the handshake and this skill disagree, trust the handshake.
 
 Sequence (the server also advertises this so models do not jump straight to
@@ -71,7 +71,7 @@ Everything on MCP **reads**. There is no MCP tool for raw databases, schemas,
 or columns on purpose. `describe_table` is the legitimate table view: terms
 and SQL attributes the table participates in.
 
-Connect: `AUTO_ONTOLOGY_API_URL` is the **web app**. Run `auto-ontology-mcp`, point the client at
+Connect: `ALL_ONTOLOGY_API_URL` is the **web app**. Run `all-ontology-mcp`, point the client at
 `…/mcp`, user signs in. No token on the MCP server. Details:
 repository `mcp/README.md` and `docs/mcp.md`.
 
@@ -79,20 +79,20 @@ repository `mcp/README.md` and `docs/mcp.md`.
 
 When MCP is unavailable, public clients call the authenticated **Next.js
 gateway**, not FastAPI
-`:3001`. FastAPI trusts `x-auto-ontology-user-id` and must not be exposed. A direct
+`:3001`. FastAPI trusts `x-all-ontology-user-id` and must not be exposed. A direct
 FastAPI request without `conversation_id` is stateless; with
 `conversation_id` it requires that internal header.
 
 Auth (any of these; resolved in one place):
 
 - Browser session cookie
-- API token: `x-api-key: $AUTO_ONTOLOGY_API_TOKEN` (`Authorization: Bearer` works for
-  `auto_ontology_…` tokens too). Token acts as its owner.
-- OAuth bearer issued by Auto Ontology (MCP sign-in)
+- API token: `x-api-key: $ALL_ONTOLOGY_API_TOKEN` (`Authorization: Bearer` works for
+  `all_ontology_…` tokens too). Token acts as its owner.
+- OAuth bearer issued by All Ontology (MCP sign-in)
 - SSO id token (`Authorization: Bearer <jwt>`), e.g. AI-Q — see
   [stack.md](references/stack.md)
 
-Shapes: `docs/openapi/auto-ontology-api.json`. Do not scrape all ~87 operations. A write
+Shapes: `docs/openapi/all-ontology-api.json`. Do not scrape all ~87 operations. A write
 request hands off to `nvidia-ontology-management`; this skill does not turn a read-only
 question into a mutation.
 
@@ -109,14 +109,14 @@ needs `conversation:write`, or it gets 403.
   **`409 Conversation in progress`**.
 - A 404 on a conversation id means it belongs to another user.
 
-Python (from the Auto Ontology README; no extra SDK):
+Python (from the All Ontology README; no extra SDK):
 
 ```python
 import os
 import requests
 
 session = requests.Session()
-session.headers["x-api-key"] = os.environ["AUTO_ONTOLOGY_API_TOKEN"]
+session.headers["x-api-key"] = os.environ["ALL_ONTOLOGY_API_TOKEN"]
 
 terms = session.get("https://ontology.example.com/api/terms").json()
 

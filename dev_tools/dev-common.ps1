@@ -7,7 +7,7 @@ Shared helpers for the Windows PowerShell developer scripts
 (`start-dev.ps1` / `stop-dev.ps1`). Dot-source it, do not run it directly.
 #>
 
-$DevPorts = @(3000, 3001, 3002)
+$DevPorts = @(3010, 3001, 3002)
 
 function Resolve-RepoRoot {
     param([Parameter(Mandatory)][string]$ScriptDir)
@@ -83,14 +83,14 @@ function Get-SelfAncestors {
 function Test-ProjectCmdLine {
     <#
     True when a command line plausibly belongs to this repository's dev stack.
-    Deliberately narrow: a foreign app that happens to sit on port 3000 must not match.
+    Deliberately narrow: a foreign app that happens to sit on port 3010 must not match.
     #>
     param([string]$CommandLine, [string]$RepoRoot)
     if ([string]::IsNullOrWhiteSpace($CommandLine)) { return $false }
     $cl = ($CommandLine -replace '/', '\').ToLowerInvariant()
     $root = (($RepoRoot -replace '/', '\').ToLowerInvariant()).TrimEnd('\') + '\'
     if ($cl.Contains($root)) { return $true }
-    foreach ($needle in @('uvicorn', 'auto_ontology', 'auto-ontology')) {
+    foreach ($needle in @('uvicorn', 'all_ontology', 'all-ontology')) {
         if ($cl.Contains($needle)) { return $true }
     }
     return $false

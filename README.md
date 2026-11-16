@@ -4,63 +4,72 @@ All rights reserved.
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# Auto Ontology
+# All-Ontology
 
-Agents can retrieve documents and query databases, but reliability gates agentic analytics: a revenue metric answered faster is worth nothing if the number is wrong. Agents need a context layer that tells them where data lives, what it means, whether to use it, how to use it, where it came from, and what is similar. NVIDIA Auto Ontology is an open library that builds that layer from enterprise metadata, reconciles definitions across systems, and exposes it to any agent harness through MCP, CLI, and API. It complements the semantic models customers already own.
+An agent can find a table and write SQL. What it cannot do on its own is say whether `revenue` means gross or net, whether the column it just joined on is allowed to leave the warehouse, or which of three systems owns the definition. A fast answer that is wrong is worse than a slow one, so agentic analytics needs a context layer, not another prompt.
 
-It enables developers to:
+**All-Ontology** is that layer, as an open-source product rather than a paper design. Point it at a warehouse, an uploaded spreadsheet, or a REST endpoint and it builds a profiled catalog of the estate; layer a governed semantic model on top (glossary terms, metric SQL, semantic foreign keys, bridge tables); then answer questions in natural language with SQL that has been checked before it runs. The catalog, the ontology, the ER diagrams and the conversation history all live in one Postgres — one backup, one permission model, one place to audit.
 
-- Discover: generate enterprise ontologies from metadata; connect existing ontologies and semantic models; build AI-ready knowledge graphs.
-- Ground: give agents trusted business meaning for metrics, entities, and relationships; reconcile inconsistent definitions across systems.
-- Validate: check generated queries against certified definitions and lineage; return provenance with every answer.
-- Expose: serve context to any agent harness through MCP, CLI, and API.
-Learn: fold certified corrections and usage back into the ontology, so shared context improves with every question.
+People use it through a web UI; agents use it through a REST API or the bundled read-only MCP server.
+
+<p>
+<img src="./docs/assets/arch.png" alt="All-Ontology Architecture" width="800">
+</p>
+
+## What it does
+
+| Job | What ships in this repository |
+| --- | --- |
+| **Connect** | Eleven SQL engines (PostgreSQL, SQL Server, MySQL, Snowflake, Databricks, Trino, ClickHouse, Kyuubi, HeavyDB, DuckDB, SQLite), uploaded Excel / CSV / Parquet files, and plain REST endpoints. Credentials come from the environment or HashiCorp Vault. |
+| **Understand** | A profiled catalog — schemas, tables, columns, primary and foreign keys, uniqueness, nullability, row counts, distinct values — kept fresh by incremental re-ingest and scheduled refresh, with PII detection over what it finds. |
+| **Define** | Glossary terms, column aliases, certified metric SQL, semantic foreign keys and bridge tables, compiled into the retrieval context and versioned so a definition change is reviewable. Model YAML can be imported and exported to work alongside models you already own. |
+| **Ask** | Natural-language to SQL over the semantic layer, with probe-based validation (literal checks, join-path checks, row caps) before a result is returned, plus the SQL, charts and saved analyses behind each answer. |
+| **Review** | A per-zone ER canvas that reconciles itself with the catalog: drag tables, draw relationships, annotate columns and tables, keep versions and templates, import/export DBML, SQL or JSON, export SVG/PNG, and ask an assistant whose proposed edits are validated before they land. |
+| **Parse** | PDFs and images turned into Markdown or JSON with tables, formulas, figures and chemical structures extracted, as asynchronous jobs the UI polls. |
+| **Govern** | Zones scope data per team; tags, owners, certification and saved-search rules label what they match; Better Auth provides SSO, invitations, API tokens and role-based access. |
+| **Serve** | A React web UI (English and 中文), a REST API with OpenAPI documents, and a read-only MCP server (`all-ontology-mcp`) with three agent skills for setup, modelling and querying. |
+
+Four properties are worth calling out, because they are what the code is built around:
+
+- **One database, not a sidecar.** The catalog and the ontology are tables in the same Postgres as the data they describe (Alembic owns the catalog schema, Prisma owns identity), so a backup or a permission change covers both.
+- **Validation before generation is trusted.** Generated SQL is probed against real literals and join paths, and row limits are applied per dialect — the answer ships with evidence, not just a query.
+- **The diagram belongs to the browser.** The ER canvas is client-owned and reconciled server-side, which keeps multi-tab editing honest and makes a whole assistant batch a single undo step.
+- **Scoping is a read-time filter.** A zone is applied to every catalog, search and exploration query, so the same instance can serve teams that must not see each other's tables.
 
 ## Benchmarks
 
 To run a text-to-SQL benchmark such as BIRD, refer to the
 [ontology SQL evaluation repository](https://github.com/NVIDIA/ontology-sql-eval/).
 
-> **Licensing & contributions.** Auto Ontology is distributed under the
+> **Licensing & contributions.** All-Ontology is distributed under the
 > [Apache License 2.0](./LICENSE). Third-party open-source components
 > bundled, linked, or otherwise used by this project are listed in
 > [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md). **This project
 > is currently not accepting external contributions.**
-
-<p>
-<img src="./docs/assets/arch.png" alt="Auto Ontology Architecture" width="800">
-</p>
-
-## Key Features
-
-- **Natural-language querying** of structured data — questions are translated to
-  SQL and executed against connected databases, powered by NVIDIA NIM.
-- **Semantic catalog / ontology layer** over relational sources, stored in
-  Postgres alongside the catalog it describes.
-- **Authentication & RBAC** —using [Better Auth](https://github.com/better-auth/better-auth).
-- **Web UI** for chat, analysis, data catalog, analytics, and settings.
-- **Flexible deployment** — Helm chart for Kubernetes or Docker Compose for a
-  local stack.
 
 ## Software Components
 
 | Component           | Technology                                                             | Role                                       | Default port |
 | ------------------- | ---------------------------------------------------------------------- | ------------------------------------------ | ------------ |
 | Frontend            | Next.js 16 (React 19, TypeScript, Tailwind CSS 4), Better Auth, Prisma | Web UI, authentication, API gateway        | 3010         |
-| Backend             | FastAPI (Python 3.12+), LangChain                                      | Chat / NL-to-SQL, catalog, datasource APIs | 3001         |
+| Backend             | FastAPI (Python 3.12+), LangChain                                      | Chat / NL-to-SQL, catalog, ontology, ER canvas, document parsing | 3001 |
 | Ingestion worker    | FastAPI (Python 3.12+)                                                 | Ingests tabular data and writes embeddings | 3002         |
 | Postgres + pgvector | Relational Database                                                    | App metadata, the catalog and ontology, vector store | 5432 |
 | HashiCorp Vault     | Optional                                                               | Secure storage of connection credentials   | —            |
 
+`docker compose` and the Helm chart publish the frontend on **3010**; the native
+scripts in `dev_tools/` bind **3000**. `APP_URL` has to name the port you
+actually open, or sign-in redirects will point at the wrong origin.
+
 ### NVIDIA NIM
 
-Auto Ontology uses NVIDIA NIM endpoints for inference — either the hosted
+All-Ontology uses NVIDIA NIM endpoints for inference — either the hosted
 [NVIDIA API catalog](https://build.nvidia.com) (`integrate.api.nvidia.com`) or
 self-hosted NIMs. The defaults in `.env.example` are:
 
 - **LLM:** `nvidia/nemotron-3.5-lightning-30b-a3b`
-- **Embeddings:** `nvidia/nemotron-3-embed-1b`
-- **Reranking:** `nvidia/llama-nemotron-rerank-vl-1b-v2`
+- **Embeddings:** `nvidia/nemotron-3.5-embed-1b`
+- **Reranking:** `nvidia/nemotron-3.5-rerank-8b`
 
 The endpoints and models are configured via the `DEFAULT_MODELS_ENDPOINT`, `DEFAULT_MODELS_MODEL`,
 `EMBED_ENDPOINT`, and `EMBED_MODEL` environment variables and require a
@@ -93,7 +102,7 @@ to the browser.
 
 ## Quickstart
 
-This runs Auto-Ontology with Docker Compose against Wide World Importers,
+This runs All-Ontology with Docker Compose against Wide World Importers,
 Microsoft's sample sales database. You need Docker with Compose v2,
 [uv](https://docs.astral.sh/uv/), and an NVIDIA API key (`nvapi-...`) from
 [build.nvidia.com](https://build.nvidia.com).
@@ -101,7 +110,7 @@ Microsoft's sample sales database. You need Docker with Compose v2,
 1. Clone the repository and create `.env`:
 
    ```bash
-   git clone https://github.com/NVIDIA/auto-ontology.git && cd auto-ontology
+   git clone https://github.com/NVIDIA/all-ontology.git && cd all-ontology
    cp .env.example .env
    ```
 
@@ -113,7 +122,7 @@ Microsoft's sample sales database. You need Docker with Compose v2,
    APP_URL=http://localhost:3010
    POSTGRES_PASSWORD=<a new password>
    CONNECTION_STRINGS=postgresql://postgres:<the same password>@postgres:5432/wideworldimporters
-   AUTO_ONTOLOGY_ADMIN_PASSWORD=<a new password>
+   ALL_ONTOLOGY_ADMIN_PASSWORD=<a new password>
    PGADMIN_PASSWORD=<a new password>
    ```
 
@@ -139,8 +148,8 @@ Microsoft's sample sales database. You need Docker with Compose v2,
    docker compose up -d --build
    ```
 
-4. Open <http://localhost:3010> and sign in with `AUTO_ONTOLOGY_ADMIN_EMAIL` and
-   `AUTO_ONTOLOGY_ADMIN_PASSWORD` from `.env`. Go to **Settings → Semantic
+4. Open <http://localhost:3010> and sign in with `ALL_ONTOLOGY_ADMIN_EMAIL` and
+   `ALL_ONTOLOGY_ADMIN_PASSWORD` from `.env`. Go to **Settings → Semantic
    Compilation** and turn it on. Ingestion runs at startup; compilation starts
    immediately and reports **Semantic compilation is ready** when it finishes.
 
@@ -196,10 +205,10 @@ again. For other setup failures, see the
 ## How it works
 
 <p>
-<img src="./docs/assets/arch.png" alt="Auto-Ontology architecture" width="800">
+<img src="./docs/assets/arch.png" alt="All-Ontology architecture" width="800">
 </p>
 
-Auto-Ontology works in three stages: it generates an ontology, people certify
+All-Ontology works in three stages: it generates an ontology, people certify
 it, and the agent answers questions from it.
 
 The ontology holds three kinds of definition:
@@ -258,10 +267,10 @@ CSV, or read them as a chart:
 <img src="./docs/assets/qa-example.png" alt="Chat answering which products drive the most revenue and highest customer count, with the generated SQL and a revenue chart" width="550">
 </p>
 
-Auto-Ontology is compatible with [Apache Ossie](https://ossie.apache.org/), the
+All-Ontology is compatible with [Apache Ossie](https://ossie.apache.org/), the
 open standard for exchanging semantic models. Ossie includes a
-[converter for Auto-Ontology](https://github.com/apache/ossie-converters/tree/main/nvidia),
-which Auto-Ontology uses to import and export model definitions as Ossie YAML.
+[converter for All-Ontology](https://github.com/apache/ossie-converters/tree/main/nvidia),
+which All-Ontology uses to import and export model definitions as Ossie YAML.
 Use **Settings → Import / Export**, or `POST /api/model/import` and
 `POST /api/model/export`.
 
@@ -275,7 +284,7 @@ Use **Settings → Import / Export**, or `POST /api/model/import` and
 | HashiCorp Vault     | Optional                          | Connection credential storage              | n/a  |
 
 Keep ports 3001 and 3002 on a private network. FastAPI trusts the user identity
-the frontend forwards in the `x-auto-ontology-user-id` header, and the ingestion
+the frontend forwards in the `x-all-ontology-user-id` header, and the ingestion
 service's endpoints (ingest, delete, reset, compile) have no authentication of
 their own. Clients go through the web app on port 3010.
 
@@ -284,7 +293,7 @@ their own. Clients go through the web app on port 3010.
 ### MCP server
 
 The [MCP](https://modelcontextprotocol.io) server gives any MCP client read-only
-tools over the ontology. Each user signs in through Auto-Ontology, and every
+tools over the ontology. Each user signs in through All-Ontology, and every
 call runs with that user's permissions.
 
 | Job           | Tools                                                         |
@@ -297,8 +306,8 @@ call runs with that user's permissions.
 Run the server against your deployment:
 
 ```bash
-AUTO_ONTOLOGY_API_URL=http://localhost:3010 \
-  uvx --from "git+https://github.com/NVIDIA/auto-ontology.git#subdirectory=mcp" auto-ontology-mcp
+ALL_ONTOLOGY_API_URL=http://localhost:3010 \
+  uvx --from "git+https://github.com/NVIDIA/all-ontology.git#subdirectory=mcp" all-ontology-mcp
 ```
 
 Cursor (`~/.cursor/mcp.json`):
@@ -306,7 +315,7 @@ Cursor (`~/.cursor/mcp.json`):
 ```json
 {
   "mcpServers": {
-    "auto-ontology": { "url": "http://localhost:3003/mcp" }
+    "all-ontology": { "url": "http://localhost:3003/mcp" }
   }
 }
 ```
@@ -317,7 +326,7 @@ Claude Desktop (`claude_desktop_config.json`), bridged with
 ```json
 {
   "mcpServers": {
-    "auto-ontology": {
+    "all-ontology": {
       "command": "npx",
       "args": ["mcp-remote", "http://localhost:3003/mcp"]
     }
@@ -330,7 +339,7 @@ Sign-in, configuration, and troubleshooting are in [docs/mcp.md](./docs/mcp.md).
 
 ### Agent skills
 
-Three skills teach a coding agent to work with Auto-Ontology. Start at
+Three skills teach a coding agent to work with All-Ontology. Start at
 [AGENTS.md](./AGENTS.md).
 
 | Skill                                                                | Covers                                               |
@@ -348,7 +357,7 @@ server-sent event stream: a `result` event carries the answer, and
 
 ```bash
 curl -N http://localhost:3010/api/chat/completions \
-  -H "x-api-key: $AUTO_ONTOLOGY_API_TOKEN" \
+  -H "x-api-key: $ALL_ONTOLOGY_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"question": "How many orders shipped last week?"}'
 ```
@@ -361,7 +370,7 @@ import requests
 
 response = requests.post(
     "http://localhost:3010/api/chat/completions",
-    headers={"x-api-key": os.environ["AUTO_ONTOLOGY_API_TOKEN"]},
+    headers={"x-api-key": os.environ["ALL_ONTOLOGY_API_TOKEN"]},
     json={"question": "How many orders shipped last week?"},
     stream=True,
     timeout=900,
@@ -384,13 +393,13 @@ for line in response.iter_lines(decode_unicode=True):
 
 Event types, multi-turn conversations, and the gateway trust boundary are in
 [docs/conversation-api.md](./docs/conversation-api.md). Every other operation is
-in the [OpenAPI spec](./docs/openapi/auto-ontology-api.json).
+in the [OpenAPI spec](./docs/openapi/all-ontology-api.json).
 
 ## Connectors, models, and predictions
 
 ### Sources
 
-Auto-Ontology connects to eleven engines:
+All-Ontology connects to eleven engines:
 
 - PostgreSQL
 - MySQL
@@ -420,7 +429,7 @@ refresh the snapshot whenever the source changes.
 
 ### Models
 
-Auto-Ontology uses four model roles. With an `nvapi-` key, each defaults to an
+All-Ontology uses four model roles. With an `nvapi-` key, each defaults to an
 NVIDIA NIM on [build.nvidia.com](https://build.nvidia.com):
 
 | Role            | Default model                           | What it does                                                                                                                   |
@@ -449,10 +458,10 @@ complete your organization's data review, before you enable it.
 ## Integrate with us
 
 To integrate an agent platform, application, or storage provider with
-Auto-Ontology,
-[open an integration request](https://github.com/NVIDIA/auto-ontology/issues/new?template=integration.yml).
+All-Ontology,
+[open an integration request](https://github.com/NVIDIA/all-ontology/issues/new?template=integration.yml).
 
-The Auto-Ontology team maintains the code and doesn't accept external pull
+The All-Ontology team maintains the code and doesn't accept external pull
 requests. Integration requests and bug reports are welcome as issues. Report
 security vulnerabilities through [SECURITY.md](./SECURITY.md). Maintainer
 workflow is in [CONTRIBUTING.md](./CONTRIBUTING.md).
@@ -466,11 +475,11 @@ workflow is in [CONTRIBUTING.md](./CONTRIBUTING.md).
 | Authentication, SSO, and API tokens     | [docs/authentication.md](./docs/authentication.md)   |
 | Conversation API                        | [docs/conversation-api.md](./docs/conversation-api.md) |
 | MCP server                              | [docs/mcp.md](./docs/mcp.md)                         |
-| REST API                                | [docs/openapi/auto-ontology-api.json](./docs/openapi/auto-ontology-api.json) |
+| REST API                                | [docs/openapi/all-ontology-api.json](./docs/openapi/all-ontology-api.json) |
 
 ## License
 
-Auto-Ontology is licensed under the [Apache License, Version 2.0](./LICENSE).
+All-Ontology is licensed under the [Apache License, Version 2.0](./LICENSE).
 SPDX identifier: `Apache-2.0`.
 
 Each NVIDIA-authored source file in this repository carries an SPDX header
@@ -482,7 +491,7 @@ All rights reserved.
 SPDX-License-Identifier: Apache-2.0
 ```
 
-Third-party open-source components used by Auto-Ontology are enumerated, with their
+Third-party open-source components used by All-Ontology are enumerated, with their
 upstream licenses and project URLs, in
 [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md). Components added by the
 container images are listed separately in
@@ -503,7 +512,7 @@ liabilities or legal consequences from your use or inability to use this
 software or any retrieved materials. Use this software and the retrieved
 materials at your own risk.
 
-External materials Auto-Ontology interacts with at run time:
+External materials All-Ontology interacts with at run time:
 
 - Model endpoints you configure, by default the NVIDIA API catalog
   (`integrate.api.nvidia.com`, `ai.api.nvidia.com`), under each provider's and

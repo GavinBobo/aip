@@ -68,7 +68,7 @@ wheels = [
 ]
 
 [[package]]
-name = "auto-ontology-mcp"
+name = "all-ontology-mcp"
 version = "1.2.0"
 source = { editable = "." }
 dependencies = [

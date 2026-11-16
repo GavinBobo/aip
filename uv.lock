@@ -207,7 +207,7 @@ wheels = [
 ]
 
 [[package]]
-name = "auto-ontology-server"
+name = "all-ontology-server"
 version = "1.2.0"
 source = { editable = "." }
 dependencies = [

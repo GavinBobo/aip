@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 from pytest import MonkeyPatch
 
-from auto_ontology_mcp.config import (
+from all_ontology_mcp.config import (
     DEFAULT_CHAT_TIMEOUT_S,
     DEFAULT_PORT,
     DEFAULT_SPEC_PATH,
@@ -20,14 +20,14 @@ from auto_ontology_mcp.config import (
 )
 
 _VARS = (
-    "AUTO_ONTOLOGY_API_URL",
-    "AUTO_ONTOLOGY_API_TOKEN",
-    "AUTO_ONTOLOGY_OPENAPI_SPEC",
-    "AUTO_ONTOLOGY_MCP_HOST",
-    "AUTO_ONTOLOGY_MCP_PORT",
-    "AUTO_ONTOLOGY_MCP_TIMEOUT_S",
-    "AUTO_ONTOLOGY_MCP_CHAT_TIMEOUT_S",
-    "AUTO_ONTOLOGY_MCP_PUBLIC_URL",
+    "ALL_ONTOLOGY_API_URL",
+    "ALL_ONTOLOGY_API_TOKEN",
+    "ALL_ONTOLOGY_OPENAPI_SPEC",
+    "ALL_ONTOLOGY_MCP_HOST",
+    "ALL_ONTOLOGY_MCP_PORT",
+    "ALL_ONTOLOGY_MCP_TIMEOUT_S",
+    "ALL_ONTOLOGY_MCP_CHAT_TIMEOUT_S",
+    "ALL_ONTOLOGY_MCP_PUBLIC_URL",
 )
 
 
@@ -40,7 +40,7 @@ def clean_env(monkeypatch: MonkeyPatch) -> None:
 
 def test_starts_with_nothing_configured() -> None:
     # Every caller signs in for themselves, so there is no credential to supply
-    # and a bare `auto-ontology-mcp` against a local Auto Ontology is a complete configuration.
+    # and a bare `all-ontology-mcp` against a local All Ontology is a complete configuration.
     settings = load_settings()
 
     assert settings.api_url == "http://localhost:3010"
@@ -60,7 +60,7 @@ def test_holds_no_credential_of_its_own() -> None:
 def test_an_exported_api_token_is_ignored(monkeypatch: MonkeyPatch) -> None:
     # Anyone who used an earlier build may still have this exported. It must
     # neither be adopted as an identity nor refused at startup.
-    monkeypatch.setenv("AUTO_ONTOLOGY_API_TOKEN", "auto_ontology_abc")
+    monkeypatch.setenv("ALL_ONTOLOGY_API_TOKEN", "all_ontology_abc")
 
     assert load_settings().api_url == "http://localhost:3010"
 
@@ -68,13 +68,13 @@ def test_an_exported_api_token_is_ignored(monkeypatch: MonkeyPatch) -> None:
 def test_strips_trailing_slash_from_api_url(monkeypatch: MonkeyPatch) -> None:
     # httpx joins base_url with a leading-slash path, so a trailing slash here
     # would produce '//api/...' and 404 against the Next.js router.
-    monkeypatch.setenv("AUTO_ONTOLOGY_API_URL", "https://auto_ontology.example.com/")
+    monkeypatch.setenv("ALL_ONTOLOGY_API_URL", "https://all-ontology.example.com/")
 
-    assert load_settings().api_url == "https://auto_ontology.example.com"
+    assert load_settings().api_url == "https://all-ontology.example.com"
 
 
 def test_rejects_missing_spec(monkeypatch: MonkeyPatch, tmp_path) -> None:
-    monkeypatch.setenv("AUTO_ONTOLOGY_OPENAPI_SPEC", str(tmp_path / "nope.json"))
+    monkeypatch.setenv("ALL_ONTOLOGY_OPENAPI_SPEC", str(tmp_path / "nope.json"))
 
     with pytest.raises(ConfigError, match="OpenAPI spec not found"):
         load_settings()
@@ -82,25 +82,25 @@ def test_rejects_missing_spec(monkeypatch: MonkeyPatch, tmp_path) -> None:
 
 @pytest.mark.parametrize("value", ["0", "-5", "not-a-number"])
 def test_rejects_nonsense_timeouts(monkeypatch: MonkeyPatch, value: str) -> None:
-    monkeypatch.setenv("AUTO_ONTOLOGY_MCP_TIMEOUT_S", value)
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_TIMEOUT_S", value)
 
-    with pytest.raises(ConfigError, match="AUTO_ONTOLOGY_MCP_TIMEOUT_S"):
+    with pytest.raises(ConfigError, match="ALL_ONTOLOGY_MCP_TIMEOUT_S"):
         load_settings()
 
 
 @pytest.mark.parametrize("value", ["0", "70000", "http"])
 def test_rejects_invalid_port(monkeypatch: MonkeyPatch, value: str) -> None:
-    monkeypatch.setenv("AUTO_ONTOLOGY_MCP_PORT", value)
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_PORT", value)
 
-    with pytest.raises(ConfigError, match="AUTO_ONTOLOGY_MCP_PORT"):
+    with pytest.raises(ConfigError, match="ALL_ONTOLOGY_MCP_PORT"):
         load_settings()
 
 
 def test_blank_values_fall_back_to_defaults(monkeypatch: MonkeyPatch) -> None:
     # Unset and empty-string are the same thing to a shell export, so an empty
     # value must not be read as "0" or as a literal blank URL.
-    monkeypatch.setenv("AUTO_ONTOLOGY_MCP_PORT", "")
-    monkeypatch.setenv("AUTO_ONTOLOGY_MCP_TIMEOUT_S", "  ")
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_PORT", "")
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_TIMEOUT_S", "  ")
 
     settings = load_settings()
 
@@ -110,14 +110,14 @@ def test_blank_values_fall_back_to_defaults(monkeypatch: MonkeyPatch) -> None:
 
 def test_public_url_is_derived_when_unset(monkeypatch: MonkeyPatch) -> None:
     # 0.0.0.0 is the default bind address and no use to a browser.
-    monkeypatch.setenv("AUTO_ONTOLOGY_MCP_PORT", "9999")
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_PORT", "9999")
 
     assert load_settings().public_url == "http://localhost:9999"
 
 
 def test_public_url_follows_an_explicit_host(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setenv("AUTO_ONTOLOGY_MCP_HOST", "127.0.0.1")
-    monkeypatch.setenv("AUTO_ONTOLOGY_MCP_PORT", "3003")
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_HOST", "127.0.0.1")
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_PORT", "3003")
 
     # Clients compare this against the address they dialled, and '127.0.0.1' is
     # not the string 'localhost' even though it is the same interface.
@@ -125,6 +125,6 @@ def test_public_url_follows_an_explicit_host(monkeypatch: MonkeyPatch) -> None:
 
 
 def test_public_url_can_be_set_explicitly(monkeypatch: MonkeyPatch) -> None:
-    monkeypatch.setenv("AUTO_ONTOLOGY_MCP_PUBLIC_URL", "https://mcp.example/")
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_PUBLIC_URL", "https://mcp.example/")
 
     assert load_settings().public_url == "https://mcp.example"

@@ -10,8 +10,8 @@ import json
 import re
 from types import SimpleNamespace
 
-from auto_ontology_mcp.config import DEFAULT_SPEC_PATH
-from auto_ontology_mcp.tools import (
+from all_ontology_mcp.config import DEFAULT_SPEC_PATH
+from all_ontology_mcp.tools import (
     CURATED,
     apply_description,
     missing_from_spec,

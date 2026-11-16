@@ -133,7 +133,7 @@ export type ExplorationLinkPathNodeDto = {
 	/** Matches `ExpansionEntityKind`/`NodeType` (`term`, `table`, `column`, `columnAttribute`). */
 	type: string;
 	/** Only ever set for a `table`/`column` kind node — see
-	 * `_enrich_catalog_path_nodes` in `auto_ontology/dal/attributes.py`. Lets the client
+	 * `_enrich_catalog_path_nodes` in `all_ontology/dal/attributes.py`. Lets the client
 	 * expand either further, the same way any other Table/Column node's
 	 * expansion does. */
 	database_id?: string | null;
@@ -167,7 +167,7 @@ export type ExplorationLinkPathDto = {
 
 /**
  * Server DTO for one FK column pair joining two tables in a
- * `DataGraphEdgeDto` (see `ForeignKeyRef` in `auto_ontology/server/models.py`). The
+ * `DataGraphEdgeDto` (see `ForeignKeyRef` in `all_ontology/server/models.py`). The
  * server renders both through `stringify_sample_values` before responding, so
  * these always land here as a plain string array (or `null`).
  */

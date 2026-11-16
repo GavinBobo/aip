@@ -1,9 +1,3 @@
-<!--
-SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
-All rights reserved.
-SPDX-License-Identifier: Apache-2.0
--->
-
 # Shared file drop
 
 The Excel / CSV connection wizard can read files from this directory when

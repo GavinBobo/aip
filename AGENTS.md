@@ -4,14 +4,14 @@ All rights reserved.
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# AGENTS.md — Auto-Ontology agent entry point
+# AGENTS.md — All-Ontology agent entry point
 
-Skills that teach an agent how to **set up** the current Auto-Ontology implementation and
+Skills that teach an agent how to **set up** the current All-Ontology implementation and
 **use** its ontology layer. They live in **`skills/`** (repo root), one directory
 per skill, under the durable `nvidia-ontology*` namespace.
 
-This file is for developers bringing Auto-Ontology up and partners embedding it in an
-agent harness. Auto-Ontology **maintainers** (build, test, schema, frontend conventions)
+This file is for developers bringing All-Ontology up and partners embedding it in an
+agent harness. All-Ontology **maintainers** (build, test, schema, frontend conventions)
 stay on [`CLAUDE.md`](./CLAUDE.md). Do not fold those conventions into these
 skills.
 
@@ -19,15 +19,15 @@ skills.
 
 - [`skills/nvidia-ontology-setup/`](./skills/nvidia-ontology-setup/) — Helm (the official
   install), local Compose, developer `--dev` / `--ds`, MCP against an
-  already-running instance, and troubleshooting. Start here when Auto-Ontology is not up yet or something failed
+  already-running instance, and troubleshooting. Start here when All-Ontology is not up yet or something failed
   during bring-up.
 - [`skills/nvidia-ontology-management/`](./skills/nvidia-ontology-management/) — inspect, model,
   **modify**, and safely publish through glossary terms, SQL attributes,
   semantic relationships, model YAML import/export, and governed result
   definitions. MCP cannot write; this skill covers the approved write paths.
 - [`skills/nvidia-ontology-query/`](./skills/nvidia-ontology-query/) — how an
-  agent calls Auto-Ontology (MCP first, REST fallback), discovers meaning through the
-  semantic layer, and validates SQL, rows, and answers. Start here when Auto-Ontology is
+  agent calls All-Ontology (MCP first, REST fallback), discovers meaning through the
+  semantic layer, and validates SQL, rows, and answers. Start here when All-Ontology is
   already deployed.
 
 ## Workflow ownership and handoffs
@@ -54,8 +54,8 @@ API catalog or a second installer.
 | Job | Owner | Skills do |
 | --- | --- | --- |
 | Install commands | `DEPLOYMENT.md` (Helm, official), `docker-compose.yml`; `dev_tools/setup_env.sh` for developer workflows | Invoke them; do not write a new installer |
-| Live read tools | `mcp/auto_ontology_mcp/tools.py` (handshake tool list) | Prefer MCP; sequence reads; never copy the tool table |
-| REST shapes and permissions | `docs/openapi/auto-ontology-api.json` | Name the operation and permission; link; do not paste schemas |
+| Live read tools | `mcp/all_ontology_mcp/tools.py` (handshake tool list) | Prefer MCP; sequence reads; never copy the tool table |
+| REST shapes and permissions | `docs/openapi/all-ontology-api.json` | Name the operation and permission; link; do not paste schemas |
 
 MCP is read-only by design. Writes go through the Next.js `/api/...` surface.
 The live MCP tool list at handshake is the source of truth if it disagrees
@@ -73,12 +73,12 @@ and build.nvidia.com/skills. That pipeline requires, per skill:
   `nv-skills-ci[bot]` pushes an "Attach NVSkills validation signatures" commit
   that must stay in the PR. Never hand-edit or fabricate these files, and rerun
   NVSkills CI after any later change to a skill in the same PR.
-- the `components.d/auto-ontology.yml` entry in **nvidia/skills** registering:
+- the `components.d/all-ontology.yml` entry in **nvidia/skills** registering:
 
 ```yaml
-name: Auto-Ontology
-repo: NVIDIA/auto-ontology
-description: Set up Auto-Ontology, model and publish its semantic layer, and run validated text-to-SQL queries through it.
+name: All-Ontology
+repo: NVIDIA/all-ontology
+description: Set up All-Ontology, model and publish its semantic layer, and run validated text-to-SQL queries through it.
 skills:
   - path: skills/nvidia-ontology-setup/
     catalog_dir: nvidia-ontology-setup
@@ -89,5 +89,5 @@ skills:
 ```
 
 Skills must stay free of staging hostnames, cluster names, Vault paths, and
-credentials — the catalog is public even when Auto-Ontology itself is
+credentials — the catalog is public even when All-Ontology itself is
 access-restricted.

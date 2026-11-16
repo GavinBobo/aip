@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 ## Description: <br>
-Query Auto Ontology and validate generated SQL, rows, and answers, using MCP or REST access, readiness checks, authentication, conversations, and grounded questions. <br>
+Query All Ontology and validate generated SQL, rows, and answers, using MCP or REST access, readiness checks, authentication, conversations, and grounded questions. <br>
 
 This skill is ready for commercial/non-commercial use. <br>
 
@@ -15,7 +15,7 @@ NVIDIA <br>
 ### License/Terms of Use: <br>
 Apache 2.0 <br>
 ## Use Case: <br>
-Developers and partners embedding Auto Ontology in an agent harness use this skill to check readiness, discover semantic-layer terms, ask grounded descriptive or diagnostic questions through MCP or the authenticated REST gateway, and validate the generated SQL, returned rows, truncation, and answer prose before presenting a claim. <br>
+Developers and partners embedding All Ontology in an agent harness use this skill to check readiness, discover semantic-layer terms, ask grounded descriptive or diagnostic questions through MCP or the authenticated REST gateway, and validate the generated SQL, returned rows, truncation, and answer prose before presenting a claim. <br>
 
 ### Deployment Geography for Use: <br>
 Global <br>
@@ -32,7 +32,7 @@ Mitigation: Review and scan skill before deployment. <br>
 
 ## Reference(s): <br>
 - [Grounded query and answer validation](references/query-validation.md) <br>
-- [Auto Ontology in a broader stack](references/stack.md) <br>
+- [All Ontology in a broader stack](references/stack.md) <br>
 - [Runtime contract](assets/runtime-contract.yaml) <br>
 
 

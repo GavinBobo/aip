@@ -52,5 +52,5 @@ SECURITY.md
 *.md
 !THIRD_PARTY_NOTICES.md
 !CONTAINER_THIRD_PARTY_NOTICES.md
-!auto_ontology/**/*.md
+!all_ontology/**/*.md
 dev_tools/

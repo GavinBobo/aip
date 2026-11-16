@@ -3,15 +3,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # ---------------------------------------------------------------------------
-# Auto Ontology FastAPI backend image
+# All Ontology FastAPI backend image
 # ---------------------------------------------------------------------------
 # Build:
 #
-#   docker build -t auto-ontology:latest .
+#   docker build -t all-ontology:latest .
 #
 # Run:
 #
-#   docker run --rm -p 3001:3001 --env-file .env auto-ontology:latest
+#   docker run --rm -p 3001:3001 --env-file .env all-ontology:latest
 #
 # ---------------------------------------------------------------------------
 
@@ -88,8 +88,8 @@ RUN apt-get update \
         libpq5 \
         tini \
  && rm -rf /var/lib/apt/lists/* \
- && groupadd --system --gid 1000 auto_ontology \
- && useradd  --system --uid 1000 --gid auto_ontology --home /app --shell /usr/sbin/nologin auto_ontology
+ && groupadd --system --gid 1000 all_ontology \
+ && useradd  --system --uid 1000 --gid all_ontology --home /app --shell /usr/sbin/nologin all_ontology
 
 # Microsoft's ODBC driver, needed by the SQL Server connector (`mssql://`).
 # The driver is not a Python package: pyodbc is the binding, this is the
@@ -110,27 +110,27 @@ WORKDIR /app
 
 COPY --from=builder /opt/python /opt/python
 COPY --from=builder /opt/venv /opt/venv
-COPY --chown=auto_ontology:auto_ontology auto_ontology/ ./auto_ontology/
-COPY --chown=auto_ontology:auto_ontology pyproject.toml ./
+COPY --chown=all_ontology:all_ontology all_ontology/ ./all_ontology/
+COPY --chown=all_ontology:all_ontology pyproject.toml ./
 # Fail the image build if the generated permission resource is absent or invalid.
-RUN python -c "from auto_ontology.server.users.permissions import permissions_for_role; assert 'group:read' in permissions_for_role('admin')"
+RUN python -c "from all_ontology.server.users.permissions import permissions_for_role; assert 'group:read' in permissions_for_role('admin')"
 # Schema migrations for the `public` schema, run by the `migrate` mode below.
-COPY --chown=auto_ontology:auto_ontology alembic/ ./alembic/
-COPY --chown=auto_ontology:auto_ontology alembic.ini ./
+COPY --chown=all_ontology:all_ontology alembic/ ./alembic/
+COPY --chown=all_ontology:all_ontology alembic.ini ./
 
 # Dispatcher entrypoint: selects between the FastAPI server, the ingestion
 # service, and the one-shot schema migration based on the first arg.
-# Defaults to auto_ontology.server.
+# Defaults to all_ontology.server.
 COPY --chmod=0755 <<'EOF' /usr/local/bin/entrypoint.sh
 #!/bin/sh
 set -e
 mode="${1:-server}"
 case "$mode" in
   server)
-    exec python -m auto_ontology.server
+    exec python -m all_ontology.server
     ;;
   ingestion_service)
-    exec python -m auto_ontology.ingestion_service
+    exec python -m all_ontology.ingestion_service
     ;;
   migrate)
     # Owns `public` only. Prisma owns `frontend` and migrates separately;
@@ -148,7 +148,7 @@ EOF
 # License and attribution files (OSRB): see CONTAINER_THIRD_PARTY_NOTICES.md.
 COPY LICENSE THIRD_PARTY_NOTICES.md CONTAINER_THIRD_PARTY_NOTICES.md OPEN_SOURCE_NOTICE /licenses/
 
-USER auto_ontology
+USER all_ontology
 
 EXPOSE 3001
 

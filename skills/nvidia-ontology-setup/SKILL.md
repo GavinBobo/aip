@@ -1,7 +1,7 @@
 ---
 name: nvidia-ontology-setup
 description: >-
-  Set up or troubleshoot the Auto Ontology runtime. Use for Helm (the official
+  Set up or troubleshoot the All Ontology runtime. Use for Helm (the official
   install), Docker Compose, developer setup, and MCP connection to an existing
   deployment.
 license: Apache-2.0
@@ -23,11 +23,11 @@ All rights reserved.
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# Auto Ontology setup
+# All Ontology setup
 
 ## Purpose
 
-Bring up the current Auto Ontology implementation, troubleshoot it, or connect an agent
+Bring up the current All Ontology implementation, troubleshoot it, or connect an agent
 to an instance that is already running. Do not invent a second installer:
 the official installation is the Helm chart in repository-root `DEPLOYMENT.md`;
 Docker Compose runs the same stack on one machine. `dev_tools/setup_env.sh` is a
@@ -46,7 +46,7 @@ Ask these if not already clear. Do not guess a default and emit a command.
 
 1. **Target** — Helm on Kubernetes (the official install, and the default
    recommendation), Docker Compose on one machine, a developer workflow
-   (`--dev` / `--ds`, only when changing Auto Ontology itself), or "Auto
+   (`--dev` / `--ds`, only when changing All Ontology itself), or "Auto
    Ontology is already up, I only need MCP"?
 2. **NVIDIA NIM key** — is `DEFAULT_MODELS_API_KEY` (Helm:
    `defaultModelsApiKey`) available? Chat and ingest need it.
@@ -72,7 +72,7 @@ values stay out of shell history and process arguments), readable only by
 them, and out of git:
 
 ```yaml
-# auto-ontology-values.yaml
+# all-ontology-values.yaml
 defaultModelsApiKey: <API-KEY>
 postgresPassword: <POSTGRES-PASSWORD>
 adminEmail: <ADMIN-EMAIL>
@@ -81,8 +81,8 @@ connectionStrings: <CONNECTION-STRINGS>   # optional; or add connections in the 
 ```
 
 ```bash
-helm fetch https://helm.ngc.nvidia.com/nvidia/charts/auto-ontology-<VERSION>.tgz
-helm install auto-ontology auto-ontology-<VERSION>.tgz -f auto-ontology-values.yaml
+helm fetch https://helm.ngc.nvidia.com/nvidia/charts/all-ontology-<VERSION>.tgz
+helm install all-ontology all-ontology-<VERSION>.tgz -f all-ontology-values.yaml
 kubectl port-forward svc/frontend 3010:3010
 ```
 
@@ -101,7 +101,7 @@ This skill does not cover Astra GitOps.
 
 For running the whole stack on one machine. In the repository root, the user
 copies `.env.example` to `.env` and fills in `AUTH_SECRET`, `APP_URL`,
-`AUTO_ONTOLOGY_ADMIN_EMAIL`, and `AUTO_ONTOLOGY_ADMIN_PASSWORD` (all required).
+`ALL_ONTOLOGY_ADMIN_EMAIL`, and `ALL_ONTOLOGY_ADMIN_PASSWORD` (all required).
 Then:
 
 ```bash
@@ -113,11 +113,11 @@ Better Auth "default secret" error. Fill `DEFAULT_MODELS_API_KEY` and a
 `CONNECTION_STRINGS` value (or plan to add connections in the UI). The full
 variable list is `.env.example`.
 
-This builds `auto-ontology` and `auto-ontology-frontend`, starts Postgres,
+This builds `all-ontology` and `all-ontology-frontend`, starts Postgres,
 pgAdmin, and the ingestion service, runs two one-shot migrate jobs, and starts
 the app:
 
-- `auto-ontology-migrate` applies Alembic migrations to the backend's `public`
+- `all-ontology-migrate` applies Alembic migrations to the backend's `public`
   schema (catalog and semantic tier). The backend waits for it.
 - `frontend-migrate` syncs the Prisma `frontend` schema: users, sessions, API
   keys, and the OAuth tables MCP sign-in uses. The frontend waits for it.
@@ -137,7 +137,7 @@ login broken.
 
 ## Developer workflows (`--dev`, `--ds`)
 
-Only for people changing Auto Ontology itself; these are not installations.
+Only for people changing All Ontology itself; these are not installations.
 `dev_tools/setup_env.sh` starts part of the stack in Docker and leaves the rest
 to run from the checkout. Both need the `.env` above plus:
 
@@ -153,25 +153,25 @@ uv sync
 ./dev_tools/setup_env.sh --dev
 cd frontend && pnpm dev
 # repo root:
-uv run uvicorn auto_ontology.server.__main__:create_app --factory --reload --host 127.0.0.1 --port 3001
+uv run uvicorn all_ontology.server.__main__:create_app --factory --reload --host 127.0.0.1 --port 3001
 ```
 
-The app factory is `create_app()` in `auto_ontology/server/__main__.py`. There is no
-`auto_ontology/server/main.py`. `uv run python -m auto_ontology.server` is the same app without
+The app factory is `create_app()` in `all_ontology/server/__main__.py`. There is no
+`all_ontology/server/main.py`. `uv run python -m all_ontology.server` is the same app without
 reload (what the container runs).
 
 `--ds` runs the frontend in Docker and FastAPI on the host:
 
 ```bash
 ./dev_tools/setup_env.sh --ds
-uv run python -m auto_ontology.server
+uv run python -m all_ontology.server
 ```
 
 The frontend image bakes `PYTHON_API_URL=http://host.docker.internal:3001`, so
 the API must accept connections from the container, not just loopback.
-`python -m auto_ontology.server` binds `0.0.0.0:3001` (what `setup_env.sh --ds`
+`python -m all_ontology.server` binds `0.0.0.0:3001` (what `setup_env.sh --ds`
 prints); a `--host 127.0.0.1` uvicorn is unreachable from the container on
-Linux. Because FastAPI trusts `x-auto-ontology-user-id`, keep port 3001
+Linux. Because FastAPI trusts `x-all-ontology-user-id`, keep port 3001
 firewalled from other machines. On native Linux Docker you may need
 `--add-host=host.docker.internal:host-gateway`.
 
@@ -181,34 +181,34 @@ This skill uses the repository's existing Helm chart and Compose file and does
 not cover Astra GitOps, change semantic definitions, or treat partial Vault
 configuration as secret storage. Ask before destructive volume deletion.
 
-## Auto Ontology is already up — MCP only
+## All Ontology is already up — MCP only
 
-Do not reinstall. Point `AUTO_ONTOLOGY_API_URL` at the **web app** (Compose UI is
+Do not reinstall. Point `ALL_ONTOLOGY_API_URL` at the **web app** (Compose UI is
 `:3010`, not FastAPI `:3001`):
 
 ```bash
-AUTO_ONTOLOGY_API_URL=http://localhost:3010 uvx --from "git+https://github.com/NVIDIA/auto-ontology.git#subdirectory=mcp" auto-ontology-mcp
+ALL_ONTOLOGY_API_URL=http://localhost:3010 uvx --from "git+https://github.com/NVIDIA/all-ontology.git#subdirectory=mcp" all-ontology-mcp
 ```
 
 Until the package is on PyPI this needs GitHub credentials that can read
-`NVIDIA/auto-ontology`. Client config uses the MCP server URL with a `/mcp` suffix.
-People sign in through Auto Ontology; do not put a token on the MCP server.
+`NVIDIA/all-ontology`. Client config uses the MCP server URL with a `/mcp` suffix.
+People sign in through All Ontology; do not put a token on the MCP server.
 
 Confirm the deployment is new enough to be an authorization server:
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' "$AUTO_ONTOLOGY_API_URL/.well-known/oauth-authorization-server"
+curl -s -o /dev/null -w '%{http_code}\n' "$ALL_ONTOLOGY_API_URL/.well-known/oauth-authorization-server"
 ```
 
 `200` is required. Anything else: run the frontend from the checkout
-(`pnpm dev`) and point `AUTO_ONTOLOGY_API_URL` at that port.
+(`pnpm dev`) and point `ALL_ONTOLOGY_API_URL` at that port.
 
 ## Examples
 
 - Kubernetes: install the published Helm chart from `DEPLOYMENT.md` with the
   admin account and `appUrl` set.
 - One machine: `docker compose up -d --build` after filling `.env`.
-- Existing deployment: do not reinstall; configure `AUTO_ONTOLOGY_API_URL` and verify
+- Existing deployment: do not reinstall; configure `ALL_ONTOLOGY_API_URL` and verify
   OAuth discovery before connecting the MCP client.
 
 ## Connect a source
@@ -235,7 +235,7 @@ Scope is set per connection: a schema allowlist, plus `table_allow_regex` /
 `table_deny_regex` applied at catalog extraction (deny wins; unqualified,
 case-sensitive names). Env connections have neither. The full table-level scope
 guarantee is still open in
-[#255](https://github.com/NVIDIA/auto-ontology/issues/255), so if particular tables must never be
+[#255](https://github.com/NVIDIA/all-ontology/issues/255), so if particular tables must never be
 catalogued, sampled, or embedded, say that this is not yet enforceable
 end-to-end rather than implying it is.
 
@@ -253,7 +253,7 @@ end-to-end rather than implying it is.
 ## Stop
 
 ```bash
-helm uninstall auto-ontology  # Helm; also deletes the postgres-data PVC and its data
+helm uninstall all-ontology  # Helm; also deletes the postgres-data PVC and its data
 docker compose down           # Compose; keep volumes
 docker compose down -v        # Compose; wipe Postgres / pgAdmin data
 ```
@@ -270,6 +270,6 @@ configuration. Redact secrets before sharing command output as evidence.
 
 - [troubleshooting.md](references/troubleshooting.md)
 - [runtime-contract.yaml](assets/runtime-contract.yaml)
-- `nvidia-ontology-query` — call Auto Ontology once it is running
+- `nvidia-ontology-query` — call All Ontology once it is running
 - `nvidia-ontology-management` — edit the semantic layer
-- `CLAUDE.md` — maintain Auto Ontology itself
+- `CLAUDE.md` — maintain All Ontology itself

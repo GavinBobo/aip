@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # ---------------------------------------------------------------------------
-# Auto Ontology image build / publish helpers
+# All Ontology image build / publish helpers
 # ---------------------------------------------------------------------------
 # These targets wrap the `docker buildx build` invocations needed to build
 # the backend and frontend images and (optionally) push them to NVIDIA's NGC
-# container registry. See `helm/auto-ontology/README.md` for the full deploy story;
+# container registry. See `helm/all-ontology/README.md` for the full deploy story;
 # this file only covers building and publishing the images.
 #
 # Common flow (one-time):
@@ -18,11 +18,11 @@
 #
 # Variables (override on the command line):
 #
-#   REGISTRY        Full nvcr.io path, e.g. nvcr.io/nvidian/sw-auto-ontology
+#   REGISTRY        Full nvcr.io path, e.g. nvcr.io/nvidian/sw-all-ontology
 #                   (required for `publish*` targets)
 #   TAG             Image tag. Defaults to `git describe`.
 #   PYTHON_API_URL  Backend URL baked into the frontend's Next.js rewrites
-#                   at build time. Defaults to http://auto-ontology:3001
+#                   at build time. Defaults to http://all-ontology:3001
 #                   (matches the in-cluster service the helm chart creates).
 #   PLATFORMS       Comma-separated platforms for multi-arch publish.
 #                   Defaults to linux/amd64,linux/arm64.
@@ -30,11 +30,11 @@
 
 REGISTRY       ?=
 TAG            ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
-PYTHON_API_URL ?= http://auto-ontology:3001
+PYTHON_API_URL ?= http://all-ontology:3001
 PLATFORMS      ?= linux/amd64,linux/arm64
 
-BACKEND_IMAGE  := auto-ontology
-FRONTEND_IMAGE := auto-ontology-frontend
+BACKEND_IMAGE  := all-ontology
+FRONTEND_IMAGE := all-ontology-frontend
 
 # --tag prefix. Plain image name when REGISTRY is empty (local builds);
 # fully-qualified when REGISTRY is set (publish builds).
@@ -46,24 +46,23 @@ else
   FRONTEND_REF := $(REGISTRY)/$(FRONTEND_IMAGE):$(TAG)
 endif
 
-.PHONY: help login builder build build-backend build-frontend \
-        publish publish-backend publish-frontend require-registry \
-        migrate migrate-check migrate-revision
+.PHONY: help login builder build build build-frontend \
+        publish publish publish-frontend
 
 help:
-	@echo "Auto Ontology image targets:"
+	@echo "All Ontology image targets:"
 	@echo "  make build               Build both images locally (host arch only)"
-	@echo "  make build-backend       Build backend image locally"
+	@echo "  make build       Build backend image locally"
 	@echo "  make build-frontend      Build frontend image locally"
 	@echo "  make publish             Build + push both images (multi-arch)"
-	@echo "  make publish-backend     Build + push backend image"
+	@echo "  make publish     Build + push backend image"
 	@echo "  make publish-frontend    Build + push frontend image"
 	@echo "  make login NGC_TOKEN=... docker login nvcr.io via NGC API token"
 	@echo ""
-	@echo "Schema targets (backend owns the \`auto_ontology\` schema; Prisma owns \`public\`):"
+	@echo "Schema targets (backend owns the \`all_ontology\` schema; Prisma owns \`public\`):"
 	@echo "  make migrate             Apply Alembic migrations (alembic upgrade head)"
 	@echo "  make migrate-check       Fail if the schema has drifted from the metadata"
-	@echo "  make migrate-revision m=\"...\"  Autogenerate a revision from auto_ontology/dal/schema.py"
+	@echo "  make migrate-revision m=\"...\"  Autogenerate a revision from all_ontology/dal/schema.py"
 	@echo
 	@echo "Required for publish*: REGISTRY=nvcr.io/<org>/<team>"
 	@echo "Current REGISTRY=$(REGISTRY) TAG=$(TAG)"
@@ -78,20 +77,20 @@ login:
 
 # Ensure a docker-container builder exists for multi-arch builds.
 builder:
-	@docker buildx inspect auto-ontology-builder >/dev/null 2>&1 \
-	  || docker buildx create --name auto-ontology-builder --driver docker-container --use
-	@docker buildx use auto-ontology-builder
+	@docker buildx inspect all-ontology-builder >/dev/null 2>&1 \
+	  || docker buildx create --name all-ontology-builder --driver docker-container --use
+	@docker buildx use all-ontology-builder
 
-build-backend:
+build:
 	docker buildx build -t $(BACKEND_REF) --load .
 
 build-frontend:
 	docker buildx build --build-arg PYTHON_API_URL=$(PYTHON_API_URL) \
 	    -t $(FRONTEND_REF) --load ./frontend
 
-build: build-backend build-frontend
+build: build build-frontend
 
-publish-backend: require-registry builder
+publish: require-registry builder
 	docker buildx build --platform $(PLATFORMS) \
 	    -t $(BACKEND_REF) --push .
 
@@ -100,24 +99,25 @@ publish-frontend: require-registry builder
 	    --build-arg PYTHON_API_URL=$(PYTHON_API_URL) \
 	    -t $(FRONTEND_REF) --push ./frontend
 
-publish: publish-backend publish-frontend
+publish: publish publish-frontend
 
 # Internal: fail fast if REGISTRY is missing on a publish target.
+.PHONY: require-registry
 require-registry:
 	@if [ -z "$(REGISTRY)" ]; then \
 	  echo "ERROR: REGISTRY is required for publish targets."; \
-	  echo "       e.g. make publish REGISTRY=nvcr.io/nvidian/sw-auto-ontology"; \
+	  echo "       e.g. make publish REGISTRY=nvcr.io/nvidian/sw-all-ontology"; \
 	  exit 2; \
 	fi
 
 # --- Schema migrations -------------------------------------------------
-# The backend owns the `auto_ontology` Postgres schema. Prisma owns `public` and migrates
+# The backend owns the `all_ontology` Postgres schema. Prisma owns `public` and migrates
 # separately (frontend/prisma/migrate.sh); the two are independent.
 
 migrate:
 	uv run alembic upgrade head
 
-# Fails when auto_ontology/dal/schema.py and the database disagree. Run this in CI:
+# Fails when all_ontology/dal/schema.py and the database disagree. Run this in CI:
 # a schema change committed without its migration is invisible until deploy.
 migrate-check:
 	uv run alembic check
@@ -125,5 +125,7 @@ migrate-check:
 migrate-revision:
 	@test -n "$(m)" || (echo 'usage: make migrate-revision m="what changed"' >&2; exit 2)
 	uv run alembic revision --autogenerate -m "$(m)"
+
+.PHONY: migrate migrate-check migrate-revision
 
 

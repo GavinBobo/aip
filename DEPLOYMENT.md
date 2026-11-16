@@ -4,7 +4,7 @@ All rights reserved.
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# Deploying Auto-Ontology on Kubernetes
+# Deploying All-Ontology on Kubernetes
 
 ## Released artifacts
 
@@ -12,10 +12,10 @@ Releases are published to the public NGC Catalog under the `nvidia` org:
 
 | Artifact | Location |
 |---|---|
-| Backend + ingestion image | `nvcr.io/nvidia/auto-ontology` |
-| Frontend (Next.js) image | `nvcr.io/nvidia/auto-ontology-frontend` |
-| MCP server image | `nvcr.io/nvidia/auto-ontology-mcp` |
-| Helm chart | `auto-ontology` in the `https://helm.ngc.nvidia.com/nvidia` Helm repo (also listed in the NGC Catalog) |
+| Backend + ingestion image | `nvcr.io/nvidia/all-ontology` |
+| Frontend (Next.js) image | `nvcr.io/nvidia/all-ontology-frontend` |
+| MCP server image | `nvcr.io/nvidia/all-ontology-mcp` |
+| Helm chart | `all-ontology` in the `https://helm.ngc.nvidia.com/nvidia` Helm repo (also listed in the NGC Catalog) |
 
 Each release tags its images with the chart version, and the chart pins its
 own images to that tag.
@@ -31,7 +31,7 @@ To install the latest published release:
    helm repo update
    ```
 
-   `helm search repo nvidia/auto-ontology --versions` lists the available
+   `helm search repo nvidia/all-ontology --versions` lists the available
    releases.
 
 2. Put the secrets in a values file. Create it in an editor rather than on
@@ -39,7 +39,7 @@ To install the latest published release:
    restrict it with `chmod 600`, and keep it out of git:
 
    ```yaml
-   # auto-ontology-secrets.yaml
+   # all-ontology-secrets.yaml
    defaultModelsApiKey: <API-KEY>
    postgresPassword: <POSTGRES-PASSWORD>
    adminEmail: <ADMIN-EMAIL>
@@ -50,7 +50,7 @@ To install the latest published release:
 3. Install the chart:
 
    ```bash
-   helm install auto-ontology nvidia/auto-ontology -f auto-ontology-secrets.yaml
+   helm install all-ontology nvidia/all-ontology -f all-ontology-secrets.yaml
    ```
 
    This installs the latest release; add `--version <version>` to pin one.

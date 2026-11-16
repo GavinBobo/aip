@@ -30,7 +30,7 @@ export type GlobalSearchItem = {
  * `description` and `synonyms` widen the match past an object's name — its
  * description, and a Term's aliases. Both are omissible, and the backend's
  * defaults are not the same: `description` is off, `synonyms` on. See
- * `GlobalSearchFilters` in `auto_ontology/server/search/router.py` for why.
+ * `GlobalSearchFilters` in `all_ontology/server/search/router.py` for why.
  *
  * `objects`, `tags` and `data` narrow instead, and omitting any of them
  * narrows by nothing.

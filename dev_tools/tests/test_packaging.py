@@ -11,7 +11,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[2]
-PERMISSION_RESOURCE = "auto_ontology/server/users/access.json"
+PERMISSION_RESOURCE = "all_ontology/server/users/access.json"
 
 
 def test_wheel_contains_the_permission_resource(tmp_path: Path) -> None:

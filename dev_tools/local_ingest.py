@@ -16,15 +16,15 @@ from __future__ import annotations
 import logging
 import os
 
-from auto_ontology.utils.embedding_rows import (
+from all_ontology.utils.embedding_rows import (
     CatalogEmbeddingRowsOp,
 )
-from auto_ontology.catalog import ingest_catalog
-from auto_ontology.utils import get_embed_params
-from auto_ontology.utils.embedding import batch_embed
-from auto_ontology.vdb import get_data_vdb
-from auto_ontology.vdb.records import write_embedded_rows
-from auto_ontology.connectors.registry import create_connector
+from all_ontology.catalog import ingest_catalog
+from all_ontology.utils import get_embed_params
+from all_ontology.utils.embedding import batch_embed
+from all_ontology.vdb import get_data_vdb
+from all_ontology.vdb.records import write_embedded_rows
+from all_ontology.connectors.registry import create_connector
 
 logger = logging.getLogger("dev_tools.local_ingest")
 

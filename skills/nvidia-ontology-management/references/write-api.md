@@ -9,7 +9,7 @@ SPDX-License-Identifier: Apache-2.0
 Canonical request/response shapes: `docs/openapi/auto-ontology-api.json`. Do not paste
 schemas here. Permissions are `x-auto-ontology-permissions` on each operation.
 
-Call the **Next.js** origin (`APP_URL`, local `:3000`), not FastAPI `:3001`.
+Call the **Next.js** origin (`APP_URL`, local `:3010`), not FastAPI `:3001`.
 
 ## Terms
 

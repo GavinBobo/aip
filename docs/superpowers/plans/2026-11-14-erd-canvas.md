@@ -1,14 +1,8 @@
-<!--
-SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
-All rights reserved.
-SPDX-License-Identifier: Apache-2.0
--->
-
 # ER 画布实施计划
 
 > **执行方式：** 本仓库不是 git 仓库，无法按任务提交；按任务顺序执行并用命令验证。
 
-**目标：** 在 Auto-Ontology 中实现按 zone 划分的 ER 画布：展示 zone 表、可拖拽建表间关联、JSON/DBML 导入导出、数据存 Postgres。
+**目标：** 在 All-Ontology 中实现按 zone 划分的 ER 画布：展示 zone 表、可拖拽建表间关联、JSON/DBML 导入导出、数据存 Postgres。
 
 **架构：** 后端新增三张表与 `/api/erd` 路由（FastAPI + SQLAlchemy Core DAL，Alembic 迁移）；
 前端新增 `/erd` 页面与自研 SVG+HTML 画布；权限沿用 `zone:read` / `zone:manage`。
@@ -22,7 +16,7 @@ SPDX-License-Identifier: Apache-2.0
 ## Task 1：后端 schema + 迁移
 
 **文件**
-- 修改：`auto_ontology/dal/schema.py`（新增 `erd_canvas`、`erd_node`、`erd_relationship`）
+- 修改：`all_ontology/dal/schema.py`（新增 `erd_canvas`、`erd_node`、`erd_relationship`）
 - 新增：`alembic/versions/<rev>_add_erd_canvas.py`（autogenerate）
 
 **步骤**
@@ -33,11 +27,11 @@ SPDX-License-Identifier: Apache-2.0
 - [ ] 检查生成的迁移只包含新增表/索引/约束。
 - [ ] `uv run alembic upgrade head`，再用 `psql`（容器内）确认三张表存在。
 
-**验证**：`docker exec postgres psql -U postgres -d auto_ontology -c "\d erd_relationship"`
+**验证**：`docker exec postgres psql -U postgres -d all_ontology -c "\d erd_relationship"`
 
 ---
 
-## Task 2：DAL（`auto_ontology/dal/erd.py`）
+## Task 2：DAL（`all_ontology/dal/erd.py`）
 
 **公开函数（签名固定，需写入 `dal_surface.json`）**
 
@@ -61,7 +55,7 @@ def replace_canvas_contents(canvas_id: str, nodes: list[dict[str, Any]], relatio
 - 列信息：目录表 join `catalog_column`（按 `ordinal_position`），虚拟表读 `columns` jsonb。
 - 所有写操作在 `write_transaction()` 内。
 
-**测试**：`auto_ontology/dal/tests/test_erd.py`（沿用 `test_zones.py` 的跳过条件与临时数据前缀）。
+**测试**：`all_ontology/dal/tests/test_erd.py`（沿用 `test_zones.py` 的跳过条件与临时数据前缀）。
 
 - [ ] 画布惰性创建 + 幂等
 - [ ] zone 增加表后重进画布出现新节点；移除表后节点消失
@@ -69,11 +63,11 @@ def replace_canvas_contents(canvas_id: str, nodes: list[dict[str, Any]], relatio
 - [ ] 关联 CRUD 与级联删除
 - [ ] 虚拟表在同步后保留
 
-**验证**：`uv run pytest auto_ontology/dal/tests/test_erd.py -q`
+**验证**：`uv run pytest all_ontology/dal/tests/test_erd.py -q`
 
 ---
 
-## Task 3：DBML 解析/序列化（`auto_ontology/server/erd/dbml.py`）
+## Task 3：DBML 解析/序列化（`all_ontology/server/erd/dbml.py`）
 
 **接口**
 
@@ -95,7 +89,7 @@ def export_dbml(nodes: list[dict], relationships: list[dict]) -> str
 - `Ref: a.b > c.d`、`Ref name: a.b < c.d`、`Ref { a.b - c.d }`
 - 未知块（`Enum`/`Indexes`/`TableGroup`/`Project`）跳过并追加 warning
 
-**测试**：`auto_ontology/server/erd/tests/test_dbml.py`
+**测试**：`all_ontology/server/erd/tests/test_dbml.py`
 
 - [ ] 解析 2 表 + Ref，基数与列名正确
 - [ ] 序列化后重新解析结果一致（往返）
@@ -107,10 +101,10 @@ def export_dbml(nodes: list[dict], relationships: list[dict]) -> str
 ## Task 4：路由与响应模型
 
 **文件**
-- 新增：`auto_ontology/server/erd/__init__.py`、`router.py`、`schemas.py`
-- 修改：`auto_ontology/server/models.py`（`ErdNode`、`ErdRelationship`、`ErdCanvas`、`ErdImportResult`）
-- 修改：`auto_ontology/server/responses.py`（`ErdCanvasResponse`、`ErdExportResponse`、`ErdImportResponse`）
-- 修改：`auto_ontology/server/__main__.py`（注册 router）
+- 新增：`all_ontology/server/erd/__init__.py`、`router.py`、`schemas.py`
+- 修改：`all_ontology/server/models.py`（`ErdNode`、`ErdRelationship`、`ErdCanvas`、`ErdImportResult`）
+- 修改：`all_ontology/server/responses.py`（`ErdCanvasResponse`、`ErdExportResponse`、`ErdImportResponse`）
+- 修改：`all_ontology/server/__main__.py`（注册 router）
 
 **接口**：见规格第「API 契约」节。所有 handler 写 docstring（OpenAPI 会带出去）。
 
@@ -156,9 +150,9 @@ def export_dbml(nodes: list[dict], relationships: list[dict]) -> str
 
 ## Task 8：验证与运行
 
-- [ ] `uv run ruff check auto_ontology/ && uv run ruff format auto_ontology/`
-- [ ] `uv run pytest auto_ontology dal dev_tools -q`（至少跑新增测试 + `test_dal_surface.py`）
-- [ ] `uv run python -m auto_ontology.dal.tests.test_dal_surface` 更新快照
+- [ ] `uv run ruff check all_ontology/ && uv run ruff format all_ontology/`
+- [ ] `uv run pytest all_ontology dal dev_tools -q`（至少跑新增测试 + `test_dal_surface.py`）
+- [ ] `uv run python -m all_ontology.dal.tests.test_dal_surface` 更新快照
 - [ ] `cd frontend && npx prettier --write . && pnpm lint && pnpm build`
 - [ ] 重启后端（`uvicorn --reload` 会自动重载；新表需先 `alembic upgrade head`）
-- [ ] 浏览器打开 `http://localhost:3000/erd`，建一条关联并刷新页面确认持久化
+- [ ] 浏览器打开 `http://localhost:3010/erd`，建一条关联并刷新页面确认持久化

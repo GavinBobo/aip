@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 # Container Third-Party Notices
 
-This file covers what the Auto-Ontology container images add on top of their
+This file covers what the All-Ontology container images add on top of their
 base image. The application's own open-source dependencies (Python and npm
 packages) are listed separately in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
@@ -17,8 +17,8 @@ Every image ships these files under `/licenses/`: `LICENSE`,
 
 Source code for the open-source components added on top of the base image is
 archived by NVIDIA at https://opensource.nvidia.com/oss/teams/nvidia, as stated
-in `OPEN_SOURCE_NOTICE`. Auto-Ontology's own source code is at
-https://github.com/NVIDIA/auto-ontology.
+in `OPEN_SOURCE_NOTICE`. All-Ontology's own source code is at
+https://github.com/NVIDIA/all-ontology.
 
 ## Base image
 
@@ -27,15 +27,15 @@ All three images are built on the NVIDIA-approved Ubuntu 22.04 base container
 
 | Image | Base |
 | --- | --- |
-| `auto-ontology` (backend and ingestion) | `nvcr.io/nvidia/base/ubuntu:jammy-20250619` |
-| `auto-ontology-frontend` | `nvcr.io/nvidia/base/ubuntu:jammy-20250619` |
-| `auto-ontology-mcp` | `nvcr.io/nvidia/base/ubuntu:jammy-20250619` |
+| `all-ontology` (backend and ingestion) | `nvcr.io/nvidia/base/ubuntu:jammy-20250619` |
+| `all-ontology-frontend` | `nvcr.io/nvidia/base/ubuntu:jammy-20250619` |
+| `all-ontology-mcp` | `nvcr.io/nvidia/base/ubuntu:jammy-20250619` |
 
 Source code for the base container is provided by NVIDIA with that image.
 
 ## Components added on top of the base image
 
-### `auto-ontology` (backend and ingestion) — `Dockerfile`
+### `all-ontology` (backend and ingestion) — `Dockerfile`
 
 | Component | Version | License | Project URL |
 | --- | --- | --- | --- |
@@ -49,7 +49,7 @@ Source code for the base container is provided by NVIDIA with that image.
 | `unixodbc` (Ubuntu package) | jammy | LGPL-2.1 | https://www.unixodbc.org |
 | `tini` (Ubuntu package) | jammy | MIT | https://github.com/krallin/tini |
 
-### `auto-ontology-frontend` — `frontend/Dockerfile`
+### `all-ontology-frontend` — `frontend/Dockerfile`
 
 | Component | Version | License | Project URL |
 | --- | --- | --- | --- |
@@ -61,7 +61,7 @@ Source code for the base container is provided by NVIDIA with that image.
 | `ca-certificates` (Ubuntu package) | jammy | MPL-2.0 (certificate data), GPL-2.0-or-later (scripts) | https://packages.ubuntu.com/jammy/ca-certificates |
 | `tini` (Ubuntu package) | jammy | MIT | https://github.com/krallin/tini |
 
-### `auto-ontology-mcp` — `mcp/Dockerfile`
+### `all-ontology-mcp` — `mcp/Dockerfile`
 
 | Component | Version | License | Project URL |
 | --- | --- | --- | --- |

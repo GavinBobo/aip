@@ -31,7 +31,7 @@ source with hot reload, started in dependency order and health-gated at each ste
 
 | Command | Description |
 |---|---|
-| `.\dev_tools\start-dev.ps1` | Postgres → backend (:3001) → ingestion (:3002) → frontend (:3000). Idempotent; `-Force` restarts everything |
+| `.\dev_tools\start-dev.ps1` | Postgres → backend (:3001) → ingestion (:3002) → frontend (:3010). Idempotent; `-Force` restarts everything |
 | `.\dev_tools\smoke-test.ps1` | Read-only end-to-end check (health, sign-in, pages, ERD canvas) |
 | `.\dev_tools\stop-dev.ps1` | Stop the three processes; Postgres keeps running (`-IncludePostgres` stops it too) |
 

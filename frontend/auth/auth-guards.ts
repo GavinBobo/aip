@@ -10,10 +10,19 @@ import { Role } from '@/enums/auth';
 /** Authoritative session lookup for server components and route handlers. */
 export const getCurrentSession = async () => auth.api.getSession({ headers: await headers() });
 
-/** Require any authenticated user; redirect to /login otherwise. */
+/**
+ * Require any authenticated user; redirect to /login otherwise.
+ *
+ * The redirect carries `next` when the middleware recorded the requested path
+ * (`x-all-ontology-pathname`), so a session that expires mid-session returns
+ * the caller to the page they were on rather than dropping them at /chat.
+ */
 export const requireUser = async () => {
 	const session = await getCurrentSession();
-	if (!session) redirect('/login');
+	if (!session) {
+		const requestedPath = (await headers()).get('x-all-ontology-pathname');
+		redirect(requestedPath ? `/login?next=${encodeURIComponent(requestedPath)}` : '/login');
+	}
 	return session;
 };
 

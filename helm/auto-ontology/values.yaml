@@ -74,9 +74,9 @@ authSecret: ""
 # Public origin of the app — REQUIRED by Better Auth (sessions, CSRF, OIDC
 # redirect URIs). It must match the URL you actually browse to, or auth
 # requests 404 / fail CSRF. The default works when reaching the frontend via
-# `kubectl port-forward svc/frontend 3000:3000`. For NodePort/ingress/https,
+# `kubectl port-forward svc/frontend 3010:3010`. For NodePort/ingress/https,
 # set this to that exact origin (e.g. https://auto-ontology.example.com).
-appUrl: "http://localhost:3000"
+appUrl: "http://localhost:3010"
 # Public origin of the separately deployed MCP server, without its `/mcp`
 # endpoint suffix. OAuth access tokens are audience-bound to this URL.
 mcpPublicUrl: "http://localhost:3003"
@@ -179,7 +179,7 @@ frontend:
     tag: "1.2.0"
     # digest: ""  # e.g. sha256:...; overrides tag when set (immutable pin)
   service:
-    port: 3000
+    port: 3010
     nodePort: 30000
   replicas: 1
   resources:

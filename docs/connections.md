@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 # Connections and credential storage
 
-Auto-Ontology reads source databases from two places: connections added in the
+All-Ontology reads source databases from two places: connections added in the
 UI, and the `CONNECTION_STRINGS` environment variable. Use one per deployment,
 because the two code paths order them differently:
 
@@ -56,12 +56,12 @@ The URL scheme selects the connector:
 | SQLite        | `sqlite://`                 | no            |
 
 The registry lives in
-[`auto_ontology/connectors/registry.py`](../auto_ontology/connectors/registry.py).
+[`all_ontology/connectors/registry.py`](../all_ontology/connectors/registry.py).
 
 ### SQL Server
 
 SQL Server uses SQL authentication over `pyodbc` and needs a Microsoft ODBC
-driver on the host running Auto-Ontology: `ODBC Driver 18 for SQL Server`
+driver on the host running All-Ontology: `ODBC Driver 18 for SQL Server`
 preferred, 17 accepted. The published backend image installs 18; for a local
 run install it from Microsoft's repository for your platform. The driver field
 is optional — when empty the connector picks the newest one installed.
@@ -148,7 +148,7 @@ basic auth. `Records path` says where the row array sits in the JSON
   100 MB and requests time out after the configured timeout (default 30s, max
   300s).
 
-Creation fetches the endpoint from the Auto-Ontology backend, so the URL must be
+Creation fetches the endpoint from the All-Ontology backend, so the URL must be
 reachable from that host. The feature is admin-only (`connection:manage`),
 like every other connection write.
 

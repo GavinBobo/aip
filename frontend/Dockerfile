@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # ---------------------------------------------------------------------------
-# Auto Ontology Next.js frontend image
+# All Ontology Next.js frontend image
 # ---------------------------------------------------------------------------
-# Build (from /frontend):  docker build -t auto-ontology-frontend:latest .
-# Run:                     docker run --rm -p 3000:3000 \
-#                              -e PYTHON_API_URL=http://auto-ontology:3001 \
-#                              auto-ontology-frontend:latest
+# Build (from /frontend):  docker build -t all-ontology-frontend:latest .
+# Run:                     docker run --rm -p 3010:3010 \
+#                              -e PYTHON_API_URL=http://all-ontology:3001 \
+#                              all-ontology-frontend:latest
 #
 # Uses Next.js standalone output (NEXT_OUTPUT=standalone) for a small image.
 # The runtime image only contains the standalone server, static assets and
@@ -69,7 +69,7 @@ FROM base-node AS builder
 # Backend URL baked into the Next.js rewrite manifest at build time
 # (Next.js evaluates rewrites() during `next build`, not at server startup).
 # Defaults to the in-cluster Service name used by the helm chart.
-ARG PYTHON_API_URL=http://auto-ontology:3001
+ARG PYTHON_API_URL=http://all-ontology:3001
 
 ARG PNPM_VERSION
 ENV PNPM_HOME=/pnpm \
@@ -97,7 +97,7 @@ FROM base-node AS runner
 
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000 \
+    PORT=3010 \
     HOSTNAME=0.0.0.0
 
 RUN apt-get update \
@@ -126,7 +126,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts /app/migrate/pri
 # `node`, so npm, npx and corepack are removed from the runtime image along
 # with the vulnerable packages they bundle.
 RUN cd /app/migrate \
- && echo '{"name":"auto-ontology-migrate","version":"0.0.1","private":true,"dependencies":{"prisma":"7.7.0","dotenv":"17.4.2"},"overrides":{"deepmerge-ts":"^8.0.2","mysql2":"^3.22.0"}}' > package.json \
+ && echo '{"name":"all-ontology-migrate","version":"0.0.1","private":true,"dependencies":{"prisma":"7.7.0","dotenv":"17.4.2"},"overrides":{"deepmerge-ts":"^8.0.2","mysql2":"^3.22.0"}}' > package.json \
  && npm install --omit=dev --no-audit --no-fund --no-package-lock \
  && chown -R nextjs:nodejs /app/migrate \
  && rm -rf /usr/lib/node_modules/npm /usr/lib/node_modules/corepack \
@@ -137,10 +137,10 @@ COPY LICENSE THIRD_PARTY_NOTICES.md CONTAINER_THIRD_PARTY_NOTICES.md OPEN_SOURCE
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 3010
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD node -e "require('http').get('http://127.0.0.1:'+(process.env.PORT||3000)+'/',(r)=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+    CMD node -e "require('http').get('http://127.0.0.1:'+(process.env.PORT||3010)+'/',(r)=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["node", "app/server.js"]

@@ -1,10 +1,4 @@
-<!--
-SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
-All rights reserved.
-SPDX-License-Identifier: Apache-2.0
--->
-
-# Auto-Ontology 部署方案（使用公司现有 PostgreSQL）
+# All-Ontology 部署方案（使用公司现有 PostgreSQL）
 
 > 适用场景：数据库用公司已经有的 PostgreSQL 实例，不自建、不用仓库里 `docker-compose.yml`
 > 那个 `postgres` 容器。本文只讲这一条路径；想在本机跑开发环境看文末附录。
@@ -19,7 +13,7 @@ SPDX-License-Identifier: Apache-2.0
 | --- | --- | --- |
 | 后端 API | FastAPI，读写 `public` 与 `frontend` 两个 schema | 3001 |
 | 摄取服务 | FastAPI + 调度器，独立进程，同上数据库 | 3002 |
-| 前端 | Next.js，通过 BFF 转发到后端 | 3000 |
+| 前端 | Next.js，通过 BFF 转发到后端 | 3010 |
 | PostgreSQL | **公司现有实例**，本项目只往里建库/建 schema | 5432 |
 
 三者可以在一台机器上跑（推荐起步），也可以拆开；它们之间只通过 HTTP 与数据库通信。
@@ -47,7 +41,7 @@ SPDX-License-Identifier: Apache-2.0
 
 ```sql
 -- 用超级用户执行一次
-\c auto_ontology
+\c all_ontology
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 ```
@@ -57,22 +51,22 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 一个库、一个应用角色即可跑通全部功能：
 
 ```sql
-CREATE ROLE svc_auto_ontology LOGIN PASSWORD '<强密码>';
-CREATE DATABASE auto_ontology
-  OWNER svc_auto_ontology
+CREATE ROLE svc_all_ontology LOGIN PASSWORD '<强密码>';
+CREATE DATABASE all_ontology
+  OWNER svc_all_ontology
   ENCODING 'UTF8'
   TEMPLATE template0;
 
-\c auto_ontology
+\c all_ontology
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- 应用要在 public 里建表（Alembic），也要在库里建 frontend schema（Prisma）
-ALTER SCHEMA public OWNER TO svc_auto_ontology;
-GRANT CREATE ON DATABASE auto_ontology TO svc_auto_ontology;
+ALTER SCHEMA public OWNER TO svc_all_ontology;
+GRANT CREATE ON DATABASE all_ontology TO svc_all_ontology;
 
 -- 这一条很重要，见 1.4
-ALTER ROLE svc_auto_ontology SET search_path TO public;
+ALTER ROLE svc_all_ontology SET search_path TO public;
 ```
 
 如果公司规定"数据库对象只能由 DBA 创建、应用只读写"，也可以把迁移拆出来单独执行
@@ -82,10 +76,10 @@ ALTER ROLE svc_auto_ontology SET search_path TO public;
 
 **PG 15 之后 `public` 不再默认对所有人可写。** 用非超级用户跑 `alembic upgrade head` 会得到
 `permission denied for schema public`。上面那条 `ALTER SCHEMA public OWNER TO ...` 就是为了这个，
-或者显式 `GRANT CREATE, USAGE ON SCHEMA public TO svc_auto_ontology`。
+或者显式 `GRANT CREATE, USAGE ON SCHEMA public TO svc_all_ontology`。
 
 **不要建与角色同名的 schema。** 默认 `search_path` 是 `"$user", public`；如果角色叫
-`svc_auto_ontology`，库里又恰好有个同名 schema，所有未限定 schema 的建表都会落到那里，
+`svc_all_ontology`，库里又恰好有个同名 schema，所有未限定 schema 的建表都会落到那里，
 Prisma 和 Alembic 随后互相看不见对方的表。项目里两处（`alembic/env.py`、`dal/session.py`）
 会把 `search_path` 钉到 `public` 兜底，但那是保险，不是设计目标。
 
@@ -113,7 +107,7 @@ schema、清理一处历史脏数据，再 `db push`（见 3.3）。
 在要跑服务的那台机器上：
 
 ```bash
-psql "host=<公司库地址> port=5432 dbname=auto_ontology user=svc_auto_ontology sslmode=require" -c "select version()"
+psql "host=<公司库地址> port=5432 dbname=all_ontology user=svc_all_ontology sslmode=require" -c "select version()"
 ```
 
 ### 3.2 建 `public`（Alembic）
@@ -125,7 +119,7 @@ psql "host=<公司库地址> port=5432 dbname=auto_ontology user=svc_auto_ontolo
 python -m uv run alembic upgrade head
 
 # B. 用镜像的 migrate 模式（镜像里带 alembic 与迁移文件）
-docker run --rm --env-file .env auto-ontology:1.2.0 migrate
+docker run --rm --env-file .env all-ontology:1.2.0 migrate
 
 # C. Kubernetes Job（见第 7 节）
 ```
@@ -135,7 +129,7 @@ docker run --rm --env-file .env auto-ontology:1.2.0 migrate
 ```bash
 cd frontend
 pnpm install
-psql "host=<公司库地址> dbname=auto_ontology user=svc_auto_ontology" \
+psql "host=<公司库地址> dbname=all_ontology user=svc_all_ontology" \
   -c "CREATE SCHEMA IF NOT EXISTS frontend"      # db push 不会自己建 schema
 pnpm db:push                                     # 等价于 prisma db push
 ```
@@ -145,7 +139,7 @@ pnpm db:push                                     # 等价于 prisma db push
 
 ```bash
 docker run --rm -w /app/migrate --env-file .env \
-  auto-ontology-frontend:1.2.0 sh prisma/migrate.sh
+  all-ontology-frontend:1.2.0 sh prisma/migrate.sh
 ```
 
 ### 3.4 校验（必须做，否则出问题很难定位）
@@ -188,7 +182,7 @@ select 1 from information_schema.tables
 | `POSTGRES_PORT` | 是 | 通常 5432 |
 | `POSTGRES_USER` | 是 | 建议专用账号，不要用 postgres 超级用户 |
 | `POSTGRES_PASSWORD` | 是 | |
-| `POSTGRES_DATABASE` | 是 | 例如 `auto_ontology` |
+| `POSTGRES_DATABASE` | 是 | 例如 `all_ontology` |
 | `POSTGRES_SSLMODE` | 视公司策略 | 留空 = 明文；强制 TLS 填 `require`，要验证书填 `verify-full` |
 
 `POSTGRES_SSLMODE` 只填一次，三个消费方各自翻译成自己驱动的写法：psycopg/libpq 与 Prisma 用
@@ -201,13 +195,13 @@ select 1 from information_schema.tables
 | --- | --- | --- |
 | `APP_URL` | 是 | 浏览器访问的地址，如 `https://ontology.example.com`；better-auth 的 cookie 与回调都基于它 |
 | `AUTH_SECRET` | 是 | 会话签名密钥，**所有副本必须一致**，升级时不要变，否则登录态全失效 |
-| `AUTO_ONTOLOGY_ADMIN_EMAIL` / `_PASSWORD` | 是 | 启动时幂等创建/重置管理员；自助注册关闭，没有它就没有入口 |
+| `ALL_ONTOLOGY_ADMIN_EMAIL` / `_PASSWORD` | 是 | 启动时幂等创建/重置管理员；自助注册关闭，没有它就没有入口 |
 | `INGESTION_SERVICE_URL` | 是 | 后端调摄取服务的地址，如 `http://ingestion-service:3002` |
 | `INGESTION_PORT` | 否 | 默认 3002 |
 | `PYTHON_API_URL` | 前端必填 | 前端 BFF 的转发目标，如 `http://127.0.0.1:3001` |
 | `NVIDIA_API_KEY` 或 `DEFAULT_MODELS_API_KEY/ENDPOINT/MODEL` | 功能需要 | 缺了服务能起，但语义编译 / Text-to-SQL 会失败 |
 | `EMBED_ENDPOINT` / `EMBED_MODEL` | 向量检索需要 | 缺省回落到 `DEFAULT_MODELS_*` |
-| `AUTO_ONTOLOGY_MCP_PUBLIC_URL` | 否 | 只有对外暴露 MCP 时才需要 |
+| `ALL_ONTOLOGY_MCP_PUBLIC_URL` | 否 | 只有对外暴露 MCP 时才需要 |
 
 ## 5. 部署方式 A：单机原生进程（推荐起步）
 
@@ -222,7 +216,7 @@ select 1 from information_schema.tables
 ### 5.2 首次安装
 
 ```bash
-git clone <repo> /opt/auto-ontology && cd /opt/auto-ontology
+git clone <repo> /opt/all-ontology && cd /opt/all-ontology
 cp .env.example .env && ${EDITOR:-vi} .env      # 按第 4 节填
 uv sync
 python -m uv run alembic upgrade head            # 建 public
@@ -237,10 +231,10 @@ cd frontend && pnpm install && pnpm db:push && pnpm build && cd ..
 
 ```bash
 # 1) 后端 API
-python -m auto_ontology.server
+python -m all_ontology.server
 
 # 2) 摄取服务
-python -m auto_ontology.ingestion_service
+python -m all_ontology.ingestion_service
 
 # 3) 前端
 cd frontend && pnpm start
@@ -257,17 +251,17 @@ Windows 上可以直接用仓库脚本按顺序拉起（带健康门控）：
 ### 5.4 常驻（systemd）
 
 ```ini
-# /etc/systemd/system/auto-ontology-api.service
+# /etc/systemd/system/all-ontology-api.service
 [Unit]
-Description=Auto-Ontology API
+Description=All-Ontology API
 After=network-online.target
 
 [Service]
 Type=simple
-User=auto-ontology
-WorkingDirectory=/opt/auto-ontology
-EnvironmentFile=/opt/auto-ontology/.env
-ExecStart=/opt/auto-ontology/.venv/bin/python -m auto_ontology.server
+User=all-ontology
+WorkingDirectory=/opt/all-ontology
+EnvironmentFile=/opt/all-ontology/.env
+ExecStart=/opt/all-ontology/.venv/bin/python -m all_ontology.server
 Restart=always
 RestartSec=5
 
@@ -275,12 +269,12 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
-摄取服务把 `ExecStart` 换成 `-m auto_ontology.ingestion_service` 即可；前端同样可以做成 unit
-（`pnpm start`），或者交给反向代理转发到 `127.0.0.1:3000`。
+摄取服务把 `ExecStart` 换成 `-m all_ontology.ingestion_service` 即可；前端同样可以做成 unit
+（`pnpm start`），或者交给反向代理转发到 `127.0.0.1:3010`。
 
 ### 5.5 反向代理
 
-生产建议由 Nginx / Caddy 终止 TLS 并转发到 3000，`APP_URL` 写对外域名。
+生产建议由 Nginx / Caddy 终止 TLS 并转发到 3010，`APP_URL` 写对外域名。
 后端 3001 与摄取 3002 **不要**直接暴露到公网。
 
 ## 6. 部署方式 B：Docker（单机，不跑数据库容器）
@@ -288,27 +282,27 @@ WantedBy=multi-user.target
 镜像自带三个运行模式，正好对应部署所需：
 
 ```bash
-docker build -t auto-ontology:1.2.0 .
-docker build -t auto-ontology-frontend:1.2.0 ./frontend \
+docker build -t all-ontology:1.2.0 .
+docker build -t all-ontology-frontend:1.2.0 ./frontend \
   --build-arg PYTHON_API_URL=http://127.0.0.1:3001
 ```
 
 ```bash
 # 1) 后端迁移：public（跑完即退出；升级时也执行它）
-docker run --rm --env-file .env auto-ontology:1.2.0 migrate
+docker run --rm --env-file .env all-ontology:1.2.0 migrate
 
 # 2) 前端迁移：frontend（建 schema + prisma db push）
 docker run --rm -w /app/migrate --env-file .env \
-  auto-ontology-frontend:1.2.0 sh prisma/migrate.sh
+  all-ontology-frontend:1.2.0 sh prisma/migrate.sh
 
 # 3) 后端
-docker run -d --name ao-api --env-file .env -p 127.0.0.1:3001:3001 auto-ontology:1.2.0 server
+docker run -d --name ao-api --env-file .env -p 127.0.0.1:3001:3001 all-ontology:1.2.0 server
 
 # 4) 摄取
-docker run -d --name ao-ingest --env-file .env auto-ontology:1.2.0 ingestion_service
+docker run -d --name ao-ingest --env-file .env all-ontology:1.2.0 ingestion_service
 
 # 5) 前端
-docker run -d --name ao-web --env-file .env -p 127.0.0.1:3000:3000 auto-ontology-frontend:1.2.0
+docker run -d --name ao-web --env-file .env -p 127.0.0.1:3010:3010 all-ontology-frontend:1.2.0
 ```
 
 三个注意点：
@@ -362,7 +356,7 @@ chart 的其余约束仍然适用：
 | `GET /api/health` | 连接 + schema 版本 + 存储 | **readiness** |
 | `GET /api/health/live` | 只证明进程活着 | **liveness** |
 | `GET /health/live`（3002） | 摄取进程活着 | liveness |
-| `GET /login`（3000） | 前端可渲染 | readiness |
+| `GET /login`（3010） | 前端可渲染 | readiness |
 
 `/api/health` 会真的查库，**不要**用它做 liveness：数据库抖一下就会触发重启风暴。
 
@@ -385,10 +379,10 @@ chart 的其余约束仍然适用：
 
 ```bash
 # 备份：两个 schema 都要，别只 dump public
-pg_dump -h <host> -U <user> -d auto_ontology -Fc -f auto_ontology_$(date +%F).dump
+pg_dump -h <host> -U <user> -d all_ontology -Fc -f all_ontology_$(date +%F).dump
 
 # 恢复
-pg_restore -h <host> -U <user> -d auto_ontology --clean --if-exists auto_ontology_2026-11-15.dump
+pg_restore -h <host> -U <user> -d all_ontology --clean --if-exists all_ontology_2026-11-15.dump
 ```
 
 恢复后必须核对：
@@ -405,8 +399,8 @@ select version_num from public.alembic_version;   -- 必须等于当前镜像期
 
 | 来源 | 默认上限 | 环境变量 |
 | --- | --- | --- |
-| 后端 DAL 连接池 | 5 + 5 = 10 | `AUTO_ONTOLOGY_PG_POOL_SIZE` / `AUTO_ONTOLOGY_PG_MAX_OVERFLOW` |
-| 向量库连接池 | 10 + 10 = 20，**两个 store** 共 40 | `AUTO_ONTOLOGY_VDB_POOL_SIZE` / `AUTO_ONTOLOGY_VDB_MAX_OVERFLOW` |
+| 后端 DAL 连接池 | 5 + 5 = 10 | `ALL_ONTOLOGY_PG_POOL_SIZE` / `ALL_ONTOLOGY_PG_MAX_OVERFLOW` |
+| 向量库连接池 | 10 + 10 = 20，**两个 store** 共 40 | `ALL_ONTOLOGY_VDB_POOL_SIZE` / `ALL_ONTOLOGY_VDB_MAX_OVERFLOW` |
 | 摄取服务 | DAL 池 10（写向量时再加 VDB 池） | 同上 |
 | 前端 Prisma | node-postgres 默认 10 | — |
 
@@ -415,7 +409,7 @@ select version_num from public.alembic_version;   -- 必须等于当前镜像期
 （`POOL_SIZE=3`、`MAX_OVERFLOW=2` 完全够用）。
 
 需要 PgBouncer 时用 transaction 模式，并让 DBA 执行
-`ALTER ROLE svc_auto_ontology SET search_path TO public;` —— 角色级设置能穿过连接池，
+`ALTER ROLE svc_all_ontology SET search_path TO public;` —— 角色级设置能穿过连接池，
 而连接串里的 `options=-c search_path=...` 在事务池下的行为需要单独验证。
 
 ## 13. 常见故障
@@ -457,7 +451,10 @@ select version_num from public.alembic_version;   -- 必须等于当前镜像期
 与本文的生产部署无关：
 
 ```powershell
-.\dev_tools\start-dev.ps1     # 会起 postgres 容器 + 三个原生进程
+.\dev_tools\start-dev.ps1     # 只连 .env 里的库 + 三个原生进程（不碰 Docker）
 .\dev_tools\smoke-test.ps1
 .\dev_tools\stop-dev.ps1
 ```
+
+要用仓库自带的容器库，加 `-WithDockerPostgres`；默认不做这件事，因为生产路径上
+数据库归公司，脚本去起一个容器只会遮蔽它。

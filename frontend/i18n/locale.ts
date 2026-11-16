@@ -13,7 +13,7 @@ export const DEFAULT_LOCALE: Locale = 'en';
  * routes and switching languages must not navigate. The key is versionless so
  * an upgrade keeps the reader's choice.
  */
-export const LOCALE_STORAGE_KEY = 'auto-ontology.locale';
+export const LOCALE_STORAGE_KEY = 'all-ontology.locale';
 
 /** Value for the `lang` attribute, so screen readers and hyphenation follow. */
 export const HTML_LANG: Record<Locale, string> = {

@@ -59,11 +59,11 @@ To install the latest published release:
    `adminEmail` and `adminPassword` are required: self-service sign-up is
    disabled, so they create the first admin, and the install fails without
    them. If users will reach the app somewhere other than
-   `http://localhost:3000` (the port-forward below), also set `appUrl` to that
+   `http://localhost:3010` (the port-forward below), also set `appUrl` to that
    exact origin.
 
 4. Expose the UI:
 
    ```bash
-   kubectl port-forward svc/frontend 3000:3000
+   kubectl port-forward svc/frontend 3010:3010
    ```

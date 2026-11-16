@@ -14,7 +14,7 @@ POST /api/chat/completions
 
 Authenticate with a session cookie or an API token (see
 [authentication.md](./authentication.md)). The request and response schemas are
-in [`openapi/auto-ontology-api.json`](./openapi/auto-ontology-api.json).
+in [`openapi/all-ontology-api.json`](./openapi/all-ontology-api.json).
 
 ## Response stream
 
@@ -40,8 +40,8 @@ import os
 import requests
 
 response = requests.post(
-    "https://auto-ontology.example.com/api/chat/completions",
-    headers={"x-api-key": os.environ["AUTO_ONTOLOGY_API_TOKEN"]},
+    "https://all-ontology.example.com/api/chat/completions",
+    headers={"x-api-key": os.environ["ALL_ONTOLOGY_API_TOKEN"]},
     json={"question": "How many orders shipped last week?"},
     stream=True,
     timeout=900,
@@ -98,8 +98,8 @@ owns it. The web UI manages its own conversation IDs.
 
 ## Trust boundary
 
-Call the Next.js gateway (`APP_URL`, port 3000 in Docker Compose). It resolves
-the user and forwards an internal `x-auto-ontology-user-id` header to FastAPI
+Call the Next.js gateway (`APP_URL`, port 3010 in Docker Compose). It resolves
+the user and forwards an internal `x-all-ontology-user-id` header to FastAPI
 (port 3001). FastAPI trusts that header without verifying it, so keep port 3001
 on a private network. A direct FastAPI request without `conversation_id` stays
 stateless; one with `conversation_id` requires the trusted identity header.

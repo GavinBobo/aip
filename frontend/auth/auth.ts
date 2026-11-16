@@ -53,7 +53,7 @@ const otherExactAdminCount = (userId: string): Promise<number> =>
 const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
 
 const mcpResource = (): string => {
-	const publicUrl = process.env.AUTO_ONTOLOGY_MCP_PUBLIC_URL?.replace(/\/+$/, '');
+	const publicUrl = process.env.ALL_ONTOLOGY_MCP_PUBLIC_URL?.replace(/\/+$/, '');
 	if (publicUrl) return `${publicUrl}/mcp`;
 	if (isBuildPhase) return 'https://mcp.invalid/mcp';
 	return 'http://localhost:3003/mcp';
@@ -190,7 +190,7 @@ export const auth = betterAuth({
 	plugins: [
 		// Two roles only: `admin` (user management) and `viewer` (everything else).
 		admin({ ac, roles, adminRoles: [Role.Admin], defaultRole: Role.Viewer }),
-		// Auto Ontology Allows only one SSO provider, so this makes the redirect URI static.
+		// All Ontology Allows only one SSO provider, so this makes the redirect URI static.
 		// Better Auth's baseURL already includes `/api/auth`, so this becomes
 		// APP_URL/api/auth/sso/callback — the URI the README tells the IdP to register.
 		sso({ redirectURI: '/sso/callback' }),
@@ -200,10 +200,10 @@ export const auth = betterAuth({
 		// auth/api-token.ts rather than via `enableSessionForAPIKeys` (left off,
 		// its default), so a token never silently becomes a browser session.
 		apiKey({
-			// `auto_ontology_` makes a leaked token greppable in logs and recognisable to
+			// `all_ontology_` makes a leaked token greppable in logs and recognisable to
 			// secret scanners; `start` keeps the first few characters so the UI can
 			// identify a token it can no longer read.
-			defaultPrefix: 'auto_ontology_',
+			defaultPrefix: 'all_ontology_',
 			defaultKeyLength: 48,
 			startingCharactersConfig: { shouldStore: true, charactersLength: 10 },
 			// A token without a name is unidentifiable in the revoke list.
@@ -218,9 +218,9 @@ export const auth = betterAuth({
 			// die), but callers may opt into an expiry up to a year out.
 			keyExpiration: { defaultExpiresIn: null, maxExpiresIn: 365 },
 		}),
-		// Makes Auto Ontology the authorization server that MCP clients log in against, so
+		// Makes All Ontology the authorization server that MCP clients log in against, so
 		// the MCP server holds no client credentials and NVIDIA never needs a
-		// redirect URI registered for it — the only one it ever sees is Auto Ontology's,
+		// redirect URI registered for it — the only one it ever sees is All Ontology's,
 		// which SSO already uses. Clients register themselves, and those
 		// registrations live in Postgres rather than on an MCP pod's disk.
 		//
@@ -233,7 +233,7 @@ export const auth = betterAuth({
 			// UserInfo requires `openid`. Advertise it so MCP clients that copy
 			// `scopes_supported` from authorization-server metadata include it.
 			scopes: ['openid', 'profile', 'email', 'offline_access'],
-			// The MCP server checks every token against Auto Ontology, so opaque tokens retain
+			// The MCP server checks every token against All Ontology, so opaque tokens retain
 			// immediate revocation without distributing resource-server credentials.
 			disableJwtPlugin: true,
 			// Keep RFC 7591 registration for existing MCP clients. Both switches are
@@ -243,8 +243,8 @@ export const auth = betterAuth({
 			// UserInfo is the bearer-authenticated replacement for getMcpSession.
 			// Include the grant metadata FastMCP needs under private claim names.
 			customUserInfoClaims: ({ jwt }) => ({
-				'urn:auto-ontology:oauth:client_id': jwt.client_id,
-				'urn:auto-ontology:oauth:scope': jwt.scope,
+				'urn:all-ontology:oauth:client_id': jwt.client_id,
+				'urn:all-ontology:oauth:scope': jwt.scope,
 			}),
 			// Every MCP call validates its token here. The app-wide limiter still
 			// applies; the provider's 60/minute UserInfo limit is too low for agents.

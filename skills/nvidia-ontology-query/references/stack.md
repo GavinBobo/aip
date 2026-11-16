@@ -57,7 +57,7 @@ and solve. Do not claim Auto Ontology schedules routes or solves LPs itself.
 
 ## Calling rules that bite in a stack
 
-- Partners call the Next.js gateway (`APP_URL` / `:3000`), never public
+- Partners call the Next.js gateway (`APP_URL` / `:3010`), never public
   FastAPI `:3001`.
 - MCP holds no deployment-wide identity. Each caller signs in as themselves.
 - `conversation_id` is per Auto Ontology user. Do not share UUIDs across users.

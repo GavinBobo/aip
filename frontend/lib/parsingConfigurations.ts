@@ -5,7 +5,7 @@
 /**
  * `configurations` keys owned by the document-parsing feature.
  *
- * These mirror `auto_ontology/parsing/settings.py` one for one. The backend
+ * These mirror `all_ontology/parsing/settings.py` one for one. The backend
  * reads them straight from the table on a short cache; this file exists so the
  * Next route handler writes the same names rather than string literals.
  */

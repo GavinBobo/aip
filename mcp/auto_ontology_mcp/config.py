@@ -33,9 +33,9 @@ from pathlib import Path
 # stale tool surface.
 DEFAULT_SPEC_PATH = Path(__file__).resolve().parent / "auto-ontology-api.json"
 
-DEFAULT_API_URL = "http://localhost:3000"
+DEFAULT_API_URL = "http://localhost:3010"
 
-# 3000 frontend, 3001 backend, 3002 ingestion — this is the next free one.
+# 3010 frontend, 3001 backend, 3002 ingestion — this is the next free one.
 DEFAULT_PORT = 3003
 DEFAULT_HOST = "0.0.0.0"
 

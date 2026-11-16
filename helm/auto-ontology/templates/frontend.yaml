@@ -13,7 +13,7 @@ spec:
   ports:
     - name: http
       port: {{ .Values.frontend.service.port }}
-      targetPort: 3000
+      targetPort: 3010
       nodePort: {{ .Values.frontend.service.nodePort }}
   selector:
     {{- include "auto-ontology.componentSelectorLabels" (dict "root" . "component" "frontend") | nindent 4 }}
@@ -48,7 +48,7 @@ spec:
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           ports:
             - name: http
-              containerPort: 3000
+              containerPort: 3010
           envFrom:
             - secretRef:
                 name: {{ include "auto-ontology.secretName" . }}
@@ -56,7 +56,7 @@ spec:
             - name: PYTHON_API_URL
               value: "http://auto-ontology:{{ .Values.backend.service.port }}"
             - name: PORT
-              value: "3000"
+              value: "3010"
             - name: HOSTNAME
               value: "0.0.0.0"
             # Auto Ontology version shown in the app header. Sourced from the Helm chart
@@ -77,13 +77,13 @@ spec:
           readinessProbe:
             httpGet:
               path: /api/health
-              port: 3000
+              port: 3010
             initialDelaySeconds: 15
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /
-              port: 3000
+              port: 3010
             initialDelaySeconds: 30
             periodSeconds: 15
           resources:

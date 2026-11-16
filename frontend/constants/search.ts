@@ -18,7 +18,7 @@ export const GLOBAL_SEARCH_ALL_TAB = 'all';
 /**
  * The value `filters.tags` carries to mean "objects with no tags at all".
  *
- * Mirrors `UNTAGGED_FILTER_VALUE` in `auto_ontology/server/search/constants.py`,
+ * Mirrors `UNTAGGED_FILTER_VALUE` in `all_ontology/server/search/constants.py`,
  * which is what reads it. A sentinel inside the list rather than a flag beside
  * it because that is what the control is: one more option in the tag picker,
  * tickable alongside real tags. Parenthesised so it cannot collide with a tag

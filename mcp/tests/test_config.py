@@ -43,7 +43,7 @@ def test_starts_with_nothing_configured() -> None:
     # and a bare `auto-ontology-mcp` against a local Auto Ontology is a complete configuration.
     settings = load_settings()
 
-    assert settings.api_url == "http://localhost:3000"
+    assert settings.api_url == "http://localhost:3010"
     assert settings.port == DEFAULT_PORT
     assert settings.timeout_s == DEFAULT_TIMEOUT_S
     assert settings.chat_timeout_s == DEFAULT_CHAT_TIMEOUT_S
@@ -62,7 +62,7 @@ def test_an_exported_api_token_is_ignored(monkeypatch: MonkeyPatch) -> None:
     # neither be adopted as an identity nor refused at startup.
     monkeypatch.setenv("AUTO_ONTOLOGY_API_TOKEN", "auto_ontology_abc")
 
-    assert load_settings().api_url == "http://localhost:3000"
+    assert load_settings().api_url == "http://localhost:3010"
 
 
 def test_strips_trailing_slash_from_api_url(monkeypatch: MonkeyPatch) -> None:

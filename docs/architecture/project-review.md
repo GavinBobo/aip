@@ -1,10 +1,4 @@
-<!--
-SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
-All rights reserved.
-SPDX-License-Identifier: Apache-2.0
--->
-
-# Auto-Ontology 项目结构分析与重构规划
+# All-Ontology 项目结构分析与重构规划
 
 > 目标读者：要长期维护这个仓库的人。
 > 本文只描述**已经核实过的事实**和**可执行的分阶段计划**，不包含未落地的改动。
@@ -18,11 +12,11 @@ SPDX-License-Identifier: Apache-2.0
 
 | 产物 | 目录 | 技术栈 | 端口 | 发布方式 |
 | --- | --- | --- | --- | --- |
-| 后端 API | `auto_ontology/` | Python 3.12 + FastAPI + SQLAlchemy + Alembic，uv 管理 | 3001 | `Dockerfile` / Helm |
-| 摄取服务 | `auto_ontology/ingestion_service/` | FastAPI（独立进程、独立调度器） | 3002 | 同一个镜像，不同命令 |
-| 前端 | `frontend/` | Next.js 16 App Router + React 19 + Prisma + better-auth | 3000 | `frontend/Dockerfile`（standalone） |
-| MCP 服务 | `mcp/auto_ontology_mcp/` | Python MCP server（只读） | — | `ci-mcp.yml` / staging |
-| 部署资产 | `helm/auto-ontology/`、`docker-compose.yml` | Helm 3 / Compose | — | `release-*` workflows |
+| 后端 API | `all_ontology/` | Python 3.12 + FastAPI + SQLAlchemy + Alembic，uv 管理 | 3001 | `Dockerfile` / Helm |
+| 摄取服务 | `all_ontology/ingestion_service/` | FastAPI（独立进程、独立调度器） | 3002 | 同一个镜像，不同命令 |
+| 前端 | `frontend/` | Next.js 16 App Router + React 19 + Prisma + better-auth | 3010 | `frontend/Dockerfile`（standalone） |
+| MCP 服务 | `mcp/all_ontology_mcp/` | Python MCP server（只读） | — | `ci-mcp.yml` / staging |
+| 部署资产 | `helm/all-ontology/`、`docker-compose.yml` | Helm 3 / Compose | — | `release-*` workflows |
 
 辅助目录：`alembic/`（迁移）、`dev_tools/`（本地开发脚本）、`skills/`（对外发布的 agent skills）、`docs/`（OpenAPI 与本文档）、`vendor/`（vendored engine wheel，Dockerfile 会 COPY 它）。
 
@@ -40,7 +34,7 @@ SPDX-License-Identifier: Apache-2.0
 ### 1.3 后端分层
 
 ```
-auto_ontology/
+all_ontology/
   server/            FastAPI 应用装配（__main__.py 里 include_router）+ 各领域 router
     erd/             画布：router / dbml / ddl / import_export / schemas
     exploration/     探索页
@@ -58,7 +52,7 @@ auto_ontology/
 
 请求路径是**两层**：`server/<domain>/router.py` 只做入参校验与 HTTP 语义，真正的读写都在 `dal/<aggregate>.py`。这条规矩目前守得比较一致，是这套代码最值得保留的部分。
 
-数据访问层有两种写法，边界已经定下来（`auto_ontology/dal/models.py` 的模块文档写着同样的话）：
+数据访问层有两种写法，边界已经定下来（`all_ontology/dal/models.py` 的模块文档写着同样的话）：
 
 | 场景 | 用哪一层 | 例子 |
 | --- | --- | --- |
@@ -97,12 +91,12 @@ frontend/
 | `app/` | 173 | 已归档移除 |
 | `components/` | 77 | 已归档移除 |
 | `common/` | 97 | 已归档移除 |
-| `auto-ontology-i18n-backup/` | 0（空目录壳） | 已归档移除 |
+| `all-ontology-i18n-backup/` | 0（空目录壳） | 已归档移除 |
 | `outputs/` | 27 张截图 | 已归档移除（本地调试产物） |
 
 证据：根目录没有 `package.json` / `tsconfig.json`；`frontend/tsconfig.json` 的 `@/*` 映射到 `frontend/*`，`frontend/**` 里没有任何一处 import 解析到根目录的同名目录；`docker-compose.yml` 里前端镜像的 `build.context` 是 `./frontend`；用 `Compare-Object` 比对文件清单，根部的 `app/`(173) / `components/`(77) / `common/`(97) 是 `frontend/` 对应目录的**严格子集**——根目录这份是更早的快照，没有任何独有文件。
 
-> 注意：`shared/` **不是**死代码，尽管它也只有一份 README。它是 Excel/CSV 连接向导的默认文件投放目录（`auto_ontology/server/connections/files.py` 在 `FILE_SOURCE_ROOTS` 未设时读 `./shared`），必须保留。
+> 注意：`shared/` **不是**死代码，尽管它也只有一份 README。它是 Excel/CSV 连接向导的默认文件投放目录（`all_ontology/server/connections/files.py` 在 `FILE_SOURCE_ROOTS` 未设时读 `./shared`），必须保留。
 
 影响（清理前）：任何人第一次读仓库都会以为这是两套前端；全局搜索会命中重复实现；`rg` / IDE 索引变慢。
 
@@ -126,7 +120,7 @@ frontend/
 
 ### 2.4 【中】接口契约靠约定维护
 
-`docs/openapi/auto-ontology-api.json` 由 `dev_tools/generate_backend_openapi.py` 生成并被 CI 校验，但前端 `types/*.ts` 是手抄的。字段一改（例如本次新增的列别名），两端要各自改一遍。
+`docs/openapi/all-ontology-api.json` 由 `dev_tools/generate_backend_openapi.py` 生成并被 CI 校验，但前端 `types/*.ts` 是手抄的。字段一改（例如本次新增的列别名），两端要各自改一遍。
 
 ### 2.5 【中】启动顺序是隐式知识
 
@@ -141,8 +135,8 @@ frontend/
 不推倒重来，只在**边界**上收口。目标形态：
 
 ```
-auto-ontology/
-  auto_ontology/            # 后端唯一源码根（pyproject packages 已如此声明）
+all-ontology/
+  all_ontology/            # 后端唯一源码根（pyproject packages 已如此声明）
     server/                 # 只放 HTTP 装配与 router
       <domain>/router.py
       <domain>/schemas.py   # 请求/响应模型（与 models.py 分离）
@@ -176,12 +170,12 @@ auto-ontology/
 
 | 阶段 | 内容 | 验收标准 | 风险 |
 | --- | --- | --- | --- |
-| **P0 清死代码** ✅ 已完成 | 移走根部 `app/ components/ common/ auto-ontology-i18n-backup/ outputs/`（`shared/` 保留，它是文件投放目录） | `tsc` / `eslint` / `prettier` / `pytest` 全绿 | 低。已改为"移动到 archive"而非删除，可随时搬回 |
+| **P0 清死代码** ✅ 已完成 | 移走根部 `app/ components/ common/ all-ontology-i18n-backup/ outputs/`（`shared/` 保留，它是文件投放目录） | `tsc` / `eslint` / `prettier` / `pytest` 全绿 | 低。已改为"移动到 archive"而非删除，可随时搬回 |
 | **P1 固化边界** | 加 `import-linter` 契约（后端）、`eslint-plugin-boundaries`（前端）；把 dev 启动脚本作为唯一入口 | CI 能拦住越界 import | 低 |
-| **P2 后端拆大文件** | `dal/terms.py`、`dal/model_interchange.py`、`dal/schema.py` 按聚合拆包；`pql_gen.py` 拆 prompt/parser/emitter | 拆分后 `dal_surface.json` 快照显式重新生成并 review | 中。`auto_ontology/dal/tests/test_dal_surface.py` 会冻结公开签名，改签名必须重新生成快照 |
+| **P2 后端拆大文件** | `dal/terms.py`、`dal/model_interchange.py`、`dal/schema.py` 按聚合拆包；`pql_gen.py` 拆 prompt/parser/emitter | 拆分后 `dal_surface.json` 快照显式重新生成并 review | 中。`all_ontology/dal/tests/test_dal_surface.py` 会冻结公开签名，改签名必须重新生成快照 |
 | **P3 引入 service 层** | 把 `router.py` 里的业务分支（例如 `erd/router.py` 的导入合并、`datasources/router.py` 的树构建）下沉到 `server/<domain>/service.py` | router 只剩参数校验 + 调用 service | 中。按领域逐个搬，不做大爆炸 |
 | **P4 前端切片** | `ExplorationView` / `ErdView` 拆成 `features/<x>/{use*.ts, *Panel.tsx}`；`lib/erd` 保持纯函数 | 单文件 ≤ 400 行；`tsc` + `eslint` 绿 | 中高。需要逐块搬迁并保持行为，建议先给 `lib/erd` 加单测再动 `ErdView` |
-| **P5 契约生成** | 由 `docs/openapi/auto-ontology-api.json` 生成 `frontend/types/generated.ts`，手写类型只保留 UI 专用 | 后端加字段后前端 `tsc` 直接报错提示 | 中。需要一次全量对齐 |
+| **P5 契约生成** | 由 `docs/openapi/all-ontology-api.json` 生成 `frontend/types/generated.ts`，手写类型只保留 UI 专用 | 后端加字段后前端 `tsc` 直接报错提示 | 中。需要一次全量对齐 |
 
 ### 建议的执行顺序理由
 
@@ -193,7 +187,7 @@ P0/P1 成本最低、收益立竿见影，且不改变运行时行为，先做�
 
 | 改动 | 位置 | 说明 |
 | --- | --- | --- |
-| 清掉根部死前端树 | `app/ components/ common/ auto-ontology-i18n-backup/` | 348 个文件、约 1.2 MB 的死快照移出仓库（见下方回滚说明）；`tsc` 与全量测试仍然通过 |
+| 清掉根部死前端树 | `app/ components/ common/ all-ontology-i18n-backup/` | 348 个文件、约 1.2 MB 的死快照移出仓库（见下方回滚说明）；`tsc` 与全量测试仍然通过 |
 | 清掉根部调试产物 | `outputs/`（27 张截图） | 本地 UI 截图，无任何文档引用 |
 | ERD 视图瘦身 | `frontend/lib/erd/clipboard.ts` / `download.ts` / `history.ts` | 从 `ErdView.tsx` 抽出剪贴板、文件下载、撤销栈三块纯逻辑；撤销/重做规则从 ~90 行分散代码收敛成一个 40 行的类 |
 | 前端测试立起来 | `frontend/vitest.config.ts` + `lib/erd/*.test.ts` | vitest 之前装了却零测试；现在 `lib/` 下的纯逻辑有了基线（10 个用例：历史栈边界、别名行高、端口锚点） |
@@ -205,20 +199,20 @@ P0/P1 成本最低、收益立竿见影，且不改变运行时行为，先做�
 | 原生启动编排 | `dev_tools/start-dev.ps1` / `stop-dev.ps1` / `dev-common.ps1` | 把"隐式启动顺序"变成可执行脚本：Postgres 真实可连 → 后端 health → 摄取 → 前端 |
 | 数据库就绪探针 | `dev_tools/wait_for_db.py` | 用 `.env` 里的真实凭据连库，替代"容器 healthy 就算就绪" |
 | 端到端自检 | `dev_tools/smoke-test.ps1` | 登录、页面、画布 API 一条命令验证 |
-| 迁移版本对齐 | `helm/auto-ontology/values.yaml` | `alembicRevision` 曾落后于 head（`b7d4f2a19c31`），会让 Helm 的 schema gate 永久等待；现在跟随 head `f5c5755297f7` |
-| ORM 实体层 | `auto_ontology/dal/models.py` | 41 张表各一个实体类，中文文档；与 `schema.py` 共用 `Table` 对象，对迁移零影响 |
-| ORM 会话 | `auto_ontology/dal/session.py: orm_session()` | 在 `write_transaction()` 内借用同一连接，ORM 与 Core 同事务 |
-| ORM 范式改造 | `auto_ontology/dal/zones.py` | 实体 CRUD 改走 ORM，集合查询保持 Core；15 个既有测试原样通过 |
+| 迁移版本对齐 | `helm/all-ontology/values.yaml` | `alembicRevision` 曾落后于 head（`b7d4f2a19c31`），会让 Helm 的 schema gate 永久等待；现在跟随 head `f5c5755297f7` |
+| ORM 实体层 | `all_ontology/dal/models.py` | 41 张表各一个实体类，中文文档；与 `schema.py` 共用 `Table` 对象，对迁移零影响 |
+| ORM 会话 | `all_ontology/dal/session.py: orm_session()` | 在 `write_transaction()` 内借用同一连接，ORM 与 Core 同事务 |
+| ORM 范式改造 | `all_ontology/dal/zones.py` | 实体 CRUD 改走 ORM，集合查询保持 Core；15 个既有测试原样通过 |
 | 中文表注释 | `schema.py: TABLE_COMMENTS` + 迁移 `f5c5755297f7` | 41 张表的 `COMMENT ON TABLE` 已写入数据库，Navicat / pgAdmin 直接可见 |
-| 测试可移植性 | `auto_ontology/dal/tests/test_migration_revision.py` | 读文件显式 `encoding="utf-8"`，Windows 下不再因 GBK 默认编码失败 |
+| 测试可移植性 | `all_ontology/dal/tests/test_migration_revision.py` | 读文件显式 `encoding="utf-8"`，Windows 下不再因 GBK 默认编码失败 |
 
 ### 回滚本次清理
 
 仓库不是 Git 仓库，所以删除是**移动**而不是 `rm`。被移走的目录都在：
 
 ```
-C:\Users\Administrator\Documents\auto-ontology-archive\2026-11-15-structure-cleanup\
-    app\  components\  common\  auto-ontology-i18n-backup\  outputs\
+C:\Users\Administrator\Documents\all-ontology-archive\2026-11-15-structure-cleanup\
+    app\  components\  common\  all-ontology-i18n-backup\  outputs\
 ```
 
 需要任何一份时直接 `Move-Item` 回仓库根目录即可。确认不再需要后，整个 archive 目录可以删掉。
@@ -230,7 +224,7 @@ C:\Users\Administrator\Documents\auto-ontology-archive\2026-11-15-structure-clea
 ```powershell
 .\dev_tools\start-dev.ps1      # 冷启动约 30s
 .\dev_tools\smoke-test.ps1     # 7/7 通过
-python -m pytest auto_ontology dev_tools -q   # 2653 passed, 148 skipped, 0 failed
+python -m pytest all_ontology dev_tools -q   # 2653 passed, 148 skipped, 0 failed
 cd frontend; pnpm exec tsc --noEmit; pnpm exec eslint .; pnpm exec prettier --check .; pnpm test
 ```
 

@@ -4,11 +4,11 @@ All rights reserved.
 SPDX-License-Identifier: Apache-2.0
 
 .SYNOPSIS
-    Stop the native Auto-Ontology dev stack started by start-dev.ps1.
+    Stop the native All-Ontology dev stack started by start-dev.ps1.
 
 .DESCRIPTION
     Kills the recorded process trees from <repo>\logs\dev-pids.json and, as a
-    fallback, anything of this repo still listening on 3000/3001/3002.
+    fallback, anything of this repo still listening on 3010/3001/3002.
     Postgres (the Docker container) keeps running unless -IncludePostgres is
     passed, so the next start is instant.
 
@@ -34,7 +34,7 @@ $logs = Join-Path $repo 'logs'
 $pidsFile = Join-Path $logs 'dev-pids.json'
 
 Write-Host ''
-Write-Host 'Auto-Ontology - stopping dev stack' -ForegroundColor White
+Write-Host 'All-Ontology - stopping dev stack' -ForegroundColor White
 Write-Host ''
 
 # 1. Anything we recorded last start.

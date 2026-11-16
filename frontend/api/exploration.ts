@@ -31,7 +31,7 @@ export type ExplorationGraphResponse<Graph> = {
 };
 
 // Server caps the response at the same number regardless of what's sent (see
-// MAX_EXPLORATION_GRAPH_NODES in auto_ontology/dal/datasources.py) — sent explicitly so
+// MAX_EXPLORATION_GRAPH_NODES in all_ontology/dal/datasources.py) — sent explicitly so
 // intent is visible at the call site rather than relying on the server default.
 const EXPLORATION_GRAPH_NODE_LIMIT = 500;
 

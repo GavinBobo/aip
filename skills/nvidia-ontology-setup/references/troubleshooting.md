@@ -12,7 +12,7 @@ output.
 ## UI loads without the left navigation (or looks broken after restart)
 
 Stale Better Auth session cookie. Happens when `AUTH_SECRET` changes or the
-database is reset. Clear site data for `localhost:3000` (or delete the
+database is reset. Clear site data for `localhost:3010` (or delete the
 `better-auth.session_token` cookie) and sign in again.
 
 Every page failing with a Better Auth "default secret" error means `.env` is
@@ -59,7 +59,7 @@ ignored with a warning and falls back to plaintext. `VAULT_AUTH_MOUNT` and
 (`200`). A redirect to the login page means the deployment predates that
 route — run the frontend from the checkout (`pnpm dev`).
 
-`AUTO_ONTOLOGY_API_URL` is the **web app**, default `http://localhost:3000`, not
+`AUTO_ONTOLOGY_API_URL` is the **web app**, default `http://localhost:3010`, not
 FastAPI `:3001`.
 
 ## Sign-in or MCP login fails although discovery works

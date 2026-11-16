@@ -26,7 +26,7 @@ export const LLM_API_KEY_KEY = 'llm_api_key';
 export const LLM_MODEL_KEY = 'llm_model';
 
 /**
- * Read an opt-out flag the way `auto_ontology/infra/feature_flags.py` does.
+ * Read an opt-out flag the way `all_ontology/infra/feature_flags.py` does.
  *
  * Both layers read the same row, so they have to canonicalize it the same way
  * or they disagree: the Python reader strips and lowercases, so a stored
@@ -40,7 +40,7 @@ export function readOptOutFlag(value: string | null | undefined): boolean {
 }
 
 /**
- * Read an opt-in flag the way `auto_ontology/infra/feature_flags.py` does with
+ * Read an opt-in flag the way `all_ontology/infra/feature_flags.py` does with
  * `default=False`. Only `"true"` enables; an absent row or an unrecognized
  * value counts as disabled, matching that reader's fallback.
  */

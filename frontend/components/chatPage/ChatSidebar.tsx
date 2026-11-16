@@ -213,7 +213,7 @@ export const ChatSidebar = ({
 					<Link href="/" className="flex items-center gap-3">
 						<Icon name={IconName.NvidiaLogo} className="h-6 w-auto text-[#76b900]" />
 						<span className="text-sm font-semibold tracking-wide text-black dark:text-zinc-100">
-							{t('Auto Ontology')}{' '}
+							{t('All Ontology')}{' '}
 						</span>
 					</Link>
 				</div>

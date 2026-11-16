@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { requests } from './requests';
+import { instanceApiPath } from '@/lib/parsingInstances';
 import type { ParsingMode, ParsingSettingsInput } from '@/lib/parsingConfigurations';
 
 /** The three groups `model_backend.describe()` reports. */
@@ -91,6 +92,29 @@ export type ParsingJob = {
 	metadata: Record<string, unknown>;
 };
 
+/** One stored parse run, as the 解析实例 list shows it. */
+export type ParsingInstance = {
+	id: string;
+	file_name: string | null;
+	source_name: string | null;
+	created: string | null;
+	page_num: number | null;
+	processing_time_ms: number | null;
+	has_markdown: boolean;
+};
+
+/** The same run with its answers, fetched when the detail view opens. */
+export type ParsingInstanceDetail = {
+	id: string;
+	document: string;
+	run: string;
+	file_name: string | null;
+	source_name: string | null;
+	created: string | null;
+	outputs: Record<string, unknown>;
+	metadata: Record<string, unknown>;
+};
+
 export const parsingApi = {
 	capabilities: () => requests.get<{ data: ParsingCapabilities }>('parsing/capabilities'),
 
@@ -114,4 +138,15 @@ export const parsingApi = {
 
 	job: (taskId: string) =>
 		requests.get<{ data: ParsingJob }>(`parsing/jobs/${encodeURIComponent(taskId)}`),
+
+	/** Stored runs, newest first, without their (large) answers. */
+	instances: (limit = 50) =>
+		requests.get<{ data: ParsingInstance[]; count: number }>('parsing/instances', { limit }),
+
+	instance: (id: string) => requests.get<{ data: ParsingInstanceDetail }>(instanceApiPath(id)),
+
+	removeInstance: (id: string) => requests.delete<{ data: { id: string } }>(instanceApiPath(id)),
+
+	/** Where the browser can fetch the stored source file from. */
+	instanceSourceUrl: (id: string): string => `/api/${instanceApiPath(id)}/source`,
 };

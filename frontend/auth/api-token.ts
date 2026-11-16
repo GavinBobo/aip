@@ -18,14 +18,25 @@
 import { auth } from '@/auth/auth';
 import { getPrisma } from '@/lib/prisma';
 
-/** Prefix every Auto Ontology-minted token carries (see the apiKey plugin config). */
-export const API_TOKEN_PREFIX = 'auto_ontology_';
+/** Prefix every All Ontology-minted token carries (see the apiKey plugin config). */
+export const API_TOKEN_PREFIX = 'all_ontology_';
+
+/**
+ * Tokens minted before the rename still carry the old prefix. Keep accepting
+ * them so renaming the product does not silently break existing scripts.
+ */
+const LEGACY_API_TOKEN_PREFIXES = ['auto_ontology_'] as const;
+
+const carriesApiTokenPrefix = (value: string): boolean =>
+	[API_TOKEN_PREFIX, ...LEGACY_API_TOKEN_PREFIXES].some((prefix) =>
+		value.startsWith(prefix),
+	);
 
 /** Canonical header for API-token auth. */
 const API_TOKEN_HEADER = 'x-api-key';
 
 /**
- * Pull a Auto Ontology API token out of the request headers.
+ * Pull an All Ontology API token out of the request headers.
  *
  * `x-api-key` is the canonical spelling, but `Authorization: Bearer` is also
  * accepted because it is what most HTTP clients reach for by default.
@@ -33,13 +44,13 @@ const API_TOKEN_HEADER = 'x-api-key';
  * Both headers are claimed only for values carrying our prefix. `Authorization`
  * is shared with SSO bearer tokens, and `x-api-key` is a header gateways
  * routinely stamp with their own credential — claiming any non-empty value made
- * `resolveUser` treat such a request as offering a Auto Ontology token, so a valid SSO id
+ * `resolveUser` treat such a request as offering an All Ontology token, so a valid SSO id
  * token alongside it produced a hard 401 instead of falling through to the JWT
  * path.
  */
 export function extractApiToken(headers: Headers): string | null {
 	const direct = headers.get(API_TOKEN_HEADER)?.trim();
-	if (direct) return direct.startsWith(API_TOKEN_PREFIX) ? direct : null;
+	if (direct) return carriesApiTokenPrefix(direct) ? direct : null;
 
 	const authorization = headers.get('authorization');
 	if (!authorization) return null;
@@ -47,7 +58,7 @@ export function extractApiToken(headers: Headers): string | null {
 	if (scheme?.toLowerCase() !== 'bearer') return null;
 
 	const token = value?.trim();
-	return token?.startsWith(API_TOKEN_PREFIX) ? token : null;
+	return token != null && carriesApiTokenPrefix(token) ? token : null;
 }
 
 /**

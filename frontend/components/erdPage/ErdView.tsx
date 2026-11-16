@@ -6,9 +6,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 
 import { erdApi } from '@/api/erd';
-import { zonesApi } from '@/api/zones';
 import { useSession } from '@/auth/auth-client';
 import { Button } from '@/common/Button';
 import { EmptyState } from '@/common/EmptyState';
@@ -23,6 +23,7 @@ import { CanvasHistory } from '@/lib/erd/history';
 import { gridLayout, layeredLayout } from '@/lib/erd/layout';
 import { buildSvgDiagram, downloadPng, downloadSvg } from '@/lib/erd/svgExport';
 import { validateCanvas, type ErdIssue } from '@/lib/erd/validation';
+import { zoneQueries } from '@/lib/queries/zones';
 import type {
 	ErdCanvas as ErdCanvasModel,
 	ErdAssistantAction,
@@ -50,6 +51,7 @@ import { TemplatesDialog } from './TemplatesDialog';
 import type { TableTemplate } from '@/lib/erd/templates';
 
 const DEFAULT_VIEWPORT: ErdViewport = { x: 0, y: 0, zoom: 1 };
+const LAST_ZONE_KEY = 'erd:last-zone';
 
 export const ErdView = () => {
 	const router = useRouter();
@@ -125,6 +127,25 @@ export const ErdView = () => {
 
 	const role = (session?.user as { role?: string } | undefined)?.role;
 	const readOnly = role !== 'admin';
+	const userId = session?.user.id ?? '';
+	// The root layout already read this list for the session and handed it to
+	// the query cache; subscribing here reuses that read instead of asking
+	// `/api/zones` again before the canvas can start loading.
+	const zonesQuery = useQuery({
+		...zoneQueries.list(userId),
+		enabled: userId !== '',
+	});
+
+	// Reopening the page can start on the zone that was open last time, so the
+	// canvas read does not have to wait for the zone list before it begins.
+	useEffect(() => {
+		const stored = window.localStorage.getItem(LAST_ZONE_KEY);
+		if (stored) setZoneId((current) => current ?? stored);
+	}, []);
+
+	useEffect(() => {
+		if (zoneId) window.localStorage.setItem(LAST_ZONE_KEY, zoneId);
+	}, [zoneId]);
 
 	const syncHistoryCounts = useCallback(() => {
 		setHistoryCounts(history.counts);
@@ -204,26 +225,29 @@ export const ErdView = () => {
 	}, [applySnapshot, history, persistSnapshot, readOnly, snapshotNow, syncHistoryCounts]);
 
 	useEffect(() => {
-		if (!session?.user.id) return undefined;
-		let cancelled = false;
-		zonesApi.getAll(session.user.id).then((response) => {
-			if (cancelled) return;
-			if (response.error) {
-				setError(response.message ?? t('Failed to load zones'));
-				setLoading(false);
-				return;
-			}
-			const list = response.data ?? [];
-			setZones(list);
-			const requested = new URLSearchParams(window.location.search).get('zone');
-			const initial = list.find((zone) => zone.id === requested) ?? list[0];
-			setZoneId(initial?.id ?? null);
-			if (!initial) setLoading(false);
-		});
-		return () => {
-			cancelled = true;
-		};
-	}, [session?.user.id]);
+		if (zonesQuery.data) setZones(zonesQuery.data);
+	}, [zonesQuery.data]);
+
+	useEffect(() => {
+		if (!zonesQuery.error) return;
+		setError(zonesQuery.error.message || t('Failed to load zones'));
+		setLoading(false);
+	}, [zonesQuery.error]);
+
+	useEffect(() => {
+		if (!userId || !zonesQuery.data) return;
+		const requested = new URLSearchParams(window.location.search).get('zone');
+		const fallback =
+			zonesQuery.data.find((zone) => zone.id === requested) ??
+			zonesQuery.data[0] ??
+			null;
+		// Keep the zone already open (including the remembered one) when the
+		// loaded list still contains it; only fall back when it does not.
+		if (zoneId && zonesQuery.data.some((zone) => zone.id === zoneId)) return;
+		if (zoneId) setError(null);
+		setZoneId(fallback?.id ?? null);
+		if (!fallback) setLoading(false);
+	}, [userId, zonesQuery.data, zoneId]);
 
 	useEffect(() => {
 		if (!zoneId) return undefined;

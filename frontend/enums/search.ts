@@ -16,7 +16,7 @@ export enum SearchObjectType {
 	Column = 'Column',
 	/**
 	 * A tag itself, not the objects carrying it — `LABEL_TAG` in
-	 * `auto_ontology/dal/search.py`. Matched on its own name, and the only kind
+	 * `all_ontology/dal/search.py`. Matched on its own name, and the only kind
 	 * with no description.
 	 */
 	Tag = 'Tag',

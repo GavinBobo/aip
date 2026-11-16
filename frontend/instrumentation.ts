@@ -5,7 +5,7 @@
 /**
  * Next.js instrumentation hook — runs once when the server process starts
  * (not during `next build`). We use it to seed/refresh the bootstrap admin
- * account from AUTO_ONTOLOGY_ADMIN_EMAIL / AUTO_ONTOLOGY_ADMIN_PASSWORD.
+ * account from ALL_ONTOLOGY_ADMIN_EMAIL / ALL_ONTOLOGY_ADMIN_PASSWORD.
  */
 export async function register() {
 	// Only run in the Node.js server runtime (skip the edge runtime / build).

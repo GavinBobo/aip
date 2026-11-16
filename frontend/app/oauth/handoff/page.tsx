@@ -52,7 +52,7 @@ const HandoffPage = () => (
 			<div className="flex items-center gap-2">
 				<Icon name={IconName.NvidiaLogo} className="h-6 w-6" />
 				<span className="text-lg font-semibold text-heading dark:text-zinc-100">
-					{t('Auto Ontology')}{' '}
+					{t('All Ontology')}{' '}
 				</span>
 			</div>
 			<Suspense fallback={null}>

@@ -1,16 +1,10 @@
-<!--
-SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
-All rights reserved.
-SPDX-License-Identifier: Apache-2.0
--->
-
 # ER 画布（Zone Canvas）设计
 
 状态：已由用户确认（2026-11-14）
 
 ## 目标
 
-在 Auto-Ontology 中提供一个 drawDB 风格的 ER 建模画布：
+在 All-Ontology 中提供一个 drawDB 风格的 ER 建模画布：
 
 - 一个 zone 对应一张画布；
 - 画布展示该 zone 覆盖的所有表（表、schema、数据库三种 zone 目标都支持）；
@@ -55,7 +49,7 @@ drawDB 仅作为交互参考。画布、布局、几何计算、DBML 解析/序�
 
 ## 数据模型
 
-新增三张表（`auto_ontology/dal/schema.py`，Alembic autogenerate）。
+新增三张表（`all_ontology/dal/schema.py`，Alembic autogenerate）。
 
 ### `erd_canvas`
 
@@ -157,7 +151,7 @@ GET 画布的返回形状：
 
 ```json
 {
-  "format": "auto-ontology-erd",
+  "format": "all-ontology-erd",
   "version": 1,
   "zone_id": "...",
   "viewport": {"x": 0, "y": 0, "zoom": 1},
@@ -188,7 +182,7 @@ GET 画布的返回形状：
 
 忽略并在导入结果里报告：`Enum`、`Indexes`、`TableGroup`、`Project`、`Note` 之外的块。
 
-导出时写 `Table`、列、`Note`、`Ref`，并附带 `// exported from Auto-Ontology` 头注释。
+导出时写 `Table`、列、`Note`、`Ref`，并附带 `// exported from All-Ontology` 头注释。
 
 ## 前端组件
 
@@ -224,9 +218,9 @@ GET 画布的返回形状：
 
 后端：
 
-- `auto_ontology/dal/tests/test_erd.py`：画布惰性创建、节点同步（新增/删除）、
+- `all_ontology/dal/tests/test_erd.py`：画布惰性创建、节点同步（新增/删除）、
   坐标更新、关联 CRUD、级联删除、虚拟表保留。
-- `auto_ontology/server/erd/tests/test_dbml.py`：DBML 解析/序列化往返、
+- `all_ontology/server/erd/tests/test_dbml.py`：DBML 解析/序列化往返、
   四种基数、note、注释与未知块警告、错误行号。
 
 前端：

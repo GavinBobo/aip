@@ -161,7 +161,7 @@ services:
     container_name: auto-ontology-frontend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3010:3010"
     env_file:
       - .env
     environment:

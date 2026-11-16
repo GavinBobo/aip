@@ -35,7 +35,7 @@ type RelationshipsModalProps = {
  * Destination of a row's external link, or `null` when there is nowhere to go.
  *
  * A related table is listed even when no Database/Schema sits above it (see
- * `_data_related_tables_match` in auto_ontology/dal/exploration.py — requiring the
+ * `_data_related_tables_match` in all_ontology/dal/exploration.py — requiring the
  * catalog path there would make the list shorter than the node's degree on
  * the graph). The `/data` page addresses a table by its full
  * `dbId|schemaId|tableId` path, so such a row has no address to link to.

@@ -24,8 +24,8 @@ Local development helpers: environment setup, database seeding, and ingest.
 | `_add_spdx_headers.py` | One-off OSRB helper; kept so the header insertion is reproducible. |
 | `fixtures/` | The test fixtures. **CI depends on these** — see below. |
 
-Everything under `fixtures/` builds the databases that `auto_ontology/dal/tests/test_golden.py`
-and `auto_ontology/connectors/tests/test_postgres.py` replay against, and is driven by
+Everything under `fixtures/` builds the databases that `all_ontology/dal/tests/test_golden.py`
+and `all_ontology/connectors/tests/test_postgres.py` replay against, and is driven by
 `.github/workflows/ci-python.yml`. Changing it changes what CI proves. See
 [`fixtures/sql/README.md`](./fixtures/sql/README.md) for what each fixture
 database covers and why.
@@ -35,12 +35,12 @@ docker compose up -d postgres
 uv run --no-sync python -m dev_tools.fixtures.seed_fixtures          # pagila + chinook
 uv run --no-sync alembic upgrade head
 uv run --no-sync python -m dev_tools.fixtures.seed_graph_fixture --reset
-uv run --no-sync pytest auto_ontology dev_tools -q
+uv run --no-sync pytest all_ontology dev_tools -q
 ```
 
 ## Running locally
 
-The **frontend** (`frontend/`) and the **Python API** (`auto_ontology/`) must both be running.
+The **frontend** (`frontend/`) and the **Python API** (`all_ontology/`) must both be running.
 
 ### One-time setup
 
@@ -67,31 +67,34 @@ Or infrastructure only (Postgres, pgAdmin, ingestion service):
 Then start the app manually:
 
 ```bash
-cd frontend && pnpm dev   # Next.js on port 3000
-uv run python -m auto_ontology.server   # FastAPI on port 3001 (from the repo root)
+cd frontend && pnpm dev   # Next.js on port 3010
+uv run python -m all_ontology.server   # FastAPI on port 3001 (from the repo root)
 ```
 
-Open **http://localhost:3000**.
+Open **http://localhost:3010**.
 
 ### Windows: one-command start / stop
 
-On Windows the same stack is driven by PowerShell. Only Postgres runs in Docker; the
-backend, the ingestion service and the frontend run from source with hot reload, so
-editing Python or TSX files takes effect immediately.
+On Windows the same stack is driven by PowerShell. The database is whatever
+`POSTGRES_*` in `.env` points at — a company instance, another local server, or the
+bundled compose container if you ask for it with `-WithDockerPostgres`. The backend,
+the ingestion service and the frontend run from source with hot reload, so editing
+Python or TSX files takes effect immediately.
 
 ```powershell
-.\dev_tools\start-dev.ps1     # Postgres -> backend -> ingestion -> frontend, each health-gated
+.\dev_tools\start-dev.ps1     # database -> backend -> ingestion -> frontend, each health-gated
 .\dev_tools\smoke-test.ps1    # read-only check: health, sign-in, pages, ERD canvas
 .\dev_tools\stop-dev.ps1      # stop the three processes; Postgres keeps running
 ```
 
 `start-dev.ps1` starts each component only after the previous one answers, which is what
 keeps the backend from failing with `could not read the applied revision: connection
-timeout expired` when Postgres is still warming up. Services that are already running and
-healthy are reused, so the script is safe to run twice; `-Force` restarts everything, and
-`-NoFrontend` / `-NoIngestion` / `-SkipPostgres` skip individual pieces. Logs land in
-`logs\` (`backend.err.log`, `frontend.log`, ...). `stop-dev.ps1 -IncludePostgres` also
-stops the container.
+timeout expired` when the database is still warming up. Services that are already running
+and healthy are reused, so the script is safe to run twice; `-Force` restarts everything,
+and `-NoFrontend` / `-NoIngestion` / `-SkipPostgres` skip individual pieces.
+`-WithDockerPostgres` additionally brings up the compose `postgres` service — only useful
+on a machine with no other database. Logs land in `logs\` (`backend.err.log`,
+`frontend.log`, ...). `stop-dev.ps1 -IncludePostgres` stops the container if it is running.
 
 ### Optional
 
@@ -99,13 +102,13 @@ stops the container.
 
 ## `setup_env.sh`
 
-Brings up the Auto-Ontology environment via `docker compose`.
+Brings up the All-Ontology environment via `docker compose`.
 
 | Command | What it starts |
 |---|---|
-| `bash ./dev_tools/setup_env.sh` | Full stack — infra (Postgres, pgAdmin, ingestion service) **and** the `auto_ontology` + `auto-ontology-frontend` images (built with `--build`). |
-| `bash ./dev_tools/setup_env.sh --dev` | Infra only. You run `auto_ontology` / `auto-ontology-frontend` locally yourself. |
-| `bash ./dev_tools/setup_env.sh --ds` | Infra **+** `auto-ontology-frontend` in docker. You run `auto_ontology` locally on `:3001`; the containerised frontend reaches it via `host.docker.internal:3001`. |
+| `bash ./dev_tools/setup_env.sh` | Full stack — infra (Postgres, pgAdmin, ingestion service) **and** the `all_ontology` + `all-ontology-frontend` images (built with `--build`). |
+| `bash ./dev_tools/setup_env.sh --dev` | Infra only. You run `all_ontology` / `all-ontology-frontend` locally yourself. |
+| `bash ./dev_tools/setup_env.sh --ds` | Infra **+** `all-ontology-frontend` in docker. You run `all_ontology` locally on `:3001`; the containerised frontend reaches it via `host.docker.internal:3001`. |
 
 ### Endpoints
 
@@ -113,9 +116,9 @@ Brings up the Auto-Ontology environment via `docker compose`.
 |---|---|
 | Postgres | `localhost:5432` |
 | pgAdmin | <http://localhost:5050> |
-| Auto-Ontology ingestion service | <http://localhost:3002> |
-| Auto-Ontology frontend (full stack only) | <http://localhost:3000> |
-| Auto-Ontology backend (full stack only) | <http://localhost:3001> |
+| All-Ontology ingestion service | <http://localhost:3002> |
+| All-Ontology frontend (full stack only) | <http://localhost:3010> |
+| All-Ontology backend (full stack only) | <http://localhost:3001> |
 
 ### `--dev` workflow
 
@@ -127,11 +130,11 @@ cd frontend && pnpm install && pnpm dev
 
 # terminal 2 — FastAPI (from the repo root)
 uv sync
-uv run uvicorn auto_ontology.server.__main__:create_app --factory --reload --host 127.0.0.1 --port 3001
+uv run uvicorn all_ontology.server.__main__:create_app --factory --reload --host 127.0.0.1 --port 3001
 ```
 
-The app factory is `create_app()` in `auto_ontology/server/__main__.py`; there is no
-`auto_ontology/server/main.py`. `uv run python -m auto_ontology.server` starts the same app without
+The app factory is `create_app()` in `all_ontology/server/__main__.py`; there is no
+`all_ontology/server/main.py`. `uv run python -m all_ontology.server` starts the same app without
 `--reload` — that is what the container runs.
 
 ### `--ds` workflow
@@ -145,7 +148,7 @@ bash ./dev_tools/setup_env.sh --ds
 
 # then, on the host:
 uv sync
-uv run uvicorn auto_ontology.server.__main__:create_app --factory --reload --host 127.0.0.1 --port 3001
+uv run uvicorn all_ontology.server.__main__:create_app --factory --reload --host 127.0.0.1 --port 3001
 ```
 
 > Linux note: `host.docker.internal` works out-of-the-box on Docker Desktop (macOS / Windows). On native Linux Docker you may need to add `--add-host=host.docker.internal:host-gateway` or bind the backend to `0.0.0.0` and use the docker bridge IP.
@@ -168,5 +171,5 @@ Kubernetes:
 
 - `Dockerfile` — backend (FastAPI / uvicorn)
 - `frontend/Dockerfile` — frontend (Next.js standalone)
-- `helm/auto-ontology/` — Helm chart with deployments, services, optional Ingress,
+- `helm/all-ontology/` — Helm chart with deployments, services, optional Ingress,
   HPA, PDB and a sample Postgres manifest

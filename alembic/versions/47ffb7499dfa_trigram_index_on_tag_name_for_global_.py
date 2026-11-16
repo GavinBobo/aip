@@ -11,9 +11,9 @@ the time and creates ``pg_trgm`` along with them, so this revision adds the
 tenth and nothing else.
 
 One index rather than two: a tag is a name and its authorship, with no
-description column to match against. ``auto_ontology.dal.schema`` skips the
+description column to match against. ``all_ontology.dal.schema`` skips the
 missing column when it builds these, and
-``auto_ontology.dal.search._LABELS_WITHOUT_DESCRIPTION`` is the same fact on the
+``all_ontology.dal.search._LABELS_WITHOUT_DESCRIPTION`` is the same fact on the
 query side.
 
 Revision ID: 47ffb7499dfa

@@ -2,12 +2,12 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-/** Mirrors `MAX_TAG_NAME_LENGTH` in `auto_ontology/server/tags/router.py`, which rejects longer. */
+/** Mirrors `MAX_TAG_NAME_LENGTH` in `all_ontology/server/tags/router.py`, which rejects longer. */
 export const MAX_TAG_NAME_LENGTH = 25;
 
 /**
  * The tag PII detection attaches. Mirrors `PII_TAG_NAME` in
- * `auto_ontology/dal/tags.py`, which refuses to delete or rename it.
+ * `all_ontology/dal/tags.py`, which refuses to delete or rename it.
  */
 export const PII_TAG_NAME = 'PII';
 

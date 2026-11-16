@@ -2,8 +2,8 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { ParsingView } from '@/components/parsingPage';
+import { ParsingInstancesView } from '@/components/parsingPage';
 
 export default function ParsingPage() {
-	return <ParsingView />;
+	return <ParsingInstancesView />;
 }

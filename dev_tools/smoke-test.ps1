@@ -4,7 +4,7 @@ All rights reserved.
 SPDX-License-Identifier: Apache-2.0
 
 .SYNOPSIS
-    Read-only smoke test for a running Auto-Ontology dev stack.
+    Read-only smoke test for a running All-Ontology dev stack.
 
 .DESCRIPTION
     Signs in with the bootstrap admin from .env and exercises the paths a
@@ -15,11 +15,11 @@ SPDX-License-Identifier: Apache-2.0
     .\dev_tools\smoke-test.ps1
 
 .EXAMPLE
-    .\dev_tools\smoke-test.ps1 -ApiUrl http://127.0.0.1:3001 -BaseUrl http://localhost:3000
+    .\dev_tools\smoke-test.ps1 -ApiUrl http://127.0.0.1:3001 -BaseUrl http://localhost:3010
 #>
 [CmdletBinding()]
 param(
-    [string]$BaseUrl = 'http://localhost:3000',
+    [string]$BaseUrl = 'http://localhost:3010',
     [string]$ApiUrl = 'http://127.0.0.1:3001',
     [int]$TimeoutSec = 90
 )
@@ -30,8 +30,8 @@ $ErrorActionPreference = 'Stop'
 $repo = Resolve-RepoRoot -ScriptDir $PSScriptRoot
 $envFile = Join-Path $repo '.env'
 
-$email = Get-DotEnvValue -Path $envFile -Key 'AUTO_ONTOLOGY_ADMIN_EMAIL'
-$password = Get-DotEnvValue -Path $envFile -Key 'AUTO_ONTOLOGY_ADMIN_PASSWORD'
+$email = Get-DotEnvValue -Path $envFile -Key 'ALL_ONTOLOGY_ADMIN_EMAIL'
+$password = Get-DotEnvValue -Path $envFile -Key 'ALL_ONTOLOGY_ADMIN_PASSWORD'
 
 $ps7 = $PSVersionTable.PSVersion.Major -ge 6
 $results = New-Object 'System.Collections.Generic.List[object]'
@@ -75,7 +75,7 @@ function Invoke-Web {
 }
 
 Write-Host ''
-Write-Host 'Auto-Ontology - smoke test' -ForegroundColor White
+Write-Host 'All-Ontology - smoke test' -ForegroundColor White
 Write-Host "  frontend $BaseUrl" -ForegroundColor DarkGray
 Write-Host "  api      $ApiUrl" -ForegroundColor DarkGray
 Write-Host ''
@@ -103,7 +103,7 @@ try {
 $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 $userId = $null
 if (-not $email -or -not $password) {
-    Add-Result -Check 'sign-in' -Ok $false -Detail 'AUTO_ONTOLOGY_ADMIN_EMAIL / _PASSWORD missing from .env'
+    Add-Result -Check 'sign-in' -Ok $false -Detail 'ALL_ONTOLOGY_ADMIN_EMAIL / _PASSWORD missing from .env'
 } else {
     $signIn = Invoke-Web -Uri "$BaseUrl/api/auth/sign-in/email" -Method Post -Session $session `
         -Headers @{ Origin = $BaseUrl } -Body @{ email = $email; password = $password }

@@ -502,6 +502,67 @@
         "title": "Body_import_model_api_model_import_post",
         "type": "object"
       },
+      "Body_parse_document_api_parsing_documents_post": {
+        "properties": {
+          "element_formats": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element Formats"
+          },
+          "extra": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra"
+          },
+          "feature_config": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Config"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "output_formats": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Formats"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_parse_document_api_parsing_documents_post",
+        "type": "object"
+      },
       "Body_preview_file_upload_api_connections_file_preview_post": {
         "properties": {
           "delimiter": {
@@ -592,6 +653,67 @@
           "file"
         ],
         "title": "Body_replace_file_dataset_api_connections__database_name__file_put",
+        "type": "object"
+      },
+      "Body_submit_parsing_job_api_parsing_jobs_post": {
+        "properties": {
+          "element_formats": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Element Formats"
+          },
+          "extra": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra"
+          },
+          "feature_config": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Config"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "output_formats": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Formats"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_submit_parsing_job_api_parsing_jobs_post",
         "type": "object"
       },
       "CanvasState": {
@@ -2069,6 +2191,58 @@
         "title": "DataResponse[PairModeAnalysis]",
         "type": "object"
       },
+      "DataResponse_ParsingCapabilities_": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ParsingCapabilities"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DataResponse[ParsingCapabilities]",
+        "type": "object"
+      },
+      "DataResponse_ParsingDocument_": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ParsingDocument"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DataResponse[ParsingDocument]",
+        "type": "object"
+      },
+      "DataResponse_ParsingInstanceDetail_": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ParsingInstanceDetail"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DataResponse[ParsingInstanceDetail]",
+        "type": "object"
+      },
+      "DataResponse_ParsingJob_": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ParsingJob"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DataResponse[ParsingJob]",
+        "type": "object"
+      },
       "DataResponse_PqlAnalysis_": {
         "additionalProperties": true,
         "properties": {
@@ -2288,6 +2462,21 @@
           "data"
         ],
         "title": "DataResponse[Zone]",
+        "type": "object"
+      },
+      "DataResponse_dict_str__Any__": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DataResponse[dict[str, Any]]",
         "type": "object"
       },
       "DataResponse_dict_str__int__": {
@@ -3420,7 +3609,7 @@
       },
       "ExplorationLinkPathNode": {
         "additionalProperties": true,
-        "description": "One Term/Table/Column/ColumnAttribute node along an `ExplorationLinkPathHop` chain.\n\n``type`` matches the Exploration graph's own node kinds (``term``,\n``table``, ``column``, ``columnAttribute``) so a client can graft/style\nthis node exactly like any other of that type \u2014 see\n`fetch_semantic_link_path`. The catalog fields are only ever set for a\n``table``/``column`` type node (see ``_enrich_catalog_path_nodes`` in\n``auto_ontology/dal/attributes.py``) \u2014 the same ids a client needs to expand\neither one further, exactly like a Table/Column node grafted anywhere\nelse in the app, so neither is a dead end just because it came from a\nlink path instead. ``table_id``/``table_name`` are a ``column`` node's\nown owning Table, additionally.",
+        "description": "One Term/Table/Column/ColumnAttribute node along an `ExplorationLinkPathHop` chain.\n\n``type`` matches the Exploration graph's own node kinds (``term``,\n``table``, ``column``, ``columnAttribute``) so a client can graft/style\nthis node exactly like any other of that type \u2014 see\n`fetch_semantic_link_path`. The catalog fields are only ever set for a\n``table``/``column`` type node (see ``_enrich_catalog_path_nodes`` in\n``all_ontology/dal/attributes.py``) \u2014 the same ids a client needs to expand\neither one further, exactly like a Table/Column node grafted anywhere\nelse in the app, so neither is a dead end just because it came from a\nlink path instead. ``table_id``/``table_name`` are a ``column`` node's\nown owning Table, additionally.",
         "properties": {
           "database_id": {
             "anyOf": [
@@ -3623,7 +3812,7 @@
           },
           "format": {
             "$ref": "#/components/schemas/ModelFormat",
-            "default": "auto_ontology"
+            "default": "all_ontology"
           },
           "include_ontology": {
             "default": false,
@@ -4586,6 +4775,28 @@
         "title": "ListResponse[Owner]",
         "type": "object"
       },
+      "ListResponse_ParsingInstance_": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ParsingInstance"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "ListResponse[ParsingInstance]",
+        "type": "object"
+      },
       "ListResponse_PublicConnection_": {
         "additionalProperties": true,
         "properties": {
@@ -4699,7 +4910,7 @@
       "ModelFormat": {
         "description": "Serialisation dialect of an exchanged model document.",
         "enum": [
-          "auto_ontology",
+          "all_ontology",
           "ossie"
         ],
         "title": "ModelFormat",
@@ -5459,6 +5670,342 @@
         "title": "PairModeSummary",
         "type": "object"
       },
+      "ParsingCapabilities": {
+        "additionalProperties": true,
+        "description": "What the parsing form is allowed to offer, and whether it can run now.\n\n``ready`` is true only when both the recognition backend and the layout\nservice have a URL; the form disables submit otherwise and points at\nSettings.",
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "element_format_defaults": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Element Format Defaults",
+            "type": "object"
+          },
+          "element_formats": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Element Formats",
+            "type": "object"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "layout_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layout Url"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "model_options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Model Options",
+            "type": "array"
+          },
+          "model_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Url"
+          },
+          "output_formats": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Output Formats",
+            "type": "array"
+          },
+          "ready": {
+            "default": false,
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "state"
+        ],
+        "title": "ParsingCapabilities",
+        "type": "object"
+      },
+      "ParsingDocument": {
+        "additionalProperties": true,
+        "description": "One parsed document.\n\n``outputs`` is keyed by the requested formats \u2014 ``{\"markdown\": \"...\",\n\"json\": {...}}`` \u2014 and ``metadata`` carries page count, timings and the\nlayout blocks, which the viewer uses to draw page thumbnails.",
+        "properties": {
+          "file_name": {
+            "title": "File Name",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "outputs": {
+            "additionalProperties": true,
+            "title": "Outputs",
+            "type": "object"
+          }
+        },
+        "required": [
+          "file_name"
+        ],
+        "title": "ParsingDocument",
+        "type": "object"
+      },
+      "ParsingInstance": {
+        "additionalProperties": true,
+        "description": "One stored parse run, as the \u89e3\u6790\u5b9e\u4f8b list shows it.\n\nThe list keeps ``outputs`` out on purpose: a 200-page Markdown answer is\nhundreds of kilobytes, and a list of fifty of them is a page nobody can\nscroll but everybody has to download. ``has_markdown`` says whether the\ndetail view has one to show.",
+        "properties": {
+          "created": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "has_markdown": {
+            "default": false,
+            "title": "Has Markdown",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "page_num": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Num"
+          },
+          "processing_time_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processing Time Ms"
+          },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "ParsingInstance",
+        "type": "object"
+      },
+      "ParsingInstanceDetail": {
+        "additionalProperties": true,
+        "description": "One stored run with its answers \u2014 what the detail view renders.",
+        "properties": {
+          "created": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created"
+          },
+          "document": {
+            "title": "Document",
+            "type": "string"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "outputs": {
+            "additionalProperties": true,
+            "title": "Outputs",
+            "type": "object"
+          },
+          "run": {
+            "title": "Run",
+            "type": "string"
+          },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          }
+        },
+        "required": [
+          "id",
+          "document",
+          "run"
+        ],
+        "title": "ParsingInstanceDetail",
+        "type": "object"
+      },
+      "ParsingJob": {
+        "additionalProperties": true,
+        "description": "An asynchronous parse request as the poller sees it.\n\n``instance`` names the process that owns the job: the task store is\nin-memory, so a poll hitting a different replica must be told rather than\nshown \"not found\".",
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "instance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instance"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ParsingDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "status"
+        ],
+        "title": "ParsingJob",
+        "type": "object"
+      },
       "PqlAnalysis": {
         "additionalProperties": true,
         "description": "A verified PQL few-shot. The PQL text is a property, not a child node.",
@@ -5732,7 +6279,7 @@
       },
       "Rule": {
         "additionalProperties": true,
-        "description": "A saved search, and the tags to apply to everything it matches.\n\n``search_term``, ``text_match_option`` and ``filters`` are the global-search\nrequest the rule replays; together they are what the rule *is*, which is why\nthey are required rather than optional like most of this module \u2014 a rule\nmissing any of the three matches nothing.\n\n``tags`` carry the name to show and the id to act by, both read from the tag\ntable on every read rather than from what the write that saved them sent \u2014\nso a renamed tag reads back renamed here, and a caller posting whole tag\nobjects is answered with the tags as they are rather than as it sent them.\nSee ``RuleTagRef`` in ``auto_ontology/server/rules/router.py``. The ids are checked\nagainst that table, so a rule cannot apply a tag that does not exist.\n\n``created_by`` is the id of the user who saved it, read from the trusted\ngateway header rather than from the request body \u2014 see\n``auto_ontology/server/chat/identity.py``. ``modified_by`` is the same for whoever\nlast renamed it, and null until somebody has \u2014 which is the same fact as\n``modified`` still equalling ``created``, and null again for a rename whose\nrequest carried no identity to record.\n\n``created`` and ``modified`` follow the convention :class:`Tag` sets: a\ntimezone-aware ``datetime`` serialised as ISO 8601, from one clock.",
+        "description": "A saved search, and the tags to apply to everything it matches.\n\n``search_term``, ``text_match_option`` and ``filters`` are the global-search\nrequest the rule replays; together they are what the rule *is*, which is why\nthey are required rather than optional like most of this module \u2014 a rule\nmissing any of the three matches nothing.\n\n``tags`` carry the name to show and the id to act by, both read from the tag\ntable on every read rather than from what the write that saved them sent \u2014\nso a renamed tag reads back renamed here, and a caller posting whole tag\nobjects is answered with the tags as they are rather than as it sent them.\nSee ``RuleTagRef`` in ``all_ontology/server/rules/router.py``. The ids are checked\nagainst that table, so a rule cannot apply a tag that does not exist.\n\n``created_by`` is the id of the user who saved it, read from the trusted\ngateway header rather than from the request body \u2014 see\n``all_ontology/server/chat/identity.py``. ``modified_by`` is the same for whoever\nlast renamed it, and null until somebody has \u2014 which is the same fact as\n``modified`` still equalling ``created``, and null again for a rename whose\nrequest carried no identity to record.\n\n``created`` and ``modified`` follow the convention :class:`Tag` sets: a\ntimezone-aware ``datetime`` serialised as ISO 8601, from one clock.",
         "properties": {
           "created": {
             "format": "date-time",
@@ -5836,7 +6383,7 @@
       },
       "RuleFilters": {
         "additionalProperties": true,
-        "description": "The global-search filters a rule replays.\n\nThe same fields ``GlobalSearchFilters`` in ``auto_ontology/server/search/router.py``\naccepts, and deliberately no others: a rule *is* a saved search, so a\nfilter stored here that the search cannot honour would be a rule that never\nreproduces the results it was created from.\n\n``synonyms`` defaults on for the reason it does there \u2014 it is what the\nsearch did before the flag existed \u2014 and ``objects`` records which tab the\nrule was saved from, since that is what the count it promises to tag was\nscoped to.",
+        "description": "The global-search filters a rule replays.\n\nThe same fields ``GlobalSearchFilters`` in ``all_ontology/server/search/router.py``\naccepts, and deliberately no others: a rule *is* a saved search, so a\nfilter stored here that the search cannot honour would be a rule that never\nreproduces the results it was created from.\n\n``synonyms`` defaults on for the reason it does there \u2014 it is what the\nsearch did before the flag existed \u2014 and ``objects`` records which tab the\nrule was saved from, since that is what the count it promises to tag was\nscoped to.",
         "properties": {
           "description": {
             "default": false,
@@ -7200,7 +7747,7 @@
       },
       "TableSqlQuery": {
         "additionalProperties": true,
-        "description": "A stored SQL query that references the table.\n\n``sql`` is nullable: unlike the other Sql reads in ``auto_ontology/dal/exploration``\nthis query has no ``_NON_EMPTY_SQL`` filter, so a Sql node with a null or\nblank ``sql_full_query`` reaches the response. Declaring it required would\nturn that row into a 500 for the whole table-detail modal.",
+        "description": "A stored SQL query that references the table.\n\n``sql`` is nullable: unlike the other Sql reads in ``all_ontology/dal/exploration``\nthis query has no ``_NON_EMPTY_SQL`` filter, so a Sql node with a null or\nblank ``sql_full_query`` reaches the response. Declaring it required would\nturn that row into a 500 for the whole table-detail modal.",
         "properties": {
           "id": {
             "title": "Id",
@@ -7358,7 +7905,7 @@
       },
       "Tag": {
         "additionalProperties": true,
-        "description": "A tag, as both the list and the create endpoint return it.\n\nThe four columns describing *when* are required, unlike most of this\nmodule: each is ``NOT NULL`` and ``auto_ontology.dal.tags`` selects them on every\npath.\n\n``created`` and ``modified`` are the first timestamps this module carries,\nso they set the convention: a timezone-aware ``datetime``, which Pydantic\nserialises as ISO 8601 and the client parses directly. They are read from\nthe database rather than the application clock, so a client comparing two\ntags is comparing one clock.\n\nThe two describing *who* are nullable, and each null says something\ndifferent. ``created_by`` is null for a tag made by a caller that reached\nFastAPI without the gateway's identity header. ``modified_by`` is\nadditionally null for a tag nobody has renamed, which is the same fact\n``modified == created`` states.\n\nBoth are opaque Better Auth user ids. Resolving one to a name is the\ngateway's job -- the accounts live in a schema this service does not own --\nso this API deliberately answers with the id it stored.",
+        "description": "A tag, as both the list and the create endpoint return it.\n\nThe four columns describing *when* are required, unlike most of this\nmodule: each is ``NOT NULL`` and ``all_ontology.dal.tags`` selects them on every\npath.\n\n``created`` and ``modified`` are the first timestamps this module carries,\nso they set the convention: a timezone-aware ``datetime``, which Pydantic\nserialises as ISO 8601 and the client parses directly. They are read from\nthe database rather than the application clock, so a client comparing two\ntags is comparing one clock.\n\nThe two describing *who* are nullable, and each null says something\ndifferent. ``created_by`` is null for a tag made by a caller that reached\nFastAPI without the gateway's identity header. ``modified_by`` is\nadditionally null for a tag nobody has renamed, which is the same fact\n``modified == created`` states.\n\nBoth are opaque Better Auth user ids. Resolving one to a name is the\ngateway's job -- the accounts live in a schema this service does not own --\nso this API deliberately answers with the id it stored.",
         "properties": {
           "created": {
             "format": "date-time",
@@ -7588,7 +8135,7 @@
         "type": "object"
       },
       "TagTargetType": {
-        "description": "Which of the five things a tag points at.\n\nUsed on both sides of tagging: it is the ``type`` of a :class:`TagItem` a\ntag's page reads, and the ``type`` the attach and detach routes validate\nagainst \u2014 which is what makes an unknown kind a 422 from FastAPI's own\nvalidation, listing the five it does accept.\n\nThe five strings are also the keys ``auto_ontology.dal.tags`` resolves to a\n``tag_target`` column, and they are spelled out here rather than imported\nfrom it: this module is the shape of the API, and pulling a five-string\nvocabulary out of the DAL made every importer of it load SQLAlchemy and the\nwhole table metadata too. ``auto_ontology/server/tests/test_tag_target_type.py`` is\nwhat keeps the two spellings identical, since a kind the DAL has no column\nfor would answer 500 rather than the 422 this enum exists to produce.",
+        "description": "Which of the five things a tag points at.\n\nUsed on both sides of tagging: it is the ``type`` of a :class:`TagItem` a\ntag's page reads, and the ``type`` the attach and detach routes validate\nagainst \u2014 which is what makes an unknown kind a 422 from FastAPI's own\nvalidation, listing the five it does accept.\n\nThe five strings are also the keys ``all_ontology.dal.tags`` resolves to a\n``tag_target`` column, and they are spelled out here rather than imported\nfrom it: this module is the shape of the API, and pulling a five-string\nvocabulary out of the DAL made every importer of it load SQLAlchemy and the\nwhole table metadata too. ``all_ontology/server/tests/test_tag_target_type.py`` is\nwhat keeps the two spellings identical, since a kind the DAL has no column\nfor would answer 500 rather than the 422 this enum exists to produce.",
         "enum": [
           "term",
           "table",
@@ -8725,7 +9272,7 @@
         "title": "ZoneUpdate",
         "type": "object"
       },
-      "auto_ontology__server__datasources__router__NodeUpdate": {
+      "all_ontology__server__datasources__router__NodeUpdate": {
         "properties": {
           "description": {
             "anyOf": [
@@ -8778,7 +9325,7 @@
         "title": "NodeUpdate",
         "type": "object"
       },
-      "auto_ontology__server__erd__schemas__NodeUpdate": {
+      "all_ontology__server__erd__schemas__NodeUpdate": {
         "description": "A move, a collapse, or both. Omitted fields are left alone.",
         "properties": {
           "collapsed": {
@@ -8887,7 +9434,7 @@
     }
   },
   "info": {
-    "title": "Auto Ontology API",
+    "title": "All Ontology API",
     "version": "0.1.0"
   },
   "openapi": "3.1.0",
@@ -10839,7 +11386,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/auto_ontology__server__erd__schemas__NodeUpdate"
+                "$ref": "#/components/schemas/all_ontology__server__erd__schemas__NodeUpdate"
               }
             }
           },
@@ -12314,7 +12861,7 @@
                 }
               }
             },
-            "description": "Auto Ontology model YAML, or with include_ontology a zip of the Apache Ossie semantic model, ontology and mapping, sent as a file attachment"
+            "description": "All Ontology model YAML, or with include_ontology a zip of the Apache Ossie semantic model, ontology and mapping, sent as a file attachment"
           },
           "422": {
             "content": {
@@ -12335,7 +12882,7 @@
     },
     "/api/model/import": {
       "post": {
-        "description": "Import a native Auto Ontology or Apache Ossie model YAML file or raw YAML body.",
+        "description": "Import a native All Ontology or Apache Ossie model YAML file or raw YAML body.",
         "operationId": "import_model_api_model_import_post",
         "parameters": [
           {
@@ -12417,7 +12964,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/auto_ontology__server__datasources__router__NodeUpdate"
+                "$ref": "#/components/schemas/all_ontology__server__datasources__router__NodeUpdate"
               }
             }
           },
@@ -12479,6 +13026,534 @@
         "summary": "List Owners",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/api/parsing/assets/{document}/{kind}/{name}": {
+      "get": {
+        "description": "Serve one extracted picture, for the Markdown ``![]()`` links to resolve.\n\nThe parser writes crops to a directory and puts a link to them in the\nMarkdown. Without this route those links only worked when the reader had the\nserver's filesystem; now the same ``/api/parsing/assets/...`` path works in\nthe app's preview, behind a reverse proxy, and in any client that can reach\nthis API.",
+        "operationId": "parsing_asset_api_parsing_assets__document___kind___name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document",
+            "required": true,
+            "schema": {
+              "title": "Document",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Parsing Asset",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
+    "/api/parsing/backends/test": {
+      "post": {
+        "description": "Probe the recognition backend, optionally with unsaved settings.",
+        "operationId": "test_parsing_backend_api_parsing_backends_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_dict_str__Any__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Parsing Backend",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
+    "/api/parsing/capabilities": {
+      "get": {
+        "description": "Backend state plus the option values the form may offer.",
+        "operationId": "parsing_capabilities_api_parsing_capabilities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_ParsingCapabilities_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Parsing Capabilities",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
+    "/api/parsing/documents": {
+      "post": {
+        "description": "Parse one document and wait for the result.\n\nSynchronous because the caller is a person watching a spinner: a 5-page PDF\nis a few seconds, and an async task would only add polling. Anything that\nmight take minutes belongs on ``POST /parsing/jobs``.",
+        "operationId": "parse_document_api_parsing_documents_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_parse_document_api_parsing_documents_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_ParsingDocument_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Parse Document",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
+    "/api/parsing/instances": {
+      "get": {
+        "description": "Recent parse runs, newest first, without their outputs.\n\nDisk is the register: one folder per run, written when the run finishes. A\nsecond index would be a second thing to keep consistent for no gain.",
+        "operationId": "list_parsing_instances_api_parsing_instances_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResponse_ParsingInstance_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Parsing Instances",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
+    "/api/parsing/instances/{document}/{run}": {
+      "delete": {
+        "description": "Remove one run: source, answer and extracted pictures.",
+        "operationId": "delete_parsing_instance_api_parsing_instances__document___run__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document",
+            "required": true,
+            "schema": {
+              "title": "Document",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run",
+            "required": true,
+            "schema": {
+              "title": "Run",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Delete Parsing Instance Api Parsing Instances  Document   Run  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Parsing Instance",
+        "tags": [
+          "parsing"
+        ]
+      },
+      "get": {
+        "description": "One stored run, Markdown and JSON included.",
+        "operationId": "get_parsing_instance_api_parsing_instances__document___run__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document",
+            "required": true,
+            "schema": {
+              "title": "Document",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run",
+            "required": true,
+            "schema": {
+              "title": "Run",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_ParsingInstanceDetail_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Parsing Instance",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
+    "/api/parsing/instances/{document}/{run}/source": {
+      "get": {
+        "description": "The file this run parsed, for the viewer's \u539f\u59cb\u6587\u4ef6 tab.",
+        "operationId": "get_parsing_instance_source_api_parsing_instances__document___run__source_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document",
+            "required": true,
+            "schema": {
+              "title": "Document",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run",
+            "required": true,
+            "schema": {
+              "title": "Run",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Parsing Instance Source",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
+    "/api/parsing/jobs": {
+      "post": {
+        "description": "Queue a parse and return immediately.\n\nThe job runs in this process. ``instance`` in the answer tells the poller\nwhich process owns it, so a replica that never saw the job can say so.",
+        "operationId": "submit_parsing_job_api_parsing_jobs_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_submit_parsing_job_api_parsing_jobs_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_ParsingJob_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit Parsing Job",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
+    "/api/parsing/jobs/{task_id}": {
+      "get": {
+        "description": "Poll a job. ``404`` means this process does not know it.",
+        "operationId": "get_parsing_job_api_parsing_jobs__task_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_ParsingJob_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Parsing Job",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
+    "/api/parsing/layout/test": {
+      "post": {
+        "description": "Probe the D-FINE layout service, optionally with unsaved settings.",
+        "operationId": "test_parsing_layout_api_parsing_layout_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_dict_str__Any__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Test Parsing Layout",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
+    "/api/parsing/settings": {
+      "get": {
+        "description": "The effective parsing settings, for the \u6a21\u578b\u8bbe\u7f6e page.\n\nReturned in the shape ``model_backend.describe()`` produces \u2014 mode, the\nthree groups, and a flattened state \u2014 with the vLLM credential removed and\nreported as ``api_key_configured`` instead.",
+        "operationId": "get_parsing_settings_api_parsing_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_dict_str__Any__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Parsing Settings",
+        "tags": [
+          "parsing"
         ]
       }
     },
@@ -13138,7 +14213,7 @@
     },
     "/api/semantic-compilation/status": {
       "get": {
-        "description": "Report whether the semantic layer has been calculated (any Term exists),\nwhether the ingestion service is compiling it right now, when the last\npass completed successfully, and when it last failed.\n\n``running`` needs the live ingestion process, so it goes through the HTTP\nproxy and degrades to ``False`` if that's unreachable. ``last_success_at``\nand ``last_failure_at`` are read straight from the ``semantic_compilation_history``\ntable instead \u2014 a temporarily unreachable ingestion service has no bearing\non Postgres, so history stays visible even while it's down (see\n``auto_ontology/server/ingestion/proxy.py``).",
+        "description": "Report whether the semantic layer has been calculated (any Term exists),\nwhether the ingestion service is compiling it right now, when the last\npass completed successfully, and when it last failed.\n\n``running`` needs the live ingestion process, so it goes through the HTTP\nproxy and degrades to ``False`` if that's unreachable. ``last_success_at``\nand ``last_failure_at`` are read straight from the ``semantic_compilation_history``\ntable instead \u2014 a temporarily unreachable ingestion service has no bearing\non Postgres, so history stays visible even while it's down (see\n``all_ontology/server/ingestion/proxy.py``).",
         "operationId": "semantic_status_api_semantic_compilation_status_get",
         "responses": {
           "200": {
@@ -13202,7 +14277,7 @@
         ]
       },
       "post": {
-        "description": "Create a SqlAttribute with its Sql node, linked to a Term.\n\nThe connector is resolved server-side (never chosen by the client \u2014\nsee ``auto_ontology/connectors/registry.py``). ``owner_id``, when set,\nnames a user or a group that can edit the catalog; omit it to leave the\nattribute unassigned. The caller is stored as ``created_by`` so the side\npanel can name them. Returns 400 when that id cannot be assigned, 409\nwhen the name is already taken, 422 when the target Term does not exist\nor the SQL can't be parsed.",
+        "description": "Create a SqlAttribute with its Sql node, linked to a Term.\n\nThe connector is resolved server-side (never chosen by the client \u2014\nsee ``all_ontology/connectors/registry.py``). ``owner_id``, when set,\nnames a user or a group that can edit the catalog; omit it to leave the\nattribute unassigned. The caller is stored as ``created_by`` so the side\npanel can name them. Returns 400 when that id cannot be assigned, 409\nwhen the name is already taken, 422 when the target Term does not exist\nor the SQL can't be parsed.",
         "operationId": "create_sql_attribute_api_sql_attributes_post",
         "requestBody": {
           "content": {
@@ -13244,7 +14319,7 @@
     },
     "/api/sql-attributes/validate": {
       "post": {
-        "description": "Validate a SQL expression against the catalog.\n\nThe connector is resolved server-side (never chosen by the client \u2014\nsee ``auto_ontology/connectors/registry.py``). Does not create a SqlAttribute.\nReturns 422 when the SQL can't be parsed or doesn't resolve to a\nknown table.",
+        "description": "Validate a SQL expression against the catalog.\n\nThe connector is resolved server-side (never chosen by the client \u2014\nsee ``all_ontology/connectors/registry.py``). Does not create a SqlAttribute.\nReturns 422 when the SQL can't be parsed or doesn't resolve to a\nknown table.",
         "operationId": "validate_sql_attribute_api_sql_attributes_validate_post",
         "requestBody": {
           "content": {
@@ -13419,7 +14494,7 @@
         ]
       },
       "put": {
-        "description": "Replace a SqlAttribute, re-parse SQL, and re-link to a Term.\n\nThe connector is resolved server-side (never chosen by the client \u2014\nsee ``auto_ontology/connectors/registry.py``). Returns 404 when no SqlAttribute\nwith that id exists, 409 on name conflict, 422 when the Term doesn't\nexist or SQL can't be parsed. Returns 403 when the caller may not edit\nthis attribute, the same check as the metadata patch.",
+        "description": "Replace a SqlAttribute, re-parse SQL, and re-link to a Term.\n\nThe connector is resolved server-side (never chosen by the client \u2014\nsee ``all_ontology/connectors/registry.py``). Returns 404 when no SqlAttribute\nwith that id exists, 409 on name conflict, 422 when the Term doesn't\nexist or SQL can't be parsed. Returns 403 when the caller may not edit\nthis attribute, the same check as the metadata patch.",
         "operationId": "update_sql_attribute_api_sql_attributes__attr_id__put",
         "parameters": [
           {

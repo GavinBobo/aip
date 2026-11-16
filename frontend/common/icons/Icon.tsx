@@ -44,6 +44,8 @@ import DiscoverySvg from './svg/discovery.svg';
 import FilterSvg from './svg/filter.svg';
 import RefreshSvg from './svg/refresh.svg';
 import FileSpreadsheetSvg from './svg/file-spreadsheet.svg';
+import EyeSvg from './svg/eye.svg';
+import EyeOffSvg from './svg/eye-off.svg';
 
 export enum IconName {
 	Close = 'close',
@@ -86,6 +88,8 @@ export enum IconName {
 	Filter = 'filter',
 	Refresh = 'refresh',
 	Spreadsheet = 'file-spreadsheet',
+	Eye = 'eye',
+	EyeOff = 'eye-off',
 }
 
 const icons: Record<IconName, FC<SVGProps<SVGSVGElement>>> = {
@@ -129,6 +133,8 @@ const icons: Record<IconName, FC<SVGProps<SVGSVGElement>>> = {
 	[IconName.Filter]: FilterSvg,
 	[IconName.Refresh]: RefreshSvg,
 	[IconName.Spreadsheet]: FileSpreadsheetSvg,
+	[IconName.Eye]: EyeSvg,
+	[IconName.EyeOff]: EyeOffSvg,
 };
 
 export type IconProps = SVGProps<SVGSVGElement> & {

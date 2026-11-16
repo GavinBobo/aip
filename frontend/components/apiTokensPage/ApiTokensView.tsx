@@ -207,7 +207,7 @@ export const ApiTokensView = () => {
 						</h1>
 						<p className="mt-1 text-xs text-secondary dark:text-zinc-400">
 							{t(
-								'Call the Auto Ontology API from scripts without signing in. A token acts as you — it can do exactly what your account can, and nothing more.',
+								'Call the All Ontology API from scripts without signing in. A token acts as you — it can do exactly what your account can, and nothing more.',
 							)}{' '}
 						</p>
 					</div>
@@ -226,7 +226,7 @@ export const ApiTokensView = () => {
 								</h2>
 								<p className="mt-1 text-xs text-body dark:text-zinc-400">
 									{t(
-										'Auto Ontology stores only a hash of it, so this is the one and only time it can be shown. Send it as the',
+										'All Ontology stores only a hash of it, so this is the one and only time it can be shown. Send it as the',
 									)}{' '}
 									<code>{t('x-api-key')}</code> {t('header.')}{' '}
 								</p>
@@ -257,7 +257,7 @@ export const ApiTokensView = () => {
 						icon={IconName.Key}
 						title={t('No API Tokens Yet')}
 						description={t(
-							'Create one to authenticate scripts and scheduled jobs against the Auto Ontology API.',
+							'Create one to authenticate scripts and scheduled jobs against the All Ontology API.',
 						)}
 						variant={EmptyStateVariant.Dashed}
 					/>

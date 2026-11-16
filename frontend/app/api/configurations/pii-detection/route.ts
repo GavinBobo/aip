@@ -9,7 +9,7 @@ import { withPermission } from '@/auth/with-auth';
 import { piiDetectionBody } from './openapi';
 
 // Key/value stored in the `configurations` table. The Python ingestion service
-// reads this same key (see auto_ontology/infra/feature_flags.py) once per ingest
+// reads this same key (see all_ontology/infra/feature_flags.py) once per ingest
 // to decide whether to classify catalog columns and attach the shared PII tag.
 //
 // The flag is opt-IN: an instance that has never touched the toggle does not

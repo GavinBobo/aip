@@ -14,7 +14,7 @@ import { withPermission } from '@/auth/with-auth';
 import { sqlQueryTimeoutBody } from './openapi';
 
 // Key/value stored in the `configurations` table. The text-to-SQL pipeline
-// reads this same key (see auto_ontology/infra/feature_flags.py) before each
+// reads this same key (see all_ontology/infra/feature_flags.py) before each
 // statement it issues, and cancels the statement once it runs this long. An
 // absent row means 30 seconds, which is also what a backend running without
 // this frontend uses.

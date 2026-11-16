@@ -83,12 +83,12 @@ connectionStrings: <CONNECTION-STRINGS>   # optional; or add connections in the 
 ```bash
 helm fetch https://helm.ngc.nvidia.com/nvidia/charts/auto-ontology-<VERSION>.tgz
 helm install auto-ontology auto-ontology-<VERSION>.tgz -f auto-ontology-values.yaml
-kubectl port-forward svc/frontend 3000:3000
+kubectl port-forward svc/frontend 3010:3010
 ```
 
 - `adminEmail` and `adminPassword` are required; the install fails without them.
 - `appUrl` must be the exact origin users browse to. The default
-  (`http://localhost:3000`) only fits the port-forward above; set it for a
+  (`http://localhost:3010`) only fits the port-forward above; set it for a
   NodePort, ingress, or HTTPS origin.
 - `authSecret` is generated on first install and kept across upgrades; set it
   only to share one value across environments.
@@ -129,7 +129,7 @@ login broken.
 
 | Service | URL |
 | --- | --- |
-| UI | http://localhost:3000 |
+| UI | http://localhost:3010 |
 | FastAPI (internal) | http://localhost:3001 |
 | Ingestion | http://localhost:3002 |
 | pgAdmin | http://localhost:5050 |
@@ -184,10 +184,10 @@ configuration as secret storage. Ask before destructive volume deletion.
 ## Auto Ontology is already up — MCP only
 
 Do not reinstall. Point `AUTO_ONTOLOGY_API_URL` at the **web app** (Compose UI is
-`:3000`, not FastAPI `:3001`):
+`:3010`, not FastAPI `:3001`):
 
 ```bash
-AUTO_ONTOLOGY_API_URL=http://localhost:3000 uvx --from "git+https://github.com/NVIDIA/auto-ontology.git#subdirectory=mcp" auto-ontology-mcp
+AUTO_ONTOLOGY_API_URL=http://localhost:3010 uvx --from "git+https://github.com/NVIDIA/auto-ontology.git#subdirectory=mcp" auto-ontology-mcp
 ```
 
 Until the package is on PyPI this needs GitHub credentials that can read
@@ -241,7 +241,7 @@ end-to-end rather than implying it is.
 
 ## Verify
 
-1. UI loads at http://localhost:3000 (or the deployed `APP_URL` / Helm `appUrl`) and shows
+1. UI loads at http://localhost:3010 (or the deployed `APP_URL` / Helm `appUrl`) and shows
    the left navigation. Missing nav → stale cookie; see
    [troubleshooting.md](references/troubleshooting.md).
 2. `GET /api/semantic-compilation/status` on the **web** origin authenticates

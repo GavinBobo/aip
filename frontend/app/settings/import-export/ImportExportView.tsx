@@ -24,12 +24,12 @@ import type { Database } from '@/types/datasources';
 import type { ImportEntityCounts, ImportSummary } from '@/types/modelInterchange';
 
 const FORMAT_LABEL: Record<ModelFormat, string> = {
-	[ModelFormat.AUTO_ONTOLOGY]: 'Native Auto Ontology',
+	[ModelFormat.ALL_ONTOLOGY]: 'Native All Ontology',
 	[ModelFormat.OSSIE]: 'Apache Ossie',
 };
 
 const EXPORT_FILENAME: Record<ModelFormat, string> = {
-	[ModelFormat.AUTO_ONTOLOGY]: 'auto-ontology-model.yaml',
+	[ModelFormat.ALL_ONTOLOGY]: 'all-ontology-model.yaml',
 	[ModelFormat.OSSIE]: 'ossie-model.yaml',
 };
 
@@ -38,9 +38,8 @@ const OSSIE_WITH_ONTOLOGY_FILENAME = 'ossie-model.zip';
 
 const FORMAT_OPTIONS: { value: ModelFormat; description: string }[] = [
 	{
-		value: ModelFormat.AUTO_ONTOLOGY,
-		description:
-			'Everything Auto Ontology stores, including catalog objects Ossie cannot name.',
+		value: ModelFormat.ALL_ONTOLOGY,
+		description: 'Everything All Ontology stores, including catalog objects Ossie cannot name.',
 	},
 	{
 		value: ModelFormat.OSSIE,
@@ -77,7 +76,7 @@ export const ImportExportView = () => {
 	const [databasesError, setDatabasesError] = useState<string | null>(null);
 	const [selectedDbIds, setSelectedDbIds] = useState<Set<string>>(new Set());
 
-	const [exportFormat, setExportFormat] = useState<ModelFormat>(ModelFormat.AUTO_ONTOLOGY);
+	const [exportFormat, setExportFormat] = useState<ModelFormat>(ModelFormat.ALL_ONTOLOGY);
 	const [includeOntology, setIncludeOntology] = useState(true);
 	const [exporting, setExporting] = useState(false);
 	const [exportError, setExportError] = useState<string | null>(null);
@@ -358,7 +357,7 @@ export const ImportExportView = () => {
 				</h2>
 				<p className="mt-1 text-xs text-secondary">
 					{t(
-						'Upload a native Auto Ontology or Apache Ossie model YAML file to write it into the catalog and semantic layer. The format is detected from the file.',
+						'Upload a native All Ontology or Apache Ossie model YAML file to write it into the catalog and semantic layer. The format is detected from the file.',
 					)}{' '}
 				</p>
 
@@ -369,7 +368,7 @@ export const ImportExportView = () => {
 					validate={validateYamlFile}
 					accept=".yaml,.yml"
 					description={t('YAML files (.yaml, .yml)')}
-					aria-label={t('Upload a Auto Ontology or Apache Ossie model YAML file')}
+					aria-label={t('Upload an All Ontology or Apache Ossie model YAML file')}
 					className="mt-4"
 				/>
 

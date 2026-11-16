@@ -1,18 +1,12 @@
-<!--
-SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
-All rights reserved.
-SPDX-License-Identifier: Apache-2.0
--->
+# 文档解析功能移植（OXR → All-Ontology）
 
-# 文档解析功能移植（OXR → Auto-Ontology）
-
-> 任务：把 OXR（SoMark 的文档解析模型）的解析能力搬进 Auto-Ontology，
+> 任务：把 OXR（SoMark 的文档解析模型）的解析能力搬进 All-Ontology，
 > 把本项目原来的"大模型设置"改成"模型设置"，并把 OXR 的模型设置一并放进去。
-> 身份认证用 Auto-Ontology 现有的 better-auth + BFF 权限，不引入 OXR 的 `api_key` 表单参数。
+> 身份认证用 All-Ontology 现有的 better-auth + BFF 权限，不引入 OXR 的 `api_key` 表单参数。
 
 ## 1. 两个项目各有什么
 
-| | OXR（`C:\Users\Administrator\Documents\OXR`） | Auto-Ontology（本仓库） |
+| | OXR（`C:\Users\Administrator\Documents\OXR`） | All-Ontology（本仓库） |
 | --- | --- | --- |
 | 解析能力 | `oxr/` 包：版面分析（D-FINE 外部服务）→ OXR 识别模型（OpenAI 兼容）→ 阅读顺序 → 后处理 → Markdown/JSON | 无 |
 | 服务 | FastAPI，`/parse/sync`、`/parse/async`、`/parse/async_check`、`/settings/model`、`/settings/layout` | FastAPI + Next.js BFF，权限在 BFF 层 |
@@ -21,12 +15,12 @@ SPDX-License-Identifier: Apache-2.0
 | 依赖 | `sopdf`、`opencv-python`、`openai`、`httpx`、`python-multipart` | 已有 fastapi/httpx/openai(经 langchain)，缺 `sopdf`、`opencv-python`、`python-multipart` |
 
 OXR 的 Python 代码约 287 KB，其中真正要搬的是 `config/` `model/` `pipeline/` `utils/` 四块（约 200 KB）；
-`server/`（含 demo 与内存队列）、`cli/` 不搬 —— 服务层由 Auto-Ontology 承担。
+`server/`（含 demo 与内存队列）、`cli/` 不搬 —— 服务层由 All-Ontology 承担。
 
 ## 2. 目标结构
 
 ```
-auto_ontology/parsing/                 # 移植后的解析包（保持 OXR 内部结构，便于对照上游）
+all_ontology/parsing/                 # 移植后的解析包（保持 OXR 内部结构，便于对照上游）
   __init__.py
   config/
     settings.py                        # 静态配置（来自 .env + 默认值）
@@ -38,12 +32,12 @@ auto_ontology/parsing/                 # 移植后的解析包（保持 OXR 内�
     prompts.py
   pipeline/                            # orchestrator / recognition / reading_order / postprocess...
   utils/
-  service.py                           # 新增：把 OXR 的 routes.py 逻辑改写成 Auto-Ontology 的服务层
+  service.py                           # 新增：把 OXR 的 routes.py 逻辑改写成 All-Ontology 的服务层
   router.py                            # 新增：/api/parsing/* 路由
   settings.py                          # 新增：读写 frontend.configurations 的解析设置
 ```
 
-**唯一允许的改动**是 import 路径（`oxr.` → `auto_ontology.parsing.`）和 OXR 的 `settings` 单例改成由本项目的配置注入。
+**唯一允许的改动**是 import 路径（`oxr.` → `all_ontology.parsing.`）和 OXR 的 `settings` 单例改成由本项目的配置注入。
 其余解析逻辑逐行保留，这样上游修 bug 时能直接对照 diff。
 
 ## 3. 认证与权限
@@ -84,6 +78,10 @@ OXR 原来用 `api_key` 表单字段做鉴权，这个字段**不再需要**，�
 | `POST` | `/api/parsing/documents` | 上传一个文档，同步返回 Markdown/JSON 与版面 JSON |
 | `POST` | `/api/parsing/jobs` | 提交异步任务，返回 `task_id` |
 | `GET` | `/api/parsing/jobs/{task_id}` | 查询任务状态与结果 |
+| `GET` | `/api/parsing/instances?limit=50` | 已保存的解析实例，最新在前；列表不带正文 |
+| `GET` | `/api/parsing/instances/{document}/{run}` | 一个实例的完整结果（Markdown/JSON/元数据） |
+| `GET` | `/api/parsing/instances/{document}/{run}/source` | 该实例解析的原始文件 |
+| `DELETE` | `/api/parsing/instances/{document}/{run}` | 删除一个实例（源文件、结果与截取的图片） |
 | `GET` | `/api/parsing/capabilities` | 当前后端模式、是否就绪、支持的元素格式（给前端渲染表单用） |
 | `GET` | `/api/parsing/settings` | 生效中的解析设置（供模型设置页读取，密钥已遮蔽） |
 | `POST` | `/api/parsing/backends/test` | 测试 vLLM / 版面服务连通性（对应 OXR 的 `/settings/model/test`） |
@@ -92,6 +90,13 @@ OXR 原来用 `api_key` 表单字段做鉴权，这个字段**不再需要**，�
 任务存储先用进程内 `MemoryTaskStore`（与 OXR 一致），并显式记录它的边界：
 进程重启即丢失、多副本不共享。需要持久化时再换表（已列为后续项）。
 
+**解析实例**是另一回事，它落在磁盘上而不是进程里：每次解析写在
+`<upload_dir>/<document>/<run>/`，源文件与 `result.json` 放在一起。`run` 是
+`YYYYMMDD-HHMMSS-<6 位十六进制>`，所以同一份文件重复上传是多个实例，不会覆盖别人
+正在看的结果。列表是把这些 `result.json` 按修改时间倒序读出来的，没有第二份索引需要
+保持一致；删除实例就是把那个目录删掉。`document` 与 `run` 都按正则校验，路径穿越
+在进入文件系统之前就被拒绝（有单测）。
+
 ## 6. 前端
 
 | 改动 | 位置 |
@@ -99,20 +104,23 @@ OXR 原来用 `api_key` 表单字段做鉴权，这个字段**不再需要**，�
 | "大模型设置" → "模型设置" | 路由 `settings/llm-settings` → `settings/model-settings`，导航文案、面包屑、i18n |
 | 在模型设置页加"文档解析"分组 | 后端选择（none/vllm/local）、vLLM 参数、版面服务参数、"测试连接"按钮 |
 | 新增"文档解析"页 | 上传（PDF/图片）、选项（输出格式、页眉页脚、公式/表格/图片格式、temperature 等）、进度、结果预览（Markdown 渲染 + JSON 查看 + 下载） |
+| 文档解析页加左侧二级菜单 | "解析实例"（`/parsing`）与"创建批量解析任务"（`/parsing/batch`），样式与设置页一致 |
+| 批量解析 | 一次选多份 PDF/图片，逐份排队、各自轮询进度；完成后可直接打开对应实例 |
+| 实例详情 | `/parsing/instances/{document}/{run}`，Markdown/JSON/元数据/原始文件四个页签，可下载或删除 |
 
 ## 7. 分阶段
 
 | 阶段 | 内容 | 验收 |
 | --- | --- | --- |
-| **P1 后端能力** ✅ | 移植 `config/model/pipeline/utils`，加 `service.py` / `router.py` / `settings.py` / `tasks.py`，补依赖 | 41 个文件移植、`import auto_ontology.parsing.pipeline.orchestrator` 通过；9 个单测；`/api/parsing/capabilities` 200；无后端时 `POST /api/parsing/documents` 返回 503 + OXR 原文 |
+| **P1 后端能力** ✅ | 移植 `config/model/pipeline/utils`，加 `service.py` / `router.py` / `settings.py` / `tasks.py`，补依赖 | 41 个文件移植、`import all_ontology.parsing.pipeline.orchestrator` 通过；9 个单测；`/api/parsing/capabilities` 200；无后端时 `POST /api/parsing/documents` 返回 503 + OXR 原文 |
 | **P2 设置改造** ✅ | 路由改名（`settings/llm-settings` → `settings/model-settings`）、导航与面包屑、OXR 设置分组、测试连接按钮 | 页面读写通过；保存后后端 5 秒内生效（实测 `mode=vllm` → `state=configured`） |
 | **P3 解析页面** ✅ | 上传（拖拽/选择）、选项表单、任务进度、Markdown/JSON/元数据三种预览、下载 .md/.json、失败提示 | 页面可用；**成功路径还差一个真实的识别端点**（见下） |
 | **P4 可选** | 解析结果入库、与 ontology 的术语/表关联、任务持久化、本地 CPU 网关集成 | 按需 |
 
 ### 已完成工作的证据
 
-- `auto_ontology/parsing/` 41 个 `.py`，`ruff check` / `ruff format --check` 干净（`_vendor/xycut_plus_plus.py` 单独豁免，见 `pyproject.toml` 注释）
-- `pytest auto_ontology/parsing` → 9 passed；全量 `pytest auto_ontology dev_tools` → 2692 passed
+- `all_ontology/parsing/` 41 个 `.py`，`ruff check` / `ruff format --check` 干净（`_vendor/xycut_plus_plus.py` 单独豁免，见 `pyproject.toml` 注释）
+- `pytest all_ontology/parsing` → 9 passed；全量 `pytest all_ontology dev_tools` → 2692 passed
 - `GET /api/parsing/capabilities` → 200，`ready:false`（未配置后端时）
 - `POST /api/parsing/documents` → 503 `Model backend is not configured. Open Settings …`
 - `PUT /api/configurations/parsing` → `{"ok":true}`；`GET` 回读 `mode=vllm, state=configured`
@@ -146,7 +154,7 @@ OXR 原来用 `api_key` 表单字段做鉴权，这个字段**不再需要**，�
 
 ### 移植时的机械改动（仅这些）
 
-1. `oxr.` → `auto_ontology.parsing.` 的 import 前缀；
+1. `oxr.` → `all_ontology.parsing.` 的 import 前缀；
 2. `model/backend.py` 的 `PROJECT_ROOT` 从 `parents[2]` 改为 `parents[3]`（包深了一层）；
 3. 设 `settings.model_settings_path` 指向临时目录（数据库才是真相）；
 4. `ruff format`（纯格式，便于对齐本仓库风格；与上游对比请用 `git diff -w`）。

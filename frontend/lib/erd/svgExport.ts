@@ -8,7 +8,6 @@ import {
 	CARD_HEADER_HEIGHT,
 	CARD_ROW_HEIGHT,
 	CARD_WIDTH,
-	cardHeaderHeight,
 	columnPort,
 	columnTop,
 	edgeSides,
@@ -48,10 +47,6 @@ const escapeXml = (value: string) =>
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;')
 		.replace(/"/g, '&quot;');
-
-/** Rough width budget for one line of 9px sans text inside a card. */
-const clipLine = (value: string, max = 44): string =>
-	value.length > max ? `${value.slice(0, max - 1)}…` : value;
 
 export type SvgDiagram = {
 	svg: string;
@@ -95,6 +90,8 @@ export const buildSvgDiagram = (
 	const byId = new Map(nodes.map((node) => [node.id, node]));
 	const parts: string[] = [];
 
+	parts.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="#fafafa"/>`);
+
 	for (const relationship of relationships) {
 		const source = byId.get(relationship.source_node_id);
 		const target = byId.get(relationship.target_node_id);
@@ -125,22 +122,14 @@ export const buildSvgDiagram = (
 
 	for (const node of nodes) {
 		const heightOfNode = nodeHeight(node);
-		const headerHeight = cardHeaderHeight(node);
 		parts.push(
 			`<g transform="translate(${node.x}, ${node.y})">`,
 			`<rect width="${CARD_WIDTH}" height="${heightOfNode}" rx="8" fill="#ffffff" stroke="#d4d4d8"/>`,
-			`<path d="M0 8 a8 8 0 0 1 8 -8 H${CARD_WIDTH - 8} a8 8 0 0 1 8 8 V${headerHeight} H0 Z" fill="#f4f4f5"/>`,
+			`<path d="M0 8 a8 8 0 0 1 8 -8 H${CARD_WIDTH - 8} a8 8 0 0 1 8 8 V${CARD_HEADER_HEIGHT} H0 Z" fill="#f4f4f5"/>`,
 			`<text x="10" y="${CARD_HEADER_HEIGHT / 2 + 4}" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#18181b">${escapeXml(
 				node.name,
 			)}</text>`,
 		);
-		if (!node.collapsed && node.note) {
-			parts.push(
-				`<text x="10" y="${CARD_HEADER_HEIGHT + 2}" font-family="system-ui, sans-serif" font-size="9" fill="#a1a1aa">${escapeXml(
-					clipLine(node.note),
-				)}</text>`,
-			);
-		}
 		if (node.table_id == null) {
 			parts.push(
 				`<text x="${CARD_WIDTH - 10}" y="${CARD_HEADER_HEIGHT / 2 + 4}" text-anchor="end" font-family="system-ui, sans-serif" font-size="9" fill="#b45309">virtual</text>`,
@@ -198,10 +187,6 @@ export const buildSvgDiagram = (
 
 	const svg = [
 		`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
-		// The background is in viewport coordinates. Inside the translated group
-		// it would start at ``padding - minX``, so any node dragged left of (or
-		// above) the origin shifted the sheet and left a blank strip.
-		`<rect x="0" y="0" width="${width}" height="${height}" fill="#fafafa"/>`,
 		`<g transform="translate(${-minX + padding}, ${-minY + padding})">`,
 		...parts,
 		'</g>',

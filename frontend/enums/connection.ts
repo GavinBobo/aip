@@ -165,7 +165,7 @@ export const CONNECTION_FIELDS: Record<ConnectionType, ConnectionField[]> = {
 			label: 'ODBC Driver',
 			placeholder: 'ODBC Driver 18 for SQL Server',
 			optional: true,
-			hint: 'Leave empty to use the newest SQL Server ODBC driver installed on the Auto-Ontology host.',
+			hint: 'Leave empty to use the newest SQL Server ODBC driver installed on the All-Ontology host.',
 		},
 		{
 			key: 'trust_server_certificate',
@@ -315,7 +315,7 @@ export const CONNECTION_FIELDS: Record<ConnectionType, ConnectionField[]> = {
  * Fields offered for every connector, appended after the type-specific ones.
  *
  * Kept separate rather than copied into all eight lists: they are enforced
- * centrally at catalog extraction (`auto_ontology/catalog/table_filter.py`), so
+ * centrally at catalog extraction (`all_ontology/catalog/table_filter.py`), so
  * every connector honours them identically and none may drift.
  */
 export const COMMON_CONNECTION_FIELDS: ConnectionField[] = [

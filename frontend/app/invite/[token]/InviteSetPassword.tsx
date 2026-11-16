@@ -11,6 +11,7 @@ import { authApi } from '@/api/auth';
 import { t } from '@/i18n';
 import { Button } from '@/common/Button';
 import { Icon, IconName } from '@/common/icons';
+import { PasswordInput } from '@/common/PasswordInput';
 import { Size, ButtonTheme } from '@/enums/button';
 import { InvitationKind } from '@/enums/invitation';
 
@@ -75,7 +76,7 @@ export const InviteSetPassword = ({ token, email, kind }: InviteSetPasswordProps
 				<div className="flex items-center gap-2">
 					<Icon name={IconName.NvidiaLogo} className="h-6 w-6" />
 					<span className="text-lg font-semibold text-heading dark:text-zinc-100">
-						{t('Auto Ontology')}{' '}
+						{t('All Ontology')}{' '}
 					</span>
 				</div>
 				{savedWithoutSession ? (
@@ -128,16 +129,15 @@ export const InviteSetPassword = ({ token, email, kind }: InviteSetPasswordProps
 							>
 								{t('Password')}{' '}
 							</label>
-							<input
+							<PasswordInput
 								id="invite-password"
-								type="password"
 								required
 								minLength={MIN_PASSWORD_LENGTH}
 								maxLength={MAX_PASSWORD_LENGTH}
 								autoComplete="new-password"
 								value={password}
 								onChange={(event) => setPassword(event.target.value)}
-								className={inputClass}
+								inputClassName={inputClass}
 							/>
 						</div>
 						<div className="flex flex-col gap-1.5">
@@ -147,16 +147,15 @@ export const InviteSetPassword = ({ token, email, kind }: InviteSetPasswordProps
 							>
 								{t('Confirm password')}{' '}
 							</label>
-							<input
+							<PasswordInput
 								id="invite-password-confirm"
-								type="password"
 								required
 								minLength={MIN_PASSWORD_LENGTH}
 								maxLength={MAX_PASSWORD_LENGTH}
 								autoComplete="new-password"
 								value={confirm}
 								onChange={(event) => setConfirm(event.target.value)}
-								className={inputClass}
+								inputClassName={inputClass}
 							/>
 						</div>
 						{error ? <p className="text-xs text-red-500">{error}</p> : null}

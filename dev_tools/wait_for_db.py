@@ -20,7 +20,7 @@ import time
 
 import psycopg
 
-from auto_ontology.env import load_env
+from all_ontology.env import load_env
 
 
 def main() -> int:
@@ -30,7 +30,7 @@ def main() -> int:
         user=os.environ.get("POSTGRES_USER", "postgres"),
         host=os.environ.get("POSTGRES_HOST", "localhost"),
         port=os.environ.get("POSTGRES_PORT", "5432"),
-        db=os.environ.get("POSTGRES_DATABASE", "auto_ontology"),
+        db=os.environ.get("POSTGRES_DATABASE", "all_ontology"),
     )
     deadline = time.monotonic() + timeout
     last_error: Exception | None = None
@@ -41,7 +41,7 @@ def main() -> int:
                 port=os.environ.get("POSTGRES_PORT", "5432"),
                 user=os.environ.get("POSTGRES_USER", "postgres"),
                 password=os.environ.get("POSTGRES_PASSWORD", ""),
-                dbname=os.environ.get("POSTGRES_DATABASE", "auto_ontology"),
+                dbname=os.environ.get("POSTGRES_DATABASE", "all_ontology"),
                 connect_timeout=3,
             ) as conn:
                 with conn.cursor() as cur:

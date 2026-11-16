@@ -46,7 +46,7 @@ To run a text-to-SQL benchmark such as BIRD, refer to the
 
 | Component           | Technology                                                             | Role                                       | Default port |
 | ------------------- | ---------------------------------------------------------------------- | ------------------------------------------ | ------------ |
-| Frontend            | Next.js 16 (React 19, TypeScript, Tailwind CSS 4), Better Auth, Prisma | Web UI, authentication, API gateway        | 3000         |
+| Frontend            | Next.js 16 (React 19, TypeScript, Tailwind CSS 4), Better Auth, Prisma | Web UI, authentication, API gateway        | 3010         |
 | Backend             | FastAPI (Python 3.12+), LangChain                                      | Chat / NL-to-SQL, catalog, datasource APIs | 3001         |
 | Ingestion worker    | FastAPI (Python 3.12+)                                                 | Ingests tabular data and writes embeddings | 3002         |
 | Postgres + pgvector | Relational Database                                                    | App metadata, the catalog and ontology, vector store | 5432 |
@@ -110,7 +110,7 @@ Microsoft's sample sales database. You need Docker with Compose v2,
    ```dotenv
    DEFAULT_MODELS_API_KEY=nvapi-...
    AUTH_SECRET=<a long random string, e.g. from openssl rand -base64 32>
-   APP_URL=http://localhost:3000
+   APP_URL=http://localhost:3010
    POSTGRES_PASSWORD=<a new password>
    CONNECTION_STRINGS=postgresql://postgres:<the same password>@postgres:5432/wideworldimporters
    AUTO_ONTOLOGY_ADMIN_PASSWORD=<a new password>
@@ -139,7 +139,7 @@ Microsoft's sample sales database. You need Docker with Compose v2,
    docker compose up -d --build
    ```
 
-4. Open <http://localhost:3000> and sign in with `AUTO_ONTOLOGY_ADMIN_EMAIL` and
+4. Open <http://localhost:3010> and sign in with `AUTO_ONTOLOGY_ADMIN_EMAIL` and
    `AUTO_ONTOLOGY_ADMIN_PASSWORD` from `.env`. Go to **Settings → Semantic
    Compilation** and turn it on. Ingestion runs at startup; compilation starts
    immediately and reports **Semantic compilation is ready** when it finishes.
@@ -189,7 +189,7 @@ Microsoft's sample sales database. You need Docker with Compose v2,
    ```
 
 If the UI loads without its left navigation after a restart, the browser is
-holding a stale session cookie. Clear site data for `localhost:3000` and sign in
+holding a stale session cookie. Clear site data for `localhost:3010` and sign in
 again. For other setup failures, see the
 [setup skill's troubleshooting guide](./skills/nvidia-ontology-setup/references/troubleshooting.md).
 
@@ -267,7 +267,7 @@ Use **Settings → Import / Export**, or `POST /api/model/import` and
 
 | Component           | Technology                        | Role                                       | Port |
 | ------------------- | --------------------------------- | ------------------------------------------ | ---- |
-| Frontend            | Next.js, Better Auth, Prisma      | Web UI, authentication, public API gateway | 3000 |
+| Frontend            | Next.js, Better Auth, Prisma      | Web UI, authentication, public API gateway | 3010 |
 | Backend             | FastAPI (Python 3.12+), LangChain | Text-to-SQL agent, catalog, ontology APIs  | 3001 |
 | Ingestion service   | FastAPI (Python 3.12+)            | Ingestion and semantic compilation         | 3002 |
 | MCP server          | FastMCP                           | Read-only agent tools over the public API  | 3003 |
@@ -277,7 +277,7 @@ Use **Settings → Import / Export**, or `POST /api/model/import` and
 Keep ports 3001 and 3002 on a private network. FastAPI trusts the user identity
 the frontend forwards in the `x-auto-ontology-user-id` header, and the ingestion
 service's endpoints (ingest, delete, reset, compile) have no authentication of
-their own. Clients go through the web app on port 3000.
+their own. Clients go through the web app on port 3010.
 
 ## Use it from your agent
 
@@ -297,7 +297,7 @@ call runs with that user's permissions.
 Run the server against your deployment:
 
 ```bash
-AUTO_ONTOLOGY_API_URL=http://localhost:3000 \
+AUTO_ONTOLOGY_API_URL=http://localhost:3010 \
   uvx --from "git+https://github.com/NVIDIA/auto-ontology.git#subdirectory=mcp" auto-ontology-mcp
 ```
 
@@ -347,7 +347,7 @@ server-sent event stream: a `result` event carries the answer, and
 `data: [DONE]` ends the stream.
 
 ```bash
-curl -N http://localhost:3000/api/chat/completions \
+curl -N http://localhost:3010/api/chat/completions \
   -H "x-api-key: $AUTO_ONTOLOGY_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"question": "How many orders shipped last week?"}'
@@ -360,7 +360,7 @@ import os
 import requests
 
 response = requests.post(
-    "http://localhost:3000/api/chat/completions",
+    "http://localhost:3010/api/chat/completions",
     headers={"x-api-key": os.environ["AUTO_ONTOLOGY_API_TOKEN"]},
     json={"question": "How many orders shipped last week?"},
     stream=True,

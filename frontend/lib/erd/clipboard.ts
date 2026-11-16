@@ -13,7 +13,7 @@
 
 import type { ErdCardinality, ErdColumn, ErdIndex } from '@/types/erd';
 
-export const ERD_CLIPBOARD_KEY = 'auto-ontology-erd-clipboard';
+export const ERD_CLIPBOARD_KEY = 'all-ontology-erd-clipboard';
 
 export type ClipboardNode = {
 	name: string;

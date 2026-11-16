@@ -2,4 +2,6 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-export { ParsingView } from './ParsingView';
+export { BatchParsingView } from './BatchParsingView';
+export { ParsingInstanceDetailView } from './ParsingInstanceDetail';
+export { ParsingInstancesView } from './ParsingInstancesView';

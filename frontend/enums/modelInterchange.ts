@@ -2,8 +2,8 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-/** Serialisation dialect of an exchanged model document (see auto_ontology/server/model_interchange/schemas.py). */
+/** Serialisation dialect of an exchanged model document (see all_ontology/server/model_interchange/schemas.py). */
 export enum ModelFormat {
-	AUTO_ONTOLOGY = 'auto_ontology',
+	ALL_ONTOLOGY = 'all_ontology',
 	OSSIE = 'ossie',
 }

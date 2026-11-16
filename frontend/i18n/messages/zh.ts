@@ -201,8 +201,8 @@ export const zh: Record<string, string> = {
 	'Remove tables': '移除多张表',
 
 	// Shared vocabulary
-	'Auto Ontology': 'Auto Ontology',
-	'Auto Ontology Agent': 'Auto Ontology 智能体',
+	'All Ontology': 'All Ontology',
+	'All Ontology Agent': 'All Ontology 智能体',
 	'API token': 'API 令牌',
 	'New Token': '新建令牌',
 	Token: '令牌',
@@ -675,10 +675,10 @@ export const zh: Record<string, string> = {
 	'Invite user': '邀请用户',
 	'Invite by email. Copy the link and send it yourself — they set a password on it. A join invite creates the account; a reset invite only changes the password.':
 		'通过邮箱邀请。复制链接并自行发送 — 对方通过链接设置密码。加入邀请会创建账户；重置邀请仅更改密码。',
-	'Create one to authenticate scripts and scheduled jobs against the Auto Ontology API.':
-		'创建一个令牌，用于脚本和定时任务通过 Auto Ontology API 进行身份认证。',
-	'Call the Auto Ontology API from scripts without signing in. A token acts as you — it can do exactly what your account can, and nothing more.':
-		'无需登录即可从脚本调用 Auto Ontology API。令牌以您的身份行事 — 其权限与您的账户完全相同，不会更多。',
+	'Create one to authenticate scripts and scheduled jobs against the All Ontology API.':
+		'创建一个令牌，用于脚本和定时任务通过 All Ontology API 进行身份认证。',
+	'Call the All Ontology API from scripts without signing in. A token acts as you — it can do exactly what your account can, and nothing more.':
+		'无需登录即可从脚本调用 All Ontology API。令牌以您的身份行事 — 其权限与您的账户完全相同，不会更多。',
 	'Creates a one-time link. Copy it and send it yourself — no email is sent. They set their own password on the link.':
 		'生成一次性链接。请自行复制并发送 — 系统不会发送邮件。对方通过链接设置自己的密码。',
 	'Failed to invite the user.': '邀请用户失败。',
@@ -758,8 +758,8 @@ export const zh: Record<string, string> = {
 	'Authorizing…': '正在授权…',
 	'Authorization Cancelled': '授权已取消',
 	'Could not complete authorization.': '无法完成授权。',
-	'is requesting access to Auto Ontology as your account.':
-		'正在请求以您的账户身份访问 Auto Ontology。',
+	'is requesting access to All Ontology as your account.':
+		'正在请求以您的账户身份访问 All Ontology。',
 	'Requested access': '请求的访问权限',
 	'the MCP client': 'MCP 客户端',
 	Account: '账户',
@@ -780,8 +780,8 @@ export const zh: Record<string, string> = {
 	'Failed to create the token.': '创建令牌失败。',
 	'Failed to revoke the token.': '撤销令牌失败。',
 	'Copy your token now': '立即复制令牌',
-	'Auto Ontology stores only a hash of it, so this is the one and only time it can be shown. Send it as the':
-		'Auto Ontology 仅存储其哈希值，因此这是唯一一次显示该令牌的机会。请将其作为',
+	'All Ontology stores only a hash of it, so this is the one and only time it can be shown. Send it as the':
+		'All Ontology 仅存储其哈希值，因此这是唯一一次显示该令牌的机会。请将其作为',
 	'this token': '此令牌',
 	'will stop working immediately. This cannot be undone.': '将立即失效。此操作无法撤销。',
 	'Revoke Token': '撤销令牌',
@@ -868,16 +868,16 @@ export const zh: Record<string, string> = {
 	'Include Ontology and Mapping': '包含本体与映射',
 	'Download the catalog and semantic layer for the selected databases as a YAML file, or as a .zip when the Ossie ontology is included.':
 		'将所选数据库的目录和语义层下载为 YAML 文件；包含 Ossie 本体时则下载为 .zip。',
-	'Everything Auto Ontology stores, including catalog objects Ossie cannot name.':
-		'Auto Ontology 存储的全部内容，包括 Ossie 无法命名的目录对象。',
+	'Everything All Ontology stores, including catalog objects Ossie cannot name.':
+		'All Ontology 存储的全部内容，包括 Ossie 无法命名的目录对象。',
 	'Open Semantic Interchange model, portable to other Ossie tools.':
 		'Open Semantic Interchange 模型，可移植到其他 Ossie 工具。',
 	'Also exports the terms as an Ossie ontology, with a mapping onto the semantic model, as a .zip of three files.':
 		'同时将术语作为 Ossie 本体导出，并附带到语义模型的映射，打包为包含三个文件的 .zip。',
-	'Upload a native Auto Ontology or Apache Ossie model YAML file to write it into the catalog and semantic layer. The format is detected from the file.':
-		'上传原生的 Auto Ontology 或 Apache Ossie 模型 YAML 文件，将其写入目录和语义层。系统会从文件中检测格式。',
-	'Upload a Auto Ontology or Apache Ossie model YAML file':
-		'上传 Auto Ontology 或 Apache Ossie 模型 YAML 文件',
+	'Upload a native All Ontology or Apache Ossie model YAML file to write it into the catalog and semantic layer. The format is detected from the file.':
+		'上传原生的 All Ontology 或 Apache Ossie 模型 YAML 文件，将其写入目录和语义层。系统会从文件中检测格式。',
+	'Upload an All Ontology or Apache Ossie model YAML file':
+		'上传 All Ontology 或 Apache Ossie 模型 YAML 文件',
 	'Please choose a .yaml or .yml file.': '请选择 .yaml 或 .yml 文件。',
 	'Failed to export model.': '导出模型失败。',
 	'Failed to import model.': '导入模型失败。',
@@ -929,7 +929,7 @@ export const zh: Record<string, string> = {
 	Question: '问题',
 	Timestamp: '时间',
 	'Searched Word': '搜索词',
-	'Search Auto Ontology': '搜索 Auto Ontology',
+	'Search All Ontology': '搜索 All Ontology',
 	'Find terms, attributes, analyses and catalog objects by name, description or synonym.':
 		'按名称、描述或同义词查找术语、属性、分析和目录对象。',
 	"Don't give up, search harder!": '别放弃，再搜一搜！',
@@ -1160,6 +1160,8 @@ export const zh: Record<string, string> = {
 	Position: '位置',
 	'Table Owner': '表所有者',
 	'Auto Generated': '自动生成',
+	'Show password': '显示密码',
+	'Hide password': '隐藏密码',
 	'Term Owner': '术语所有者',
 	'Semantic compilation is running': '语义编译正在运行',
 	'Semantic compilation failed': '语义编译失败',
@@ -1239,6 +1241,48 @@ export const zh: Record<string, string> = {
 	processing: '解析中',
 	success: '已完成',
 	failed: '失败',
+	// Document parsing section: two destinations, list and batch form.
+	'Parsing Instances': '解析实例',
+	'New Batch Task': '创建批量解析任务',
+	'Create Batch Parsing Task': '创建批量解析任务',
+	'Document parsing sections': '文档解析分区',
+	'Expand parsing menu': '展开解析菜单',
+	'Collapse parsing menu': '收起解析菜单',
+	'Queue several PDFs or document images at once. Each file becomes one parsing instance, kept in the list on the left. The recognition and layout endpoints are configured in Model Settings.':
+		'可以一次把多份 PDF 或文档图片加入队列，每份文件都会生成一个解析实例，保存在左侧的解析实例列表里。识别与版面分析的端点在下方的"模型设置"里配置。',
+	'Drop PDFs or images here, or': '把多个 PDF 或图片拖到这里，或',
+	'choose files': '选择文件',
+	Queue: '待解析队列',
+	'Clear the queue': '清空队列',
+	ready: '待解析',
+	submitting: '提交中',
+	'Remove from the queue': '从队列中移除',
+	'Parse documents': '批量解析',
+	'Add documents and press Parse. The result appears here.':
+		'添加文档并点击"批量解析"，结果会显示在这里。',
+	'This document could not be parsed.': '这份文档解析失败。',
+	'Open the instance': '查看解析实例',
+	'Every parse is kept with its source file and answer, newest first. Open one to read the Markdown, the JSON, or the file it came from.':
+		'每次解析都会连同源文件与结果一起保留，最新的排在最前面。点开可以查看 Markdown、JSON 或原始文件。',
+	'Failed to load parsing instances.': '加载解析实例失败。',
+	'Delete {name} and its parsed result? This cannot be undone.':
+		'删除 {name} 及其解析结果？该操作不可撤销。',
+	'Failed to delete the parsing instance.': '删除解析实例失败。',
+	'Loading parsing instances…': '正在加载解析实例…',
+	'No parsing instances yet.': '还没有解析实例。',
+	'Create the first batch task': '创建第一个批量解析任务',
+	'Parsed at': '解析时间',
+	Pages: '页数',
+	Duration: '耗时',
+	Markdown: 'Markdown',
+	Open: '打开',
+	'This parsing instance could not be loaded.': '无法加载该解析实例。',
+	// The backend's own 404 copy, shown verbatim by the detail view.
+	'Instance not found': '解析实例不存在或已被删除。',
+	'This run has no stored result': '这次解析没有保存结果。',
+	'Loading the parsing instance…': '正在加载解析实例…',
+	'{count} pages': '{count} 页',
+	'{count} page': '{count} 页',
 	'Document parsing': '文档解析',
 	'The parser needs two endpoints: a recognition model (vLLM, or the bundled local gateway) and the layout-analysis service. Changes take effect within a few seconds — no restart.':
 		'解析需要两个端点：识别模型（vLLM，或内置的本地网关）和版面分析服务。保存后几秒内生效，无需重启。',

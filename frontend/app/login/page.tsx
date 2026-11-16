@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/common/Button';
 import { Size, ButtonTheme } from '@/enums/button';
 import { Icon, IconName } from '@/common/icons';
+import { PasswordInput } from '@/common/PasswordInput';
 import { SkeletonBlock } from '@/common/Skeleton';
 import { t } from '@/i18n';
 import { authApi, type SsoProvider } from '@/api/auth';
@@ -50,7 +51,7 @@ const LoginForm = () => {
 	const next = params.get('next') || resumeAuthorize(params) || '/chat';
 
 	// The authorize endpoint is a route handler, not a page. Resume it with a
-	// same-origin fetch so a loopback redirect_uri stays on Auto Ontology's thank-you
+	// same-origin fetch so a loopback redirect_uri stays on All Ontology's thank-you
 	// page instead of Chrome following localhost:8787.
 	const goTo = (destination: string) => {
 		if (destination.startsWith('/api/')) {
@@ -179,14 +180,13 @@ const LoginForm = () => {
 				>
 					{t('Password')}{' '}
 				</label>
-				<input
+				<PasswordInput
 					id="password"
-					type="password"
 					autoComplete="current-password"
 					required
 					value={password}
 					onChange={(event) => setPassword(event.target.value)}
-					className={inputClass}
+					inputClassName={inputClass}
 				/>
 			</div>
 
@@ -224,7 +224,7 @@ const LoginPage = () => (
 			<div className="flex items-center gap-2">
 				<Icon name={IconName.NvidiaLogo} className="h-6 w-6" />
 				<span className="text-lg font-semibold text-heading dark:text-zinc-100">
-					{t('Auto Ontology')}{' '}
+					{t('All Ontology')}{' '}
 				</span>
 			</div>
 			<Suspense fallback={<LoginLoading />}>

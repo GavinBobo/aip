@@ -46,10 +46,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
 	title: {
-		default: 'Auto Ontology — NVIDIA',
-		template: 'Auto Ontology - %s',
+		default: 'All Ontology — NVIDIA',
+		template: 'All Ontology - %s',
 	},
-	description: 'NVIDIA Auto Ontology',
+	description: 'NVIDIA All Ontology',
 	icons: {
 		icon: '/favicon.svg',
 	},
@@ -97,7 +97,7 @@ export default async function RootLayout({
 	const isAdmin = session?.user.role === Role.Admin;
 	// Injected at runtime by the Helm chart from the chart version (.Chart.Version).
 	const appVersion = process.env.APP_VERSION;
-	const pathname = (await headers()).get('x-auto-ontology-pathname') ?? '';
+	const pathname = (await headers()).get('x-all-ontology-pathname') ?? '';
 	const showAppChrome = Boolean(session) && !isLoginOrOauthPath(pathname);
 	// Only read where `showAppChrome` holds, which is where there is a session.
 	const userId = session?.user.id ?? '';

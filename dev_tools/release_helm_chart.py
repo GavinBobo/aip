@@ -2,7 +2,7 @@
 # All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-"""Package ``helm/auto-ontology`` and publish it to the NGC Helm chart registry.
+"""Package ``helm/all-ontology`` and publish it to the NGC Helm chart registry.
 
 Publishes ``<org>[/<team>]/<name>:<version>``, served from
 ``https://helm.ngc.nvidia.com/<org>[/<team>]/charts/``.
@@ -19,7 +19,7 @@ or a registry customers can't reach.
 
 Usage (from the repo root)::
 
-    helm lint helm/auto-ontology
+    helm lint helm/all-ontology
     python dev_tools/release_helm_chart.py \\
         --org nvstaging --team gsf --version 1.0.0 --app-version 1.0 [--dry-run]
 
@@ -49,9 +49,9 @@ PUBLISHED_IMAGE_REGISTRY = "nvcr.io/nvidia"
 
 # values.yaml key -> the image release-docker.yml publishes for it.
 CHART_IMAGES = {
-    "backend": "auto-ontology",
-    "ingestion": "auto-ontology",
-    "frontend": "auto-ontology-frontend",
+    "backend": "all-ontology",
+    "ingestion": "all-ontology",
+    "frontend": "all-ontology-frontend",
 }
 
 _NOT_FOUND_EXC = frozenset({"ResourceNotFoundException", "ChartNotFoundException"})
@@ -162,15 +162,15 @@ def main() -> None:
     parser.add_argument(
         "-a", "--app-version", required=True, help="Image tag the chart deploys"
     )
-    parser.add_argument("-n", "--name", default="auto-ontology", help="Chart name")
+    parser.add_argument("-n", "--name", default="all-ontology", help="Chart name")
     parser.add_argument(
-        "--chart-dir", default=str(REPO_ROOT / "helm" / "auto-ontology")
+        "--chart-dir", default=str(REPO_ROOT / "helm" / "all-ontology")
     )
-    parser.add_argument("--display-name", default="NVIDIA Auto Ontology Helm Chart")
+    parser.add_argument("--display-name", default="NVIDIA All Ontology Helm Chart")
     parser.add_argument(
         "-d",
         "--description",
-        default="Auto Ontology: FastAPI backend, ingestion worker, Next.js "
+        default="All Ontology: FastAPI backend, ingestion worker, Next.js "
         "frontend and Postgres (pgvector)",
     )
     parser.add_argument(

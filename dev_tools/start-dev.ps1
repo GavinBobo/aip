@@ -11,7 +11,7 @@ SPDX-License-Identifier: Apache-2.0
 
       1. Postgres            Docker container `postgres` (the only containerised piece)
       2. FastAPI backend     .venv python -m uvicorn, --reload, 127.0.0.1:3001
-      3. Ingestion service   .venv python -m auto_ontology.ingestion_service, 3002
+      3. Ingestion service   .venv python -m all_ontology.ingestion_service, 3002
       4. Next.js frontend    pnpm dev, 3000
 
     Each step waits for the previous one to actually answer before the next
@@ -36,8 +36,12 @@ param(
     [switch]$NoFrontend,
     # Skip the standalone ingestion service.
     [switch]$NoIngestion,
-    # Do not touch Docker; assume Postgres is already reachable.
+    # Do not wait for the database at all (rarely useful).
     [switch]$SkipPostgres,
+    # Start the bundled Postgres container from docker-compose.yml. Off by
+    # default: the database is whatever POSTGRES_* in .env points at, which is
+    # normally an instance this repository does not manage.
+    [switch]$WithDockerPostgres,
     # How long to wait for the backend /health endpoint.
     [int]$HealthTimeoutSec = 240,
     [int]$FrontendTimeoutSec = 300
@@ -77,42 +81,51 @@ if (-not (Test-Path -LiteralPath $python)) {
 }
 
 # --------------------------------------------------------------------------- #
-# 1. Postgres (the only Docker piece)
+# 1. Postgres
+#
+# The database is whatever POSTGRES_* in .env points at. This repository does
+# not own it: in a company setup it is a managed instance, and starting a
+# container would either be pointless or shadow the real one. `-WithDockerPostgres`
+# is the opt-in for the bundled compose service, which is only useful on a
+# machine that has nothing else.
 # --------------------------------------------------------------------------- #
 if ($SkipPostgres) {
-    Write-Warn 'skipping Postgres bootstrap (-SkipPostgres)'
+    Write-Warn 'skipping the database wait (-SkipPostgres)'
 } else {
     Write-Step 'Postgres'
-    if (-not (Test-DockerEngine)) {
-        $desktop = 'C:\Program Files\Docker\Docker\Docker Desktop.exe'
-        if (Test-Path -LiteralPath $desktop) {
-            Write-Warn 'Docker engine is not responding; launching Docker Desktop'
-            Start-Process -FilePath $desktop | Out-Null
-        }
-        $deadline = (Get-Date).AddSeconds(180)
-        while ((Get-Date) -lt $deadline -and -not (Test-DockerEngine)) { Start-Sleep -Seconds 3 }
+    if ($WithDockerPostgres) {
         if (-not (Test-DockerEngine)) {
-            Write-Fail 'Docker engine did not come up within 180s - start Docker Desktop and retry'
+            $desktop = 'C:\Program Files\Docker\Docker\Docker Desktop.exe'
+            if (Test-Path -LiteralPath $desktop) {
+                Write-Warn 'Docker engine is not responding; launching Docker Desktop'
+                Start-Process -FilePath $desktop | Out-Null
+            }
+            $deadline = (Get-Date).AddSeconds(180)
+            while ((Get-Date) -lt $deadline -and -not (Test-DockerEngine)) { Start-Sleep -Seconds 3 }
+            if (-not (Test-DockerEngine)) {
+                Write-Fail 'Docker engine did not come up within 180s - start Docker Desktop and retry'
+                exit 1
+            }
+        }
+
+        & docker compose up -d --wait postgres
+        if ($LASTEXITCODE -ne 0) {
+            Write-Fail 'docker compose up -d --wait postgres failed'
             exit 1
         }
     }
 
-    & docker compose up -d --wait postgres
-    if ($LASTEXITCODE -ne 0) {
-        Write-Fail 'docker compose up -d --wait postgres failed'
-        exit 1
-    }
-
-    # `--wait` only proves the container healthcheck passed; prove the app's own
-    # credentials and target database work before starting anything that reads
-    # the Alembic revision at import time.
+    # Either way, prove the app's own credentials and target database work before
+    # starting anything that reads the Alembic revision at import time. A
+    # `--wait` that only watched a container healthcheck is not that proof.
     & $python -m dev_tools.wait_for_db 180
     if ($LASTEXITCODE -ne 0) {
-        Write-Fail 'Postgres never accepted a connection with the credentials in .env'
-        & docker compose logs --tail 40 postgres
+        Write-Fail 'the database in .env never accepted a connection'
+        Write-Host "  host: $((Get-DotEnvValue -Path (Join-Path $repo '.env') -Key 'POSTGRES_HOST'))" -ForegroundColor DarkGray
+        if ($WithDockerPostgres) { & docker compose logs --tail 40 postgres }
         exit 1
     }
-    Write-Ok 'postgres accepting connections'
+    Write-Ok 'database accepting connections'
 }
 
 # --------------------------------------------------------------------------- #
@@ -142,8 +155,8 @@ if ($backendPid -eq 0) {
         exit 1
     }
     $backend = Start-LoggedProcess -FilePath $python -WorkingDirectory $repo -Name 'backend' -LogDir $logs -Arguments @(
-        '-m', 'uvicorn', 'auto_ontology.server.__main__:create_app',
-        '--factory', '--reload', '--reload-dir', 'auto_ontology',
+        '-m', 'uvicorn', 'all_ontology.server.__main__:create_app',
+        '--factory', '--reload', '--reload-dir', 'all_ontology',
         '--host', '127.0.0.1', '--port', '3001'
     )
     Write-Host "  ..  starting (pid $($backend.Pid)), waiting for $backendUrl" -ForegroundColor DarkGray
@@ -180,7 +193,7 @@ if ($NoIngestion) {
 
     if ($ingestPid -eq 0) {
         $ingest = Start-LoggedProcess -FilePath $python -WorkingDirectory $repo -Name 'ingestion' -LogDir $logs -Arguments @(
-            '-m', 'auto_ontology.ingestion_service'
+            '-m', 'all_ontology.ingestion_service'
         )
         Write-Host "  ..  starting (pid $($ingest.Pid)), waiting for $ingestUrl" -ForegroundColor DarkGray
         if (-not (Wait-HttpStatus -Url $ingestUrl -TimeoutSec 120 -Accept @(200) -ProcessId $ingest.Pid)) {
@@ -268,8 +281,8 @@ $record = [ordered]@{
 }
 $record | ConvertTo-Json | Set-Content -LiteralPath $pidsFile -Encoding utf8
 
-$adminEmail = Get-DotEnvValue -Path (Join-Path $repo '.env') -Key 'AUTO_ONTOLOGY_ADMIN_EMAIL'
-$adminPassword = Get-DotEnvValue -Path (Join-Path $repo '.env') -Key 'AUTO_ONTOLOGY_ADMIN_PASSWORD'
+$adminEmail = Get-DotEnvValue -Path (Join-Path $repo '.env') -Key 'ALL_ONTOLOGY_ADMIN_EMAIL'
+$adminPassword = Get-DotEnvValue -Path (Join-Path $repo '.env') -Key 'ALL_ONTOLOGY_ADMIN_PASSWORD'
 
 Write-Host ''
 Write-Host '  dev stack is up' -ForegroundColor Green

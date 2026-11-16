@@ -5,7 +5,7 @@
 /**
  * Default and bounds of the SQL Query Timeout setting (Settings > Agent
  * Settings). They mirror `DEFAULT_`/`MIN_`/`MAX_SQL_QUERY_TIMEOUT_SECONDS` in
- * `auto_ontology/infra/feature_flags.py`, which reads the stored value before
+ * `all_ontology/infra/feature_flags.py`, which reads the stored value before
  * every statement the text-to-SQL agent issues.
  *
  * Kept free of Prisma and Next-runtime imports: the client settings page and

@@ -12,9 +12,9 @@ const owns = (root: string, pathname: string): boolean =>
  * Returns the nav href that owns `pathname`, or `null` when the path is
  * outside the section.
  *
- * The longest href wins. `/parsing` is both the instances page and the parent
- * segment of `/parsing/batch`, so a plain "does any prefix match" test selects
- * both entries at once; comparing match lengths keeps exactly one active.
+ * The longest href wins. `/parsing` is both the parse page and the parent
+ * segment of `/parsing/instances`, so a plain "does any prefix match" test
+ * selects both entries at once; comparing match lengths keeps one active.
  */
 export const activeSectionHref = (pathname: string, hrefs: readonly string[]): string | null => {
 	const path = stripTrailingSlash(pathname);

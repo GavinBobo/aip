@@ -2,14 +2,10 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
-import { BatchParsingView } from '@/components/parsingPage';
-
-export const metadata: Metadata = {
-	title: 'Create Batch Parsing Task',
-};
-
+// The batch form moved to the section root (/parsing) when the two pages were
+// swapped; keep the old link working for anyone who bookmarked it.
 export default function ParsingBatchPage() {
-	return <BatchParsingView />;
+	redirect('/parsing/instances');
 }

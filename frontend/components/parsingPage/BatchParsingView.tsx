@@ -83,6 +83,10 @@ export const BatchParsingView = () => {
 	const [items, setItems] = useState<BatchItem[]>([]);
 	const [selectedKey, setSelectedKey] = useState<string | null>(null);
 	const [tab, setTab] = useState<'markdown' | 'json' | 'metadata' | 'original'>('markdown');
+	// Comparison mode trades the tabbed answer for the one arrangement that
+	// matters when judging a parse: the source on the left, the Markdown on the
+	// right. It is a view state, so it survives switching files in the queue.
+	const [compare, setCompare] = useState(false);
 	const [dragging, setDragging] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -255,17 +259,65 @@ export const BatchParsingView = () => {
 		selected != null &&
 		(/\.pdf$/i.test(selected.file.name) || selected.file.type === 'application/pdf');
 
+	// The empty, busy and failed states read the same in both layouts; only the
+	// successful answer differs (tabs versus Markdown beside the source).
+	const answerStatus = (
+		<>
+			{selected == null && (
+				<p className="text-secondary dark:text-zinc-500">
+					{t('Add documents and press Parse. The result appears here.')}
+				</p>
+			)}
+			{selected != null &&
+				(selected.phase === 'running' || selected.phase === 'submitting') && (
+					<div className="flex items-center gap-2 text-secondary dark:text-zinc-400">
+						<Spinner />
+						<span>
+							{selected.job?.status === 'queuing'
+								? t('Queued…')
+								: t('Recognising pages…')}
+						</span>
+					</div>
+				)}
+			{selected?.phase === 'failed' && (
+				<div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+					{selected.error ?? t('This document could not be parsed.')}
+					<span className="mt-1 block">
+						<Link className="underline" href="/settings/model-settings">
+							{t('Check Model Settings')}
+						</Link>
+					</span>
+				</div>
+			)}
+		</>
+	);
+
 	return (
 		<div className="flex h-full min-h-0 flex-col overflow-y-auto bg-white dark:bg-zinc-950">
-			<header className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
-				<h1 className="text-base font-semibold text-heading dark:text-zinc-100">
-					{t('Create Batch Parsing Task')}
-				</h1>
-				<p className="mt-1 max-w-3xl text-xs leading-relaxed text-secondary dark:text-zinc-400">
-					{t(
-						'Queue several PDFs or document images at once. Each file becomes one parsing instance, kept in the list on the left. The recognition and layout endpoints are configured in Model Settings.',
-					)}
-				</p>
+			<header className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
+				<div className="min-w-0 flex-1">
+					<h1 className="text-base font-semibold text-heading dark:text-zinc-100">
+						{t('Parsing Examples')}
+					</h1>
+					<p className="mt-1 max-w-3xl text-xs leading-relaxed text-secondary dark:text-zinc-400">
+						{t(
+							'Queue several PDFs or document images at once. Each file becomes one parsing instance, kept under Batch Parsing Tasks. The recognition and layout endpoints are configured in Model Settings.',
+						)}
+					</p>
+				</div>
+				<div className="shrink-0">
+					<Button
+						theme={compare ? ButtonTheme.Outline : ButtonTheme.Secondary}
+						size={Size.SMALL}
+						iconPosition="left"
+						aria-pressed={compare}
+						title={t('Show the original file next to the Markdown')}
+						onClick={() => setCompare((current) => !current)}
+					>
+						<Icon name={IconName.View} className="h-3.5 w-3.5" />
+						{t('Compare mode')}
+					</Button>
+				</div>
 			</header>
 
 			{capabilities != null && !capabilities.ready && (
@@ -277,198 +329,210 @@ export const BatchParsingView = () => {
 				</div>
 			)}
 
-			<div className="grid flex-1 gap-5 p-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
-				<section className="space-y-4">
-					<div
-						onDragOver={(event) => {
-							event.preventDefault();
-							setDragging(true);
-						}}
-						onDragLeave={() => setDragging(false)}
-						onDrop={(event) => {
-							event.preventDefault();
-							setDragging(false);
-							addFiles(event.dataTransfer.files);
-						}}
-						className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors ${
-							dragging
-								? 'border-[#76b900] bg-[#76b900]/5'
-								: 'border-zinc-300 dark:border-zinc-700'
-						}`}
-					>
-						<span className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 text-secondary dark:bg-zinc-800 dark:text-zinc-300">
-							<Icon name={IconName.Spreadsheet} className="h-4 w-4" />
-						</span>
-						<p className="text-xs text-body dark:text-zinc-300">
-							{t('Drop PDFs or images here, or')}{' '}
-							<button
-								type="button"
-								className="text-[#5c9200] underline dark:text-[#a3e635]"
-								onClick={() => inputRef.current?.click()}
-							>
-								{t('choose files')}
-							</button>
-						</p>
-						<input
-							ref={inputRef}
-							type="file"
-							multiple
-							accept=".pdf,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff"
-							className="hidden"
-							onChange={(event) => {
-								addFiles(event.target.files);
-								// Cleared so choosing the same file twice fires `change` again.
-								event.target.value = '';
+			<div
+				className={`grid flex-1 gap-5 p-6 ${
+					compare ? '' : 'lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]'
+				}`}
+			>
+				{!compare && (
+					<section className="space-y-4">
+						<div
+							onDragOver={(event) => {
+								event.preventDefault();
+								setDragging(true);
 							}}
-						/>
-					</div>
-
-					{items.length > 0 && (
-						<div className="space-y-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
-							<div className="flex items-center justify-between">
-								<h2 className="text-xs font-semibold text-heading dark:text-zinc-100">
-									{t('Queue')} · {items.length}
-								</h2>
+							onDragLeave={() => setDragging(false)}
+							onDrop={(event) => {
+								event.preventDefault();
+								setDragging(false);
+								addFiles(event.dataTransfer.files);
+							}}
+							className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors ${
+								dragging
+									? 'border-[#76b900] bg-[#76b900]/5'
+									: 'border-zinc-300 dark:border-zinc-700'
+							}`}
+						>
+							<span className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 text-secondary dark:bg-zinc-800 dark:text-zinc-300">
+								<Icon name={IconName.Spreadsheet} className="h-4 w-4" />
+							</span>
+							<p className="text-xs text-body dark:text-zinc-300">
+								{t('Drop PDFs or images here, or')}{' '}
 								<button
 									type="button"
-									className="text-[11px] text-secondary underline hover:text-heading disabled:opacity-50 dark:text-zinc-400"
-									onClick={() => {
-										setItems([]);
-										showFile(null, null);
-									}}
-									disabled={busy}
+									className="text-[#5c9200] underline dark:text-[#a3e635]"
+									onClick={() => inputRef.current?.click()}
 								>
-									{t('Clear the queue')}
+									{t('choose files')}
 								</button>
-							</div>
-							<ul className="max-h-64 space-y-1 overflow-y-auto">
-								{items.map((item) => (
-									<li key={item.key}>
-										<div
-											className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${
-												item.key === selectedKey
-													? 'bg-[#76b900]/10 ring-1 ring-[#76b900]/30'
-													: 'hover:bg-zinc-50 dark:hover:bg-zinc-800/60'
-											}`}
-										>
-											<button
-												type="button"
-												className="min-w-0 flex-1 text-left"
-												onClick={() => showFile(item.key, item.file)}
+							</p>
+							<input
+								ref={inputRef}
+								type="file"
+								multiple
+								accept=".pdf,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff"
+								className="hidden"
+								onChange={(event) => {
+									addFiles(event.target.files);
+									// Cleared so choosing the same file twice fires `change` again.
+									event.target.value = '';
+								}}
+							/>
+						</div>
+
+						{items.length > 0 && (
+							<div className="space-y-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+								<div className="flex items-center justify-between">
+									<h2 className="text-xs font-semibold text-heading dark:text-zinc-100">
+										{t('Queue')} · {items.length}
+									</h2>
+									<button
+										type="button"
+										className="text-[11px] text-secondary underline hover:text-heading disabled:opacity-50 dark:text-zinc-400"
+										onClick={() => {
+											setItems([]);
+											showFile(null, null);
+										}}
+										disabled={busy}
+									>
+										{t('Clear the queue')}
+									</button>
+								</div>
+								<ul className="max-h-64 space-y-1 overflow-y-auto">
+									{items.map((item) => (
+										<li key={item.key}>
+											<div
+												className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${
+													item.key === selectedKey
+														? 'bg-[#76b900]/10 ring-1 ring-[#76b900]/30'
+														: 'hover:bg-zinc-50 dark:hover:bg-zinc-800/60'
+												}`}
 											>
-												<span className="block truncate text-xs text-body dark:text-zinc-300">
-													{item.file.name}
-												</span>
-												<span className="block truncate text-[10px] text-secondary dark:text-zinc-500">
-													{formatBytes(item.file.size)}
-													{item.error != null ? ` · ${item.error}` : ''}
-												</span>
-											</button>
-											<span
-												className={`rounded px-1.5 py-0.5 text-[10px] ${STATUS_STYLE[item.phase]}`}
-											>
-												{t(
-													item.phase === 'idle'
-														? 'ready'
-														: item.phase === 'submitting'
-															? 'submitting'
-															: item.phase === 'running'
-																? item.job?.status === 'queuing'
-																	? 'queuing'
-																	: 'processing'
-																: item.phase,
-												)}
-											</span>
-											{!busy && (
 												<button
 													type="button"
-													aria-label={t('Remove from the queue')}
-													className="text-secondary hover:text-red-600 dark:text-zinc-500"
-													onClick={() => removeItem(item.key)}
+													className="min-w-0 flex-1 text-left"
+													onClick={() => showFile(item.key, item.file)}
 												>
-													<Icon
-														name={IconName.Close}
-														className="h-3 w-3"
-													/>
+													<span className="block truncate text-xs text-body dark:text-zinc-300">
+														{item.file.name}
+													</span>
+													<span className="block truncate text-[10px] text-secondary dark:text-zinc-500">
+														{formatBytes(item.file.size)}
+														{item.error != null
+															? ` · ${item.error}`
+															: ''}
+													</span>
 												</button>
-											)}
-										</div>
-									</li>
-								))}
-							</ul>
-						</div>
-					)}
+												<span
+													className={`rounded px-1.5 py-0.5 text-[10px] ${STATUS_STYLE[item.phase]}`}
+												>
+													{t(
+														item.phase === 'idle'
+															? 'ready'
+															: item.phase === 'submitting'
+																? 'submitting'
+																: item.phase === 'running'
+																	? item.job?.status === 'queuing'
+																		? 'queuing'
+																		: 'processing'
+																	: item.phase,
+													)}
+												</span>
+												{!busy && (
+													<button
+														type="button"
+														aria-label={t('Remove from the queue')}
+														className="text-secondary hover:text-red-600 dark:text-zinc-500"
+														onClick={() => removeItem(item.key)}
+													>
+														<Icon
+															name={IconName.Close}
+															className="h-3 w-3"
+														/>
+													</button>
+												)}
+											</div>
+										</li>
+									))}
+								</ul>
+							</div>
+						)}
 
-					<div className="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-						<h2 className="text-xs font-semibold text-heading dark:text-zinc-100">
-							{t('Output')}
-						</h2>
-						<div className="flex flex-wrap gap-4 text-xs text-body dark:text-zinc-300">
-							{(capabilities?.output_formats ?? ['markdown', 'json']).map(
-								(format) => (
-									<label key={format} className="flex items-center gap-1.5">
-										<input
-											type="checkbox"
-											checked={outputFormats.includes(format)}
-											onChange={(event) =>
-												setOutputFormats((current) =>
-													event.target.checked
-														? [...current, format]
-														: current.filter((item) => item !== format),
-												)
-											}
-										/>
-										{format}
-									</label>
-								),
-							)}
-							<label className="flex items-center gap-1.5">
-								<input
-									type="checkbox"
-									checked={keepHeaderFooter}
-									onChange={(event) => setKeepHeaderFooter(event.target.checked)}
-								/>
-								{t('Keep header and footer')}
-							</label>
-						</div>
+						<div className="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+							<h2 className="text-xs font-semibold text-heading dark:text-zinc-100">
+								{t('Output')}
+							</h2>
+							<div className="flex flex-wrap gap-4 text-xs text-body dark:text-zinc-300">
+								{(capabilities?.output_formats ?? ['markdown', 'json']).map(
+									(format) => (
+										<label key={format} className="flex items-center gap-1.5">
+											<input
+												type="checkbox"
+												checked={outputFormats.includes(format)}
+												onChange={(event) =>
+													setOutputFormats((current) =>
+														event.target.checked
+															? [...current, format]
+															: current.filter(
+																	(item) => item !== format,
+																),
+													)
+												}
+											/>
+											{format}
+										</label>
+									),
+								)}
+								<label className="flex items-center gap-1.5">
+									<input
+										type="checkbox"
+										checked={keepHeaderFooter}
+										onChange={(event) =>
+											setKeepHeaderFooter(event.target.checked)
+										}
+									/>
+									{t('Keep header and footer')}
+								</label>
+							</div>
 
-						<h2 className="pt-1 text-xs font-semibold text-heading dark:text-zinc-100">
-							{t('Element formats')}
-						</h2>
-						<div className="grid grid-cols-2 gap-2">
-							{Object.entries(capabilities?.element_formats ?? {}).map(
-								([element, values]) => (
-									<label key={element} className="flex flex-col gap-1">
-										<span className="text-[11px] text-secondary dark:text-zinc-400">
-											{element}
-										</span>
-										<select
-											value={elementFormats[element] ?? values[0]}
-											onChange={(event) =>
-												setElementFormats((current) => ({
-													...current,
-													[element]: event.target.value,
-												}))
-											}
-											className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-xs text-body outline-none focus:border-[#76b900] dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300"
-										>
-											{values.map((value) => (
-												<option key={value} value={value}>
-													{ELEMENT_LABELS[element]?.[value] ?? value}
-												</option>
-											))}
-										</select>
-									</label>
-								),
-							)}
-						</div>
+							<h2 className="pt-1 text-xs font-semibold text-heading dark:text-zinc-100">
+								{t('Element formats')}
+							</h2>
+							<div className="grid grid-cols-2 gap-2">
+								{Object.entries(capabilities?.element_formats ?? {}).map(
+									([element, values]) => (
+										<label key={element} className="flex flex-col gap-1">
+											<span className="text-[11px] text-secondary dark:text-zinc-400">
+												{element}
+											</span>
+											<select
+												value={elementFormats[element] ?? values[0]}
+												onChange={(event) =>
+													setElementFormats((current) => ({
+														...current,
+														[element]: event.target.value,
+													}))
+												}
+												className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-xs text-body outline-none focus:border-[#76b900] dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300"
+											>
+												{values.map((value) => (
+													<option key={value} value={value}>
+														{ELEMENT_LABELS[element]?.[value] ?? value}
+													</option>
+												))}
+											</select>
+										</label>
+									),
+								)}
+							</div>
 
-						<h2 className="pt-1 text-xs font-semibold text-heading dark:text-zinc-100">
-							{t('Model parameters (optional)')}
-						</h2>
-						<div className="grid grid-cols-3 gap-2">
-							{(capabilities?.model_options ?? Object.keys(MODEL_OPTION_LABELS)).map(
-								(option) => (
+							<h2 className="pt-1 text-xs font-semibold text-heading dark:text-zinc-100">
+								{t('Model parameters (optional)')}
+							</h2>
+							<div className="grid grid-cols-3 gap-2">
+								{(
+									capabilities?.model_options ?? Object.keys(MODEL_OPTION_LABELS)
+								).map((option) => (
 									<label key={option} className="flex flex-col gap-1">
 										<span className="text-[11px] text-secondary dark:text-zinc-400">
 											{MODEL_OPTION_LABELS[option] ?? option}
@@ -487,49 +551,76 @@ export const BatchParsingView = () => {
 											className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-xs text-body outline-none focus:border-[#76b900] dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300"
 										/>
 									</label>
-								),
-							)}
+								))}
+							</div>
 						</div>
-					</div>
 
-					<div className="flex items-center gap-3">
-						<Button
-							theme={ButtonTheme.Primary}
-							size={Size.REGULAR}
-							loading={busy}
-							disabled={items.length === 0 || busy || outputFormats.length === 0}
-							onClick={() => void start()}
-						>
-							{busy ? t('Parsing…') : t('Parse documents')}
-						</Button>
-					</div>
-				</section>
-
-				<section className="flex min-h-[420px] min-w-0 flex-col rounded-lg border border-zinc-200 dark:border-zinc-700">
-					<div className="flex items-center gap-1 border-b border-zinc-200 px-3 py-2 dark:border-zinc-700">
-						{(
-							[
-								['markdown', 'Markdown'],
-								['json', 'JSON'],
-								['metadata', t('Metadata')],
-								['original', t('Original file')],
-							] as const
-						).map(([key, label]) => (
-							<button
-								key={key}
-								type="button"
-								onClick={() => setTab(key)}
-								className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
-									tab === key
-										? 'bg-[#76b900]/15 font-medium text-heading dark:text-zinc-100'
-										: 'text-secondary hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
-								}`}
+						<div className="flex items-center gap-3">
+							<Button
+								theme={ButtonTheme.Primary}
+								size={Size.REGULAR}
+								loading={busy}
+								disabled={items.length === 0 || busy || outputFormats.length === 0}
+								onClick={() => void start()}
 							>
-								{label}
-							</button>
-						))}
+								{busy ? t('Parsing…') : t('Parse documents')}
+							</Button>
+						</div>
+					</section>
+				)}
+
+				<section
+					className={`flex min-w-0 flex-col rounded-lg border border-zinc-200 dark:border-zinc-700 ${
+						compare ? 'h-[70vh] min-h-[520px]' : 'min-h-[420px]'
+					}`}
+				>
+					<div className="flex items-center gap-1 border-b border-zinc-200 px-3 py-2 dark:border-zinc-700">
+						{!compare &&
+							(
+								[
+									['markdown', 'Markdown'],
+									['json', 'JSON'],
+									['metadata', t('Metadata')],
+									['original', t('Original file')],
+								] as const
+							).map(([key, label]) => (
+								<button
+									key={key}
+									type="button"
+									onClick={() => setTab(key)}
+									className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+										tab === key
+											? 'bg-[#76b900]/15 font-medium text-heading dark:text-zinc-100'
+											: 'text-secondary hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+									}`}
+								>
+									{label}
+								</button>
+							))}
 						<span className="flex-1" />
-						{tab === 'original' && previewUrl != null && (
+						{compare && items.length > 0 && (
+							<select
+								value={selectedKey ?? ''}
+								onChange={(event) => {
+									const item = items.find(
+										(entry) => entry.key === event.target.value,
+									);
+									if (item != null) showFile(item.key, item.file);
+								}}
+								aria-label={t('Document')}
+								className="mr-2 h-7 max-w-[260px] rounded-md border border-zinc-300 bg-white px-2 text-xs text-body outline-none focus:border-[#76b900] dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300"
+							>
+								<option value="" disabled>
+									{t('Choose a document first.')}
+								</option>
+								{items.map((item) => (
+									<option key={item.key} value={item.key}>
+										{item.file.name}
+									</option>
+								))}
+							</select>
+						)}
+						{(compare || tab === 'original') && previewUrl != null && (
 							<a
 								href={previewUrl}
 								target="_blank"
@@ -581,79 +672,97 @@ export const BatchParsingView = () => {
 						)}
 					</div>
 
-					<div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 text-xs text-body dark:text-zinc-300">
-						{selected == null && (
-							<p className="text-secondary dark:text-zinc-500">
-								{t('Add documents and press Parse. The result appears here.')}
-							</p>
-						)}
-						{selected != null &&
-							(selected.phase === 'running' || selected.phase === 'submitting') && (
-								<div className="flex items-center gap-2 text-secondary dark:text-zinc-400">
-									<Spinner />
-									<span>
-										{selected.job?.status === 'queuing'
-											? t('Queued…')
-											: t('Recognising pages…')}
-									</span>
+					{compare ? (
+						<div className="grid min-h-0 flex-1 grid-cols-1 divide-y divide-zinc-200 lg:grid-cols-2 lg:divide-x lg:divide-y-0 dark:divide-zinc-700">
+							<div className="flex min-h-0 flex-col">
+								<div className="border-b border-zinc-200 px-4 py-1.5 text-[11px] font-medium text-secondary dark:border-zinc-700 dark:text-zinc-400">
+									{t('Original file')}
 								</div>
-							)}
-						{selected?.phase === 'failed' && (
-							<div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
-								{selected.error ?? t('This document could not be parsed.')}
-								<span className="mt-1 block">
-									<Link className="underline" href="/settings/model-settings">
-										{t('Check Model Settings')}
-									</Link>
-								</span>
+								<div className="min-h-0 flex-1 overflow-auto p-3">
+									{selected == null || previewUrl == null ? (
+										<p className="text-xs text-secondary dark:text-zinc-500">
+											{t('Choose a document first.')}
+										</p>
+									) : selectedIsPdf ? (
+										// Chrome and Edge render PDFs natively; the browser's own
+										// viewer is what "what does the file look like" means.
+										<iframe
+											src={previewUrl}
+											title={selected.file.name}
+											className="h-full min-h-[420px] w-full rounded-lg border border-zinc-200 dark:border-zinc-700"
+										/>
+									) : (
+										// eslint-disable-next-line @next/next/no-img-element -- a local blob URL, not a remote asset
+										<img
+											src={previewUrl}
+											alt={selected.file.name}
+											className="mx-auto max-w-full rounded-lg border border-zinc-200 dark:border-zinc-700"
+										/>
+									)}
+								</div>
 							</div>
-						)}
-						{selected?.phase === 'success' && tab === 'markdown' && (
-							<MarkdownContent markdown={markdown} />
-						)}
-						{selected?.phase === 'success' && tab === 'json' && (
-							<pre className="overflow-x-auto rounded-lg bg-zinc-900 p-3 text-[11px] leading-relaxed text-zinc-100 dark:bg-black">
-								{JSON.stringify(json ?? {}, null, 2)}
-							</pre>
-						)}
-						{selected?.phase === 'success' && tab === 'metadata' && (
-							<dl className="space-y-1">
-								{Object.entries(metadata).map(([key, value]) => (
-									<div key={key} className="flex gap-2">
-										<dt className="min-w-[140px] text-secondary dark:text-zinc-500">
-											{key}
-										</dt>
-										<dd className="break-all">
-											{typeof value === 'object'
-												? JSON.stringify(value)
-												: String(value)}
-										</dd>
-									</div>
+							<div className="flex min-h-0 flex-col">
+								<div className="border-b border-zinc-200 px-4 py-1.5 text-[11px] font-medium text-secondary dark:border-zinc-700 dark:text-zinc-400">
+									Markdown
+								</div>
+								<div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 text-xs text-body dark:text-zinc-300">
+									{answerStatus}
+									{selected?.phase === 'success' && (
+										<MarkdownContent markdown={markdown} />
+									)}
+								</div>
+							</div>
+						</div>
+					) : (
+						<div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 text-xs text-body dark:text-zinc-300">
+							{answerStatus}
+							{selected?.phase === 'success' && tab === 'markdown' && (
+								<MarkdownContent markdown={markdown} />
+							)}
+							{selected?.phase === 'success' && tab === 'json' && (
+								<pre className="overflow-x-auto rounded-lg bg-zinc-900 p-3 text-[11px] leading-relaxed text-zinc-100 dark:bg-black">
+									{JSON.stringify(json ?? {}, null, 2)}
+								</pre>
+							)}
+							{selected?.phase === 'success' && tab === 'metadata' && (
+								<dl className="space-y-1">
+									{Object.entries(metadata).map(([key, value]) => (
+										<div key={key} className="flex gap-2">
+											<dt className="min-w-[140px] text-secondary dark:text-zinc-500">
+												{key}
+											</dt>
+											<dd className="break-all">
+												{typeof value === 'object'
+													? JSON.stringify(value)
+													: String(value)}
+											</dd>
+										</div>
+									))}
+								</dl>
+							)}
+							{tab === 'original' &&
+								(selected == null || previewUrl == null ? (
+									<p className="text-secondary dark:text-zinc-500">
+										{t('Choose a document first.')}
+									</p>
+								) : selectedIsPdf ? (
+									// Chrome and Edge render PDFs natively; the browser's own
+									// viewer is what "what does the file look like" means.
+									<iframe
+										src={previewUrl}
+										title={selected.file.name}
+										className="h-[70vh] w-full rounded-lg border border-zinc-200 dark:border-zinc-700"
+									/>
+								) : (
+									// eslint-disable-next-line @next/next/no-img-element -- a local blob URL, not a remote asset
+									<img
+										src={previewUrl}
+										alt={selected.file.name}
+										className="max-w-full rounded-lg border border-zinc-200 dark:border-zinc-700"
+									/>
 								))}
-							</dl>
-						)}
-						{tab === 'original' &&
-							(selected == null || previewUrl == null ? (
-								<p className="text-secondary dark:text-zinc-500">
-									{t('Choose a document first.')}
-								</p>
-							) : selectedIsPdf ? (
-								// Chrome and Edge render PDFs natively; the browser's own
-								// viewer is what "what does the file look like" means.
-								<iframe
-									src={previewUrl}
-									title={selected.file.name}
-									className="h-[70vh] w-full rounded-lg border border-zinc-200 dark:border-zinc-700"
-								/>
-							) : (
-								// eslint-disable-next-line @next/next/no-img-element -- a local blob URL, not a remote asset
-								<img
-									src={previewUrl}
-									alt={selected.file.name}
-									className="max-w-full rounded-lg border border-zinc-200 dark:border-zinc-700"
-								/>
-							))}
-					</div>
+						</div>
+					)}
 				</section>
 			</div>
 		</div>

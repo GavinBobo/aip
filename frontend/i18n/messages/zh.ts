@@ -1241,15 +1241,18 @@ export const zh: Record<string, string> = {
 	processing: '解析中',
 	success: '已完成',
 	failed: '失败',
-	// Document parsing section: two destinations, list and batch form.
-	'Parsing Instances': '解析实例',
+	// Document parsing section: two destinations, the parse page and the list.
+	'Parsing Examples': '解析示例',
+	'Compare mode': '对比模式',
+	'Show the original file next to the Markdown': '把原始文件和 Markdown 并排显示',
+	'Batch Parsing Tasks': '批量解析任务',
 	'New Batch Task': '创建批量解析任务',
 	'Create Batch Parsing Task': '创建批量解析任务',
 	'Document parsing sections': '文档解析分区',
 	'Expand parsing menu': '展开解析菜单',
 	'Collapse parsing menu': '收起解析菜单',
-	'Queue several PDFs or document images at once. Each file becomes one parsing instance, kept in the list on the left. The recognition and layout endpoints are configured in Model Settings.':
-		'可以一次把多份 PDF 或文档图片加入队列，每份文件都会生成一个解析实例，保存在左侧的解析实例列表里。识别与版面分析的端点在下方的"模型设置"里配置。',
+	'Queue several PDFs or document images at once. Each file becomes one parsing instance, kept under Batch Parsing Tasks. The recognition and layout endpoints are configured in Model Settings.':
+		'可以一次把多份 PDF 或文档图片加入队列，每份文件都会生成一个解析实例，保存在"创建批量解析任务"里。识别与版面分析的端点在下方的"模型设置"里配置。',
 	'Drop PDFs or images here, or': '把多个 PDF 或图片拖到这里，或',
 	'choose files': '选择文件',
 	Queue: '待解析队列',
@@ -1283,6 +1286,7 @@ export const zh: Record<string, string> = {
 	'Loading the parsing instance…': '正在加载解析实例…',
 	'{count} pages': '{count} 页',
 	'{count} page': '{count} 页',
+	Document: '文档',
 	'Document parsing': '文档解析',
 	'The parser needs two endpoints: a recognition model (vLLM, or the bundled local gateway) and the layout-analysis service. Changes take effect within a few seconds — no restart.':
 		'解析需要两个端点：识别模型（vLLM，或内置的本地网关）和版面分析服务。保存后几秒内生效，无需重启。',

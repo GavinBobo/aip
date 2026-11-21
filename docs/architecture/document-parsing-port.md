@@ -104,7 +104,7 @@ OXR 原来用 `api_key` 表单字段做鉴权，这个字段**不再需要**，�
 | "大模型设置" → "模型设置" | 路由 `settings/llm-settings` → `settings/model-settings`，导航文案、面包屑、i18n |
 | 在模型设置页加"文档解析"分组 | 后端选择（none/vllm/local）、vLLM 参数、版面服务参数、"测试连接"按钮 |
 | 新增"文档解析"页 | 上传（PDF/图片）、选项（输出格式、页眉页脚、公式/表格/图片格式、temperature 等）、进度、结果预览（Markdown 渲染 + JSON 查看 + 下载） |
-| 文档解析页加左侧二级菜单 | "解析实例"（`/parsing`）与"创建批量解析任务"（`/parsing/batch`），样式与设置页一致 |
+| 文档解析页加左侧二级菜单 | "解析示例"（`/parsing`，解析页）与"创建批量解析任务"（`/parsing/instances`，实例列表），样式与设置页一致；`/parsing/batch` 跳转到实例列表 |
 | 批量解析 | 一次选多份 PDF/图片，逐份排队、各自轮询进度；完成后可直接打开对应实例 |
 | 实例详情 | `/parsing/instances/{document}/{run}`，Markdown/JSON/元数据/原始文件四个页签，可下载或删除 |
 

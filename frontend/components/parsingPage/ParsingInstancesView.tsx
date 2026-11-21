@@ -74,7 +74,7 @@ export const ParsingInstancesView = () => {
 			<header className="flex items-start justify-between gap-4 border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
 				<div>
 					<h1 className="text-base font-semibold text-heading dark:text-zinc-100">
-						{t('Parsing Instances')}
+						{t('Batch Parsing Tasks')}
 					</h1>
 					<p className="mt-1 max-w-3xl text-xs leading-relaxed text-secondary dark:text-zinc-400">
 						{t(
@@ -93,7 +93,7 @@ export const ParsingInstancesView = () => {
 						{t('Refresh')}
 					</Button>
 					<Link
-						href="/parsing/batch"
+						href="/parsing"
 						className="inline-flex h-8 items-center rounded-lg bg-[#76b900] px-3 text-xs font-medium text-black transition-colors hover:bg-[#86c900]"
 					>
 						{t('Create Batch Parsing Task')}
@@ -119,7 +119,7 @@ export const ParsingInstancesView = () => {
 							{t('No parsing instances yet.')}
 						</p>
 						<Link
-							href="/parsing/batch"
+							href="/parsing"
 							className="mt-3 inline-block text-xs text-[#5c9200] underline dark:text-[#a3e635]"
 						>
 							{t('Create the first batch task')}

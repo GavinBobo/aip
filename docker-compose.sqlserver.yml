@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
+# All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Local SQL Server 2022 for All-Ontology source-connection testing.
+#   docker compose -f docker-compose.sqlserver.yml up -d
+#   docker exec -it sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "<password>" -C -i /seed/demo.sql
+#
+# The password comes from SQLSERVER_SA_PASSWORD in .env. It must satisfy the
+# SQL Server policy: at least 8 characters and three of upper/lower/digit/symbol.
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    restart: unless-stopped
+    ports:
+      - "${SQLSERVER_PORT:-1433}:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SQLSERVER_SA_PASSWORD}
+      MSSQL_PID: Developer
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      # Seed scripts, applied manually with sqlcmd (see header).
+      - ./deploy/sqlserver:/seed:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' -b -o /dev/null",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  sqlserver_data:

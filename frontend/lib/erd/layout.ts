@@ -2,7 +2,7 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { CARD_WIDTH, nodeHeight } from './geometry';
+import { nodeHeight, nodeWidth } from './geometry';
 import type { ErdNode, ErdRelationship } from '@/types/erd';
 
 const COLUMN_GAP = 120;
@@ -62,13 +62,18 @@ export const layeredLayout = (
 	}
 
 	const placement: Record<string, Placement> = {};
-	for (const [level, column] of [...columns.entries()].sort((a, b) => a[0] - b[0])) {
+	let levelX = ORIGIN;
+	for (const column of [...columns.entries()]
+		.sort((a, b) => a[0] - b[0])
+		.map((entry) => entry[1])) {
 		let y = ORIGIN;
-		const x = ORIGIN + level * (CARD_WIDTH + COLUMN_GAP);
+		let width = 0;
 		for (const node of column.sort((a, b) => a.name.localeCompare(b.name))) {
-			placement[node.id] = { x, y };
+			placement[node.id] = { x: levelX, y };
 			y += nodeHeight(node) + ROW_GAP;
+			width = Math.max(width, nodeWidth(node));
 		}
+		levelX += width + COLUMN_GAP;
 	}
 	return placement;
 };
@@ -77,19 +82,31 @@ export const layeredLayout = (
 export const gridLayout = (nodes: ErdNode[]): Record<string, Placement> => {
 	const columns = Math.max(1, Math.ceil(Math.sqrt(nodes.length)));
 	const placement: Record<string, Placement> = {};
-	let y = ORIGIN;
-	let rowHeight = 0;
+	const widths = Array.from({ length: columns }, () => 0);
+	const heights: number[] = [];
 	nodes.forEach((node, index) => {
-		if (index > 0 && index % columns === 0) {
-			y += rowHeight + ROW_GAP;
-			rowHeight = 0;
-		}
 		const column = index % columns;
+		const row = Math.floor(index / columns);
+		widths[column] = Math.max(widths[column], nodeWidth(node));
+		heights[row] = Math.max(heights[row] ?? 0, nodeHeight(node));
+	});
+	const xOffsets: number[] = [];
+	let x = ORIGIN;
+	for (const width of widths) {
+		xOffsets.push(x);
+		x += width + COLUMN_GAP;
+	}
+	const yOffsets: number[] = [];
+	let y = ORIGIN;
+	for (const height of heights) {
+		yOffsets.push(y);
+		y += height + ROW_GAP;
+	}
+	nodes.forEach((node, index) => {
 		placement[node.id] = {
-			x: ORIGIN + column * (CARD_WIDTH + COLUMN_GAP),
-			y,
+			x: xOffsets[index % columns],
+			y: yOffsets[Math.floor(index / columns)],
 		};
-		rowHeight = Math.max(rowHeight, nodeHeight(node));
 	});
 	return placement;
 };

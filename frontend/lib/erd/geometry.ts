@@ -6,6 +6,8 @@ import type { ErdColumn, ErdNode, ErdViewport } from '@/types/erd';
 
 /** Card metrics shared by the canvas and the hit-testing code. */
 export const CARD_WIDTH = 248;
+export const MIN_CARD_WIDTH = 200;
+export const MAX_CARD_WIDTH = 720;
 export const CARD_HEADER_HEIGHT = 36;
 export const CARD_ROW_HEIGHT = 24;
 /** Extra height a column row grows by when it carries an alias. */
@@ -21,6 +23,14 @@ export type ColumnRef = {
 	nodeId: string;
 	column: string | null;
 };
+
+/** A card's current width, with the canvas's resize limits applied. */
+export const nodeWidth = (node: ErdNode): number =>
+	Math.min(MAX_CARD_WIDTH, Math.max(MIN_CARD_WIDTH, node.width ?? CARD_WIDTH));
+
+/** Clamp a width during a resize drag. */
+export const clampCardWidth = (width: number): number =>
+	Math.min(MAX_CARD_WIDTH, Math.max(MIN_CARD_WIDTH, width));
 
 /** Height of one column row: the name line, plus the alias line when present. */
 export const columnRowHeight = (column: ErdColumn): number =>
@@ -55,7 +65,7 @@ export const columnPort = (node: ErdNode, column: string | null, side: 'left' | 
 		node.collapsed || index < 0
 			? node.y + nodeHeight(node) / 2
 			: node.y + columnTop(node, index) + CARD_ROW_HEIGHT / 2;
-	return { x: side === 'right' ? node.x + CARD_WIDTH : node.x, y };
+	return { x: side === 'right' ? node.x + nodeWidth(node) : node.x, y };
 };
 
 /** Which side to leave from and arrive at, so the curve does not loop back. */
@@ -114,7 +124,7 @@ export const nodesBounds = (nodes: ErdNode[]): Bounds | null => {
 		(bounds, node) => ({
 			minX: Math.min(bounds.minX, node.x),
 			minY: Math.min(bounds.minY, node.y),
-			maxX: Math.max(bounds.maxX, node.x + CARD_WIDTH),
+			maxX: Math.max(bounds.maxX, node.x + nodeWidth(node)),
 			maxY: Math.max(bounds.maxY, node.y + nodeHeight(node)),
 		}),
 		{

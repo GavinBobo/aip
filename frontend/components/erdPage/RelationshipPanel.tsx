@@ -12,9 +12,9 @@ import { t } from '@/i18n';
 import type { ErdCardinality, ErdNode, ErdRelationship } from '@/types/erd';
 
 const CARDINALITIES: { value: ErdCardinality; label: string }[] = [
+	{ value: 'one-to-one', label: '1 : 1' },
 	{ value: 'many-to-one', label: 'N : 1' },
 	{ value: 'one-to-many', label: '1 : N' },
-	{ value: 'one-to-one', label: '1 : 1' },
 	{ value: 'many-to-many', label: 'N : M' },
 ];
 

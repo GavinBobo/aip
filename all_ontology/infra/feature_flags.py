@@ -18,6 +18,7 @@ so existing instances keep profiling after an upgrade that adds the toggle).
 from __future__ import annotations
 
 import logging
+import os
 
 import psycopg
 
@@ -43,6 +44,9 @@ DEFAULT_SQL_QUERY_TIMEOUT_SECONDS = 30
 # treated like junk rather than clamped, so both sides agree on what it means.
 MIN_SQL_QUERY_TIMEOUT_SECONDS = 1
 MAX_SQL_QUERY_TIMEOUT_SECONDS = 3600
+
+#: When true, semantic FK creation must not query the source warehouse.
+PREVENT_SEMANTIC_FK_DB_QUERIES_ENV = "PREVENT_SEMANTIC_FK_DB_QUERIES"
 
 
 def _read_configuration_row(key: str) -> tuple[object, ...] | None:
@@ -102,6 +106,17 @@ def is_distinct_value_probing_enabled() -> bool:
     metered warehouse.
     """
     return read_configuration_flag(DISTINCT_VALUE_PROBING_ENABLED_KEY, default=True)
+
+
+def is_semantic_fk_db_query_prevented() -> bool:
+    """Whether semantic FK work must avoid querying the source warehouse.
+
+    Covers the ascending distinct-value probes on suspected key columns and
+    the join check an inferred FK must pass before it is stored. Unset means
+    allowed; the env var is the escape hatch for a read-only or metered source.
+    """
+    value = os.environ.get(PREVENT_SEMANTIC_FK_DB_QUERIES_ENV, "")
+    return value.strip().lower() in {"true", "1", "yes"}
 
 
 def is_pii_detection_enabled() -> bool:

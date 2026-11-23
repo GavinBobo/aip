@@ -37,6 +37,8 @@ from all_ontology.dal.erd import (  # noqa: E402
     delete_relationship,
     get_canvas,
     get_or_create_canvas,
+    MAX_NODE_WIDTH,
+    MIN_NODE_WIDTH,
     restore_node,
     restore_version,
     update_note,
@@ -191,6 +193,29 @@ def test_moving_a_node_is_persisted(catalog) -> None:
     assert (reread["x"], reread["y"]) == (123.5, 456.25)
 
 
+def test_a_table_width_is_persisted_and_clamped(catalog) -> None:
+    canvas = get_or_create_canvas(catalog["zone"])
+    customers = _node_by_name(canvas, "public.customers")
+
+    resized = update_node(customers["id"], x=None, y=None, collapsed=None, width=360)
+    assert resized is not None
+    assert resized["width"] == 360
+    reread = _node_by_name(get_canvas(catalog["zone"]), "public.customers")
+    assert reread["width"] == 360
+
+    narrow = update_node(customers["id"], x=None, y=None, collapsed=None, width=10)
+    assert narrow is not None and narrow["width"] == MIN_NODE_WIDTH
+    wide = update_node(customers["id"], x=None, y=None, collapsed=None, width=5000)
+    assert wide is not None and wide["width"] == MAX_NODE_WIDTH
+
+    snapshot = get_canvas(catalog["zone"])
+    restored = restore_canvas_state(
+        canvas["id"], snapshot["nodes"], snapshot["relationships"]
+    )
+    assert restored is not None
+    assert _node_by_name(restored, "public.customers")["width"] == MAX_NODE_WIDTH
+
+
 def test_a_canvas_only_table_can_be_edited_in_place(catalog) -> None:
     """drawDB-style table editing: rename and rewrite the columns."""
     canvas = get_or_create_canvas(catalog["zone"])
@@ -278,6 +303,126 @@ def test_clearing_a_column_alias_removes_it(catalog) -> None:
     )
     assert cleared is not None
     assert cleared["columns"][0]["note"] is None
+
+
+def test_a_catalog_table_column_order_is_canvas_only(catalog) -> None:
+    """The card may be reordered without pretending the database changed."""
+    store().query_write(
+        s.catalog_column.insert().values(
+            table_id=catalog["orders"],
+            name="status",
+            data_type="text",
+            ordinal_position=1,
+            is_nullable=True,
+        )
+    )
+    canvas = get_or_create_canvas(catalog["zone"])
+    orders = _node_by_name(canvas, "public.orders")
+    assert [column["name"] for column in orders["columns"]] == [
+        "status",
+        "customer_id",
+    ]
+
+    reordered = update_node(
+        orders["id"],
+        x=None,
+        y=None,
+        collapsed=None,
+        column_order=["customer_id", "status"],
+    )
+    assert reordered is not None
+    assert reordered["column_order"] == ["customer_id", "status"]
+    assert [column["name"] for column in reordered["columns"]] == [
+        "customer_id",
+        "status",
+    ]
+    # Only the display order moved; the catalog's own data is untouched.
+    assert [column["data_type"] for column in reordered["columns"]] == [
+        "bigint",
+        "text",
+    ]
+
+    annotated = update_node(
+        orders["id"],
+        x=None,
+        y=None,
+        collapsed=None,
+        column_notes={"status": "lifecycle"},
+    )
+    assert annotated is not None
+    assert [column["name"] for column in annotated["columns"]] == [
+        "customer_id",
+        "status",
+    ]
+    assert annotated["columns"][1]["note"] == "lifecycle"
+
+    reread = _node_by_name(get_canvas(catalog["zone"]), "public.orders")
+    assert [column["name"] for column in reread["columns"]] == [
+        "customer_id",
+        "status",
+    ]
+
+    snapshot = get_canvas(catalog["zone"])
+    restored = restore_canvas_state(
+        canvas["id"], snapshot["nodes"], snapshot["relationships"]
+    )
+    assert restored is not None
+    restored_orders = _node_by_name(restored, "public.orders")
+    assert [column["name"] for column in restored_orders["columns"]] == [
+        "customer_id",
+        "status",
+    ]
+    assert restored_orders["columns"][1]["note"] == "lifecycle"
+
+
+def test_a_canvas_only_table_can_be_reordered_by_column_name(catalog) -> None:
+    canvas = get_or_create_canvas(catalog["zone"])
+    created = create_node(
+        canvas_id=canvas["id"],
+        name="draft.audit_log",
+        table_id=None,
+        columns=[
+            {"name": "id", "data_type": "uuid", "is_primary_key": True},
+            {"name": "actor", "data_type": "text"},
+            {"name": "created_at", "data_type": "timestamp"},
+        ],
+        x=0,
+        y=0,
+    )
+
+    reordered = update_node(
+        created["id"],
+        x=None,
+        y=None,
+        collapsed=None,
+        column_order=["created_at", "id", "actor"],
+    )
+    assert reordered is not None
+    assert [column["name"] for column in reordered["columns"]] == [
+        "created_at",
+        "id",
+        "actor",
+    ]
+    assert reordered["columns"][1]["is_primary_key"] is True
+
+    edited = update_node(
+        created["id"],
+        x=None,
+        y=None,
+        collapsed=None,
+        columns=[
+            {"name": "actor", "data_type": "text"},
+            {"name": "created_at", "data_type": "timestamp"},
+            {"name": "id", "data_type": "uuid", "is_primary_key": True},
+        ],
+    )
+    assert edited is not None
+    assert edited["column_order"] is None
+    assert [column["name"] for column in edited["columns"]] == [
+        "actor",
+        "created_at",
+        "id",
+    ]
 
 
 def test_column_notes_survive_a_snapshot_restore(catalog) -> None:
@@ -438,6 +583,8 @@ def test_notes_are_stored_moved_and_restored(catalog) -> None:
 
     moved = update_note(note["id"], text="revised", x=99)
     assert moved is not None and moved["x"] == 99 and moved["text"] == "revised"
+    resized = update_note(note["id"], width=320, height=180)
+    assert resized is not None and (resized["width"], resized["height"]) == (320, 180)
 
     snapshot_nodes = [
         {
@@ -450,10 +597,11 @@ def test_notes_are_stored_moved_and_restored(catalog) -> None:
         }
         for n in canvas["nodes"]
     ]
-    restored = restore_canvas_state(canvas["id"], snapshot_nodes, [], [moved])
+    restored = restore_canvas_state(canvas["id"], snapshot_nodes, [], [resized])
     assert restored is not None
     assert [row["id"] for row in restored["notes"]] == [note["id"]]
     assert restored["notes"][0]["text"] == "revised"
+    assert (restored["notes"][0]["width"], restored["notes"][0]["height"]) == (320, 180)
 
     assert delete_note(note["id"]) is True
     assert get_canvas(catalog["zone"])["notes"] == []

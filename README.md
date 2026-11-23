@@ -29,6 +29,15 @@ People use it through a web UI; agents use it through a REST API or the bundled 
 | **Govern** | Zones scope data per team; tags, owners, certification and saved-search rules label what they match; Better Auth provides SSO, invitations, API tokens and role-based access. |
 | **Serve** | A React web UI (English and 中文), a REST API with OpenAPI documents, and a read-only MCP server (`all-ontology-mcp`) with three agent skills for setup, modelling and querying. |
 
+The semantic compiler groups copies of one schema into **term families**
+(`OLD_ROOMS` / `NEW_ROOMS`), verifies inferred foreign keys against each
+column's lowest distinct values, attaches suspected FK columns that resolved
+to nothing, and fills in a business description for any ColumnAttribute that
+still lacks one.
+Columns tagged **PII** are left out of value sampling, and stored values are
+withheld when the tag appears. See
+[`docs/architecture/semantic-quality-1.3.md`](./docs/architecture/semantic-quality-1.3.md).
+
 Four properties are worth calling out, because they are what the code is built around:
 
 - **One database, not a sidecar.** The catalog and the ontology are tables in the same Postgres as the data they describe (Alembic owns the catalog schema, Prisma owns identity), so a backup or a permission change covers both.

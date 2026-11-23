@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 import time
 from typing import Any, Optional
 from urllib.parse import parse_qs, unquote, urlparse
@@ -31,6 +32,11 @@ from all_ontology.connectors.base import SQLDatabase, StatementTimeout
 logger = logging.getLogger(__name__)
 
 DEFAULT_MSSQL_PORT = 1433
+
+# Login timeout for a new connection. An unreachable host otherwise blocks for
+# the driver's default. 30s gives a VPN or an Azure SQL serverless resume room
+# to finish without making an unreachable host hang for minutes.
+DEFAULT_LOGIN_TIMEOUT_S = 30
 
 # ODBC drivers tried in order when the connection does not name one. The
 # Microsoft drivers are versioned and not every host has the newest; the bare
@@ -58,24 +64,127 @@ _SYSTEM_SCHEMAS = ("sys", "INFORMATION_SCHEMA", "guest")
 _MAX_USER_SCHEMA_ID = 16384
 
 
+class MSSQLConnectionError(ValueError):
+    """A connection failure with an operator-actionable explanation."""
+
+
 def _truthy(value: object) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
 def _resolve_driver(configured: str) -> str:
     """Return *configured*, or the newest SQL Server ODBC driver installed."""
+    configured = configured.strip().strip("{}").strip()
     if configured:
+        # Honour an explicit name even when this process cannot enumerate
+        # drivers (some managed ODBC configurations hide the list). The
+        # connection error below still explains how to fix a wrong name.
         return configured
-    installed = set(pyodbc.drivers())
+    installed = list(pyodbc.drivers())
+    installed_by_name = {name.casefold(): name for name in installed}
     for candidate in DRIVER_PREFERENCE:
-        if candidate in installed:
-            return candidate
+        match = installed_by_name.get(candidate.casefold())
+        if match is not None:
+            if candidate in ("SQL Server", "SQL Server Native Client 11.0"):
+                logger.warning(
+                    "Using legacy SQL Server ODBC driver %r. Install 'ODBC "
+                    "Driver 18 for SQL Server' for TLS and current SQL Server "
+                    "features.",
+                    match,
+                )
+            return match
     raise ValueError(
         "No SQL Server ODBC driver found. Install 'ODBC Driver 18 for SQL "
         "Server' (or 17) on the host running All-Ontology, or name an "
         "installed driver in the connection's Driver field. Installed ODBC "
         f"drivers: {sorted(installed) or 'none'}"
     )
+
+
+def _query_option(query: dict[str, list[str]], *names: str) -> str:
+    """Read a query option case- and separator-insensitively.
+
+    People paste SQL Server URLs from other tools, where the option is spelled
+    ``TrustServerCertificate`` or ``trustServerCertificate`` rather than the
+    snake_case form this project emits. Folding case and separators means those
+    URLs keep working instead of silently dropping the TLS setting.
+    """
+    folded = {
+        re.sub(r"[_\-\s]", "", key).casefold(): values[0]
+        for key, values in query.items()
+        if values
+    }
+    for name in names:
+        value = folded.get(re.sub(r"[_\-\s]", "", name).casefold())
+        if value is not None:
+            return value.strip()
+    return ""
+
+
+def _split_host(value: str) -> tuple[str, str, str]:
+    """Split a host field into ``(host, port, instance)``.
+
+    The Host field is allowed to carry the shapes people copy from SQL Server
+    tooling: ``host,1433``, ``host:1433``, ``host\\SQLEXPRESS``, and bracketed
+    IPv6. The normal URL parser only understands the last two when they are
+    written as URL components, so reconcile them here before building ODBC's
+    ``SERVER=`` value.
+    """
+    host = value.strip()
+    if host.casefold().startswith("tcp:"):
+        host = host[4:].strip()
+    port = ""
+    instance = ""
+
+    if host.startswith("["):
+        end = host.find("]")
+        if end != -1:
+            rest = host[end + 1 :].strip()
+            host = host[1:end]
+            if rest.startswith(":") and rest[1:].isdigit():
+                port = rest[1:]
+        return host, port, instance
+
+    if "\\" in host:
+        host, instance = host.split("\\", 1)
+        instance = instance.strip()
+        if "," in instance:
+            name, _, tail = instance.rpartition(",")
+            if name and tail.strip().isdigit():
+                instance, port = name.strip(), tail.strip()
+
+    if "," in host:
+        head, _, tail = host.rpartition(",")
+        if head and tail.strip().isdigit():
+            host, port = head, tail.strip()
+    elif host.count(":") == 1:
+        head, _, tail = host.rpartition(":")
+        if head and tail.isdigit():
+            host, port = head, tail
+
+    return host.strip(), port, instance
+
+
+def _normalize_encrypt(value: str) -> str:
+    """Normalize the encryption switch without weakening an explicit choice."""
+    raw = value.strip().lower()
+    if not raw:
+        return ""
+    aliases = {
+        "1": "yes",
+        "true": "yes",
+        "on": "yes",
+        "0": "no",
+        "false": "no",
+        "off": "no",
+    }
+    normalized = aliases.get(raw, raw)
+    if normalized not in ("yes", "no", "strict", "mandatory", "optional"):
+        raise ValueError(
+            "SQL Server 'encrypt' must be one of yes, no, strict, mandatory, "
+            f"optional, true, or false; got {value!r}"
+        )
+    return normalized
 
 
 def _parse_connection_string(connection_string: str) -> dict[str, Any]:
@@ -102,25 +211,42 @@ def _parse_connection_string(connection_string: str) -> dict[str, Any]:
 
     query = parse_qs(parsed.query)
 
-    def first(key: str) -> str:
-        return (query.get(key, [""])[0] or "").strip()
+    host, embedded_port, embedded_instance = _split_host(parsed.hostname)
+    instance = _query_option(query, "instance", "instance_name") or embedded_instance
+    instance = instance.lstrip("\\").strip()
 
-    encrypt = first("encrypt").lower()
-    if encrypt and encrypt not in ("yes", "no", "strict", "mandatory", "optional"):
-        raise ValueError(
-            "SQL Server 'encrypt' must be one of yes, no, optional, mandatory, "
-            f"strict; got {encrypt!r}"
-        )
+    # A named instance resolves its own dynamic port through SQL Browser. Only
+    # add 1433 for the default instance, or when the caller named a port.
+    port: int | None
+    query_port = _query_option(query, "port")
+    if parsed.port is not None:
+        port = parsed.port
+    elif query_port:
+        try:
+            port = int(query_port)
+        except ValueError as exc:
+            raise ValueError(
+                f"SQL Server port must be an integer; got {query_port!r}"
+            ) from exc
+    elif embedded_port:
+        port = int(embedded_port)
+    elif instance:
+        port = None
+    else:
+        port = DEFAULT_MSSQL_PORT
 
     return {
-        "host": parsed.hostname,
-        "port": parsed.port or DEFAULT_MSSQL_PORT,
+        "host": host,
+        "port": port,
+        "instance": instance,
         "user": unquote(parsed.username or ""),
         "password": unquote(parsed.password or ""),
         "database": database,
-        "driver": unquote(first("driver")),
-        "encrypt": encrypt,
-        "trust_server_certificate": _truthy(first("trust_server_certificate")),
+        "driver": unquote(_query_option(query, "driver")),
+        "encrypt": _normalize_encrypt(_query_option(query, "encrypt")),
+        "trust_server_certificate": _truthy(
+            _query_option(query, "trust_server_certificate", "trustServerCertificate")
+        ),
     }
 
 
@@ -131,7 +257,16 @@ def _brace(value: str) -> str:
 
 def _odbc_connection_string(fields: dict[str, Any]) -> str:
     """Build the semicolon-delimited string ``pyodbc.connect`` expects."""
-    server = f"tcp:{fields['host']},{fields['port']}"
+    host = str(fields["host"])
+    # ODBC needs brackets around an IPv6 literal; without them the commas in
+    # ``tcp:::1,1433`` are parsed as the port separator.
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
+    if fields.get("instance"):
+        host += f"\\{fields['instance']}"
+    if fields.get("port") is not None:
+        host += f",{fields['port']}"
+    server = f"tcp:{host}"
     parts = [
         f"DRIVER={_brace(_resolve_driver(fields['driver']))}",
         f"SERVER={_brace(server)}",
@@ -154,6 +289,127 @@ def _is_timeout(exc: pyodbc.Error) -> bool:
     """Whether *exc* is the query timeout, not some other ODBC failure."""
     sqlstate = str(exc.args[0]).strip().upper() if exc.args else ""
     return sqlstate in _TIMEOUT_SQLSTATES or "timeout expired" in str(exc).lower()
+
+
+def _connection_target(fields: dict[str, Any]) -> str:
+    """Describe the endpoint without credentials, for an error message."""
+    target = str(fields.get("host") or "")
+    if fields.get("instance"):
+        target += f"\\{fields['instance']}"
+    if fields.get("port") is not None:
+        target += f",{fields['port']}"
+    return target or "the configured SQL Server"
+
+
+def _redact_driver_detail(text: str) -> str:
+    """Strip a password if a driver ever echoes the connection string."""
+    return re.sub(
+        r"(?i)\b(?:pwd|password)\s*=\s*(?:\{[^}]*\}|[^;]*)",
+        "PWD=***",
+        text,
+    )
+
+
+def _connection_error_message(exc: pyodbc.Error, fields: dict[str, Any]) -> str:
+    """Turn the driver's terse ODBC error into an operator-facing diagnosis.
+
+    ODBC reports host lookup failures, TLS trust problems, and credential
+    problems through similarly shaped ``OperationalError`` values. The raw
+    message is kept at the end, but the hint names the setting most likely to
+    fix the failure so the connection test is actionable.
+    """
+    detail = _redact_driver_detail(
+        " ".join(str(part) for part in exc.args if part)
+    )
+    text = detail.casefold()
+    sqlstate = str(exc.args[0]).strip().upper() if exc.args else ""
+    target = _connection_target(fields)
+
+    hint = ""
+    if (
+        sqlstate == "IM002"
+        or "data source name not found" in text
+        or "driver not found" in text
+    ):
+        try:
+            installed = sorted(pyodbc.drivers())
+        except Exception:  # pragma: no cover - driver manager unavailable
+            installed = []
+        hint = (
+            "The ODBC driver is missing or its name is wrong. Install "
+            "'ODBC Driver 18 for SQL Server' on the All-Ontology host, or "
+            "select an installed driver in the Driver field. Installed ODBC "
+            f"drivers: {installed or 'none'}."
+        )
+    elif (
+        "certificate chain was issued by an authority that is not trusted" in text
+        or "ssl provider" in text
+        or "certificate verify failed" in text
+        or "self-signed certificate" in text
+        or "protocol version" in text
+        or "tls10" in text
+    ):
+        hint = (
+            "TLS certificate validation failed. For an on-premise server with "
+            "a self-signed certificate, enable 'Trust Server Certificate'. If "
+            "the listener has no TLS at all, set Encryption to 'no'."
+        )
+    elif "cannot open database" in text or "4060" in text:
+        hint = (
+            "The login reached SQL Server but cannot open the named database. "
+            "Check the database name and that the login has CONNECT permission."
+        )
+    elif (
+        "login failed for user" in text
+        or "18456" in text
+        or sqlstate == "28000"
+    ):
+        hint = (
+            "SQL authentication was rejected. Confirm the login exists, mixed "
+            "mode authentication is enabled, and the user/password are correct."
+        )
+    elif (
+        "server was not found or was not accessible" in text
+        or "tcp provider" in text
+        or "connection refused" in text
+        or "could not open a connection" in text
+        or "error: 40" in text
+        or "network-related" in text
+        or sqlstate in ("08001", "08S01")
+    ):
+        hint = (
+            "The host/port is unreachable from the All-Ontology container or "
+            "service. Check the server address, firewall, and port; for a "
+            "named instance either give its fixed port or make SQL Browser "
+            "(UDP 1434) reachable."
+        )
+    elif "timeout expired" in text or "login timeout" in text:
+        hint = (
+            "The login timed out. Check that the host is reachable and that "
+            "the SQL Server is not overloaded."
+        )
+    elif "invalid connection string attribute" in text:
+        if fields.get("encrypt") in ("mandatory", "optional"):
+            hint = (
+                "This ODBC driver does not accept Encrypt=mandatory/optional. "
+                "Use Encrypt=yes or Encrypt=no."
+            )
+        else:
+            hint = (
+                "The selected ODBC driver does not understand one of the "
+                "connection options. Use 'ODBC Driver 18 for SQL Server' for "
+                "Encrypt/TrustServerCertificate support."
+            )
+    else:
+        hint = (
+            "Check the host, port, instance name, credentials, and that the "
+            "SQL Server accepts TCP connections."
+        )
+
+    return (
+        f"Could not connect to SQL Server {target}. {hint} "
+        f"Driver message: {detail or exc.__class__.__name__}"
+    )
 
 
 class MSSQLDatabase(SQLDatabase):
@@ -195,7 +451,16 @@ class MSSQLDatabase(SQLDatabase):
         # ``timeout`` here is the login timeout; the query cap is set on the
         # connection below. Both matter: an unreachable host otherwise blocks
         # for the driver's 15-30s default before any statement runs.
-        connection = pyodbc.connect(self._odbc_string, autocommit=True, timeout=15)
+        try:
+            connection = pyodbc.connect(
+                self._odbc_string,
+                autocommit=True,
+                timeout=DEFAULT_LOGIN_TIMEOUT_S,
+            )
+        except pyodbc.Error as exc:
+            raise MSSQLConnectionError(
+                _connection_error_message(exc, getattr(self, "_fields", {}))
+            ) from exc
         if timeout_s is not None:
             # pyodbc's Connection.timeout is the per-connection query timeout,
             # so a fresh connection per statement keeps the cap from leaking
@@ -237,7 +502,7 @@ class MSSQLDatabase(SQLDatabase):
                 # pyodbc binds positionally with ``?``; ``None`` must be passed
                 # as no parameters rather than an empty sequence, which pyodbc
                 # rejects for statements that have no placeholders.
-                if parameters is None:
+                if not parameters:
                     cursor.execute(sql)
                 else:
                     cursor.execute(sql, parameters)
@@ -383,10 +648,11 @@ class MSSQLDatabase(SQLDatabase):
                 """,
                 [-int(hours)],
             )
-        except pyodbc.Error:
+        except (pyodbc.Error, MSSQLConnectionError) as exc:
             logger.info(
-                "SQL Server query history unavailable for %s (VIEW SERVER STATE?)",
+                "SQL Server query history unavailable for %s: %s",
                 self._database_name,
+                exc,
             )
             return pd.DataFrame(columns=["end_time", "query_text"])
 
@@ -472,7 +738,15 @@ class MSSQLDatabase(SQLDatabase):
         try:
             cursor = connection.cursor()
             try:
-                cursor.execute("SELECT 1")
+                try:
+                    cursor.execute("SELECT 1")
+                except pyodbc.Error as exc:
+                    # The socket can die between connect and the probe. Report
+                    # that the same way as a login failure rather than leaking
+                    # a bare ODBC tuple to the connection-test UI.
+                    raise MSSQLConnectionError(
+                        _connection_error_message(exc, getattr(self, "_fields", {}))
+                    ) from exc
             finally:
                 cursor.close()
         finally:

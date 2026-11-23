@@ -1265,7 +1265,9 @@ class ErdNode(ApiModel):
     x: float
     y: float
     collapsed: bool = False
+    width: float = 248.0
     columns: list[ErdColumn] = Field(default_factory=list)
+    column_order: list[str] | None = None
     indexes: list[ErdIndex] = Field(default_factory=list)
     note: str | None = None
 

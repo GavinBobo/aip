@@ -38,6 +38,7 @@ export type ConnectionFieldKey =
 	| 'host'
 	| 'http_path'
 	| 'port'
+	| 'instance'
 	| 'account'
 	| 'warehouse'
 	| 'user'
@@ -76,6 +77,8 @@ export type ConnectionField = {
 	file?: boolean;
 	/** `accept` attribute for a file field. */
 	fileAccept?: string;
+	/** Rendered as a select; the value is sent as a string. */
+	options?: { value: string; label: string }[];
 	/** Helper text shown under the field. */
 	hint?: string;
 };
@@ -146,7 +149,20 @@ export const CONNECTION_FIELDS: Record<ConnectionType, ConnectionField[]> = {
 	],
 	[ConnectionType.MSSQL]: [
 		{ key: 'host', label: 'Host', placeholder: 'sqlserver.example.com' },
-		{ key: 'port', label: 'Port', placeholder: '1433', optional: true },
+		{
+			key: 'instance',
+			label: 'Instance Name',
+			placeholder: 'SQLEXPRESS',
+			optional: true,
+			hint: 'For a named instance (HOST\\INSTANCE). Leave empty for the default instance. When no fixed port is given, SQL Browser (UDP 1434) must be reachable.',
+		},
+		{
+			key: 'port',
+			label: 'Port',
+			placeholder: '1433',
+			optional: true,
+			hint: 'Defaults to 1433 for the default instance. For a named instance, leave empty unless the administrator gave you a fixed port.',
+		},
 		{
 			key: 'user',
 			label: 'User',
@@ -168,11 +184,23 @@ export const CONNECTION_FIELDS: Record<ConnectionType, ConnectionField[]> = {
 			hint: 'Leave empty to use the newest SQL Server ODBC driver installed on the All-Ontology host.',
 		},
 		{
+			key: 'encrypt',
+			label: 'Encryption',
+			optional: true,
+			options: [
+				{ value: '', label: 'Driver default (encrypted on ODBC 18)' },
+				{ value: 'yes', label: 'Required' },
+				{ value: 'no', label: 'Off' },
+				{ value: 'strict', label: 'Strict (TDS 8.0)' },
+			],
+			hint: 'Choose Off only when the SQL Server listener has no TLS at all. ODBC Driver 18 encrypts by default.',
+		},
+		{
 			key: 'trust_server_certificate',
 			label: 'Trust Server Certificate',
 			optional: true,
 			boolean: true,
-			hint: 'Enable for a server with a self-signed TLS certificate. ODBC Driver 18 encrypts by default and rejects an untrusted certificate.',
+			hint: 'Enable for a server with a self-signed TLS certificate. This skips certificate identity validation, so prefer installing the CA certificate in production.',
 		},
 	],
 	[ConnectionType.SNOWFLAKE]: [

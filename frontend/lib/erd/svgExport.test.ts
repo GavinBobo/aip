@@ -41,6 +41,12 @@ describe('buildSvgDiagram', () => {
 		expect(diagram!.width).toBe(CARD_WIDTH + 80);
 	});
 
+	it('sizes the sheet from a table’s custom width', () => {
+		const diagram = buildSvgDiagram([node({ x: -200, width: 420 })], [], [], 40);
+
+		expect(diagram!.width).toBe(420 + 80);
+	});
+
 	it('draws the table note under the name in grey', () => {
 		const diagram = buildSvgDiagram([node({ note: 'core metrics' })], []);
 

@@ -316,7 +316,7 @@
         "description": "One existing connection, addressed by node id.\n\n``source``/``target`` carry the table names too: the model reasons about\nnames (\"orders \u4e0e customers \u7684\u5173\u7cfb\"), but acts on ids.",
         "properties": {
           "cardinality": {
-            "default": "many-to-one",
+            "default": "one-to-one",
             "title": "Cardinality",
             "type": "string"
           },
@@ -3338,6 +3338,20 @@
             "title": "Collapsed",
             "type": "boolean"
           },
+          "column_order": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column Order"
+          },
           "columns": {
             "items": {
               "$ref": "#/components/schemas/ErdColumn"
@@ -3381,6 +3395,11 @@
               }
             ],
             "title": "Table Id"
+          },
+          "width": {
+            "default": 248.0,
+            "title": "Width",
+            "type": "number"
           },
           "x": {
             "title": "X",
@@ -4943,6 +4962,20 @@
             "title": "Canvas Id",
             "type": "string"
           },
+          "column_order": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column Order"
+          },
           "columns": {
             "anyOf": [
               {
@@ -4999,6 +5032,11 @@
             ],
             "title": "Table Id"
           },
+          "width": {
+            "default": 248.0,
+            "title": "Width",
+            "type": "number"
+          },
           "x": {
             "default": 0.0,
             "title": "X",
@@ -5024,6 +5062,20 @@
             "default": false,
             "title": "Collapsed",
             "type": "boolean"
+          },
+          "column_order": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column Order"
           },
           "columns": {
             "anyOf": [
@@ -5091,6 +5143,11 @@
               }
             ],
             "title": "Table Id"
+          },
+          "width": {
+            "default": 248.0,
+            "title": "Width",
+            "type": "number"
           },
           "x": {
             "default": 0.0,
@@ -6114,7 +6171,7 @@
             "type": "string"
           },
           "cardinality": {
-            "default": "many-to-one",
+            "default": "one-to-one",
             "title": "Cardinality",
             "type": "string"
           },
@@ -6164,7 +6221,7 @@
         "description": "One relationship in a client-side undo/redo snapshot.",
         "properties": {
           "cardinality": {
-            "default": "many-to-one",
+            "default": "one-to-one",
             "title": "Cardinality",
             "type": "string"
           },
@@ -9326,7 +9383,7 @@
         "type": "object"
       },
       "all_ontology__server__erd__schemas__NodeUpdate": {
-        "description": "A move, a collapse, or both. Omitted fields are left alone.",
+        "description": "A move, resize or collapse. Omitted fields are left alone.",
         "properties": {
           "collapsed": {
             "anyOf": [
@@ -9352,6 +9409,20 @@
               }
             ],
             "title": "Column Notes"
+          },
+          "column_order": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column Order"
           },
           "columns": {
             "anyOf": [
@@ -9404,6 +9475,17 @@
               }
             ],
             "title": "Note"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
           },
           "x": {
             "anyOf": [
@@ -11369,7 +11451,7 @@
         ]
       },
       "patch": {
-        "description": "Move or collapse one table card, or annotate its columns.\n\nColumn aliases (``column_notes``) and the table note are accepted for\ncatalog tables as well; renaming or rewriting columns is not.",
+        "description": "Move, resize or collapse one table card, or annotate its columns.\n\nColumn aliases (``column_notes``) and the table note are accepted for\ncatalog tables as well; renaming or rewriting columns is not. A\n``column_order`` and ``width`` are presentation-only and work for either\nkind of table.",
         "operationId": "patch_node_api_erd_nodes__node_id__patch",
         "parameters": [
           {

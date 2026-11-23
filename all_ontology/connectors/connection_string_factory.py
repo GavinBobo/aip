@@ -51,6 +51,48 @@ def _encode_private_key(pem: str) -> str:
     return base64.urlsafe_b64encode(pem.encode()).decode()
 
 
+def _split_mssql_host(value: str) -> tuple[str, str, str]:
+    """Split a SQL Server host field into ``(host, port, instance)``.
+
+    The form offers separate Host, Port, and Instance fields, but people paste
+    ``host,1433`` or ``host\\SQLEXPRESS`` into Host too. Reconciling those here
+    keeps the emitted URL valid instead of producing ``host,1433:1433``.
+    """
+    host = value.strip()
+    if host.casefold().startswith("tcp:"):
+        host = host[4:].strip()
+    port = ""
+    instance = ""
+
+    if host.startswith("["):
+        end = host.find("]")
+        if end != -1:
+            rest = host[end + 1 :].strip()
+            host = host[1:end]
+            if rest.startswith(":") and rest[1:].isdigit():
+                port = rest[1:]
+        return host, port, instance
+
+    if "\\" in host:
+        host, instance = host.split("\\", 1)
+        instance = instance.strip()
+        if "," in instance:
+            name, _, tail = instance.rpartition(",")
+            if name and tail.strip().isdigit():
+                instance, port = name.strip(), tail.strip()
+
+    if "," in host:
+        head, _, tail = host.rpartition(",")
+        if head and tail.strip().isdigit():
+            host, port = head, tail.strip()
+    elif host.count(":") == 1:
+        head, _, tail = host.rpartition(":")
+        if head and tail.isdigit():
+            host, port = head, tail
+
+    return host.strip(), port, instance
+
+
 def build_connection_string(connection: Mapping[str, Any]) -> str:
     """Return a connector connection string for a structured *connection*."""
     conn_type = str(connection.get("type") or "").strip().lower()
@@ -74,11 +116,19 @@ def build_connection_string(connection: Mapping[str, Any]) -> str:
         return f"mysql://{_enc(user)}:{_enc(password)}@{host}:{port}/{_enc(database)}"
 
     if conn_type in ("mssql", "sqlserver"):
-        host = _require(connection, "host").rstrip("/")
+        host, embedded_port, embedded_instance = _split_mssql_host(
+            _require(connection, "host").rstrip("/")
+        )
         user = _require(connection, "user")
         password = _require(connection, "password")
         database = _require(connection, "database")
-        port = str(connection.get("port") or "").strip() or DEFAULT_MSSQL_PORT
+        instance = str(connection.get("instance") or "").strip() or embedded_instance
+        instance = instance.lstrip("\\").strip()
+        port = str(connection.get("port") or "").strip() or embedded_port
+        # A named instance resolves its own dynamic port through SQL Browser, so
+        # do not invent 1433 and point the client at the wrong listener.
+        if not port and not instance:
+            port = DEFAULT_MSSQL_PORT
 
         params = []
         # The ODBC driver is a host dependency: name it explicitly when the
@@ -95,8 +145,14 @@ def build_connection_string(connection: Mapping[str, Any]) -> str:
         encrypt = str(connection.get("encrypt") or "").strip().lower()
         if encrypt:
             params.append(f"encrypt={_enc(encrypt)}")
+        if instance:
+            params.append(f"instance={_enc(instance)}")
 
-        url = f"mssql://{_enc(user)}:{_enc(password)}@{host}:{port}/{_enc(database)}"
+        # IPv6 literals need brackets in the authority component. Everything
+        # else is kept as entered so DNS names and IPv4 addresses stay readable.
+        authority_host = f"[{host}]" if ":" in host else host
+        authority = f"{authority_host}:{port}" if port else authority_host
+        url = f"mssql://{_enc(user)}:{_enc(password)}@{authority}/{_enc(database)}"
         if params:
             url += f"?{'&'.join(params)}"
         return url

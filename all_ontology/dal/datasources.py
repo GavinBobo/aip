@@ -19,7 +19,7 @@ Two shapes recur and are easy to break:
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Sequence
 
 import pandas as pd
 from sqlalchemy import (
@@ -31,6 +31,7 @@ from sqlalchemy import (
     distinct,
     func,
     literal,
+    or_,
     select,
     update,
 )
@@ -536,6 +537,37 @@ def store_column_sample_values(table_id: str, samples: dict[str, list]) -> None:
     _set_column_property(table_id, encoded, "sample_values")
 
 
+#: The ``catalog_column`` fields profiling derives from a column's values.
+VALUE_PROFILE_COLUMNS = (
+    "sample_values",
+    "distinct_values",
+    "is_unique",
+    "distinct_ratio",
+    "format",
+)
+
+
+def clear_column_values(table_id: str, column_names: Sequence[str]) -> None:
+    """Null every value-derived profile field of the named columns.
+
+    The store functions leave a column they are not given untouched, so a
+    profile persisted before a column was withheld from sampling would
+    otherwise outlive that decision. A stale ``is_unique`` matters: it keeps
+    the column a semantic FK target whose values are probed live.
+    """
+    names = list(column_names)
+    if not names:
+        return
+    store().query_write(
+        update(s.catalog_column)
+        .where(
+            s.catalog_column.c.table_id == table_id,
+            s.catalog_column.c.name.in_(names),
+        )
+        .values(dict.fromkeys(VALUE_PROFILE_COLUMNS))
+    )
+
+
 def store_column_uniqueness(table_id: str, uniqueness: dict[str, bool]) -> None:
     """Write ``is_unique`` flags onto a table's columns."""
     if not uniqueness:
@@ -544,6 +576,29 @@ def store_column_uniqueness(table_id: str, uniqueness: dict[str, bool]) -> None:
         table_id,
         {name: bool(flag) for name, flag in uniqueness.items()},
         "is_unique",
+    )
+
+
+def store_column_distinct_values(table_id: str, values: dict[str, list]) -> None:
+    """Write each column's lowest distinct values, JSON-encoded.
+
+    Encoded like ``sample_values`` (types kept, nulls dropped); a column whose
+    list holds nothing is left alone.
+    """
+    encoded = {
+        name: dumped
+        for name, column_values in values.items()
+        if (dumped := dump_sample_values(column_values)) is not None
+    }
+    _set_column_property(table_id, encoded, "distinct_values")
+
+
+def store_column_distinct_ratios(table_id: str, ratios: dict[str, float]) -> None:
+    """Write the measured share of distinct sampled values onto columns."""
+    _set_column_property(
+        table_id,
+        {name: float(ratio) for name, ratio in ratios.items()},
+        "distinct_ratio",
     )
 
 
@@ -892,6 +947,7 @@ def fetch_all_tables_without_term(
             s.catalog_table.c.id,
             s.catalog_table.c.name,
             s.catalog_table.c.description,
+            s.catalog_table.c.pk,
             s.catalog_schema.c.name.label("schema_name"),
         )
         .select_from(_table_join())
@@ -1548,6 +1604,12 @@ def find_table_key_columns(
         select(s.catalog_column.c.name).where(
             s.catalog_column.c.table_id == table_id,
             s.catalog_column.c.is_unique.is_(True),
+            # Callers prove a GROUP BY vacuous or a join 1:1 from this; mostly
+            # distinct (a 0.95 ratio) is not enough for either claim.
+            or_(
+                s.catalog_column.c.distinct_ratio.is_(None),
+                s.catalog_column.c.distinct_ratio >= 1.0,
+            ),
         )
     )
     unique_cols = list(

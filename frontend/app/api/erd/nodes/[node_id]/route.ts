@@ -5,7 +5,7 @@
 import { withPermission } from '@/auth/with-auth';
 import { proxyToBackend } from '@/auth/proxy-backend';
 
-// erdApi.updateNode — move or collapse a card (admin only).
+// erdApi.updateNode — move, resize, collapse or reorder a card (admin only).
 export const PATCH = withPermission({ zone: ['manage'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );

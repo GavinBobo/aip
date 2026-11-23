@@ -281,10 +281,10 @@ def validate_actions(
                     f"{source.name} → {target.name} 的连接列 {missing} 不存在，已忽略"
                 )
                 continue
-            cardinality = (action.cardinality or "many-to-one").strip()
+            cardinality = (action.cardinality or "one-to-one").strip()
             if cardinality not in ERD_CARDINALITIES:
-                warnings.append(f"基数 {cardinality!r} 不合法，改用 many-to-one")
-                cardinality = "many-to-one"
+                warnings.append(f"基数 {cardinality!r} 不合法，改用 one-to-one")
+                cardinality = "one-to-one"
             action.cardinality = cardinality
         elif kind == "delete_relationship":
             if action.relationship_id not in relationships:

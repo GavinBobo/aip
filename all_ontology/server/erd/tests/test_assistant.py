@@ -117,7 +117,7 @@ def test_an_unknown_cardinality_falls_back_rather_than_failing() -> None:
         cardinality="orders-to-customer",
     )
     accepted, warnings = validate_actions([action], _request())
-    assert [item.cardinality for item in accepted] == ["many-to-one"]
+    assert [item.cardinality for item in accepted] == ["one-to-one"]
     assert any("基数" in warning for warning in warnings)
 
 

@@ -164,7 +164,7 @@ select 1 from information_schema.tables
 再把服务起起来，`GET /api/health` 会自己复核第 1 项：
 
 ```json
-{"status":"ok","postgres":{"status":"ok"},"migrations":{"status":"ok","revision":"f5c5755297f7"}}
+{"status":"ok","postgres":{"status":"ok"},"migrations":{"status":"ok","revision":"c4d81a7f2e35"}}
 ```
 
 `migrations.status` 不是 `ok` 时后端会**拒绝启动**并打印需要的命令 —— 这是刻意设计，

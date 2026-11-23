@@ -27,6 +27,7 @@ router = APIRouter()
 #: Spacing used when a DBML document carries no positions (it never does).
 _GRID_X = 360.0
 _GRID_Y = 300.0
+_VIEW_MARGIN = 40.0
 
 
 def _existing_nodes_by_name(canvas: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -79,8 +80,10 @@ def _normalise_import_nodes(
                 "table_id": table_id,
                 "x": float(raw.get("x", 0)),
                 "y": float(raw.get("y", 0)),
+                "width": float(raw.get("width") or 248),
                 "collapsed": bool(raw.get("collapsed", False)),
                 "columns": raw.get("columns") or None,
+                "column_order": raw.get("column_order") or None,
                 "indexes": raw.get("indexes") or None,
                 "note": raw.get("note"),
             }
@@ -121,13 +124,13 @@ def _import_json(
             continue
         source = str(raw.get("source") or "")
         target = str(raw.get("target") or "")
-        cardinality = raw.get("cardinality") or "many-to-one"
+        cardinality = raw.get("cardinality") or "one-to-one"
         if cardinality not in s.ERD_CARDINALITIES:
             warnings.append(
                 f"relationship {source} -> {target}: unknown cardinality "
-                f"{cardinality!r}, using many-to-one"
+                f"{cardinality!r}, using one-to-one"
             )
-            cardinality = "many-to-one"
+            cardinality = "one-to-one"
         relationships.append(
             {
                 "source": source,
@@ -181,17 +184,28 @@ def _import_dbml(
 def _place_nodes(
     nodes: list[dict[str, Any]], canvas: dict[str, Any]
 ) -> list[dict[str, Any]]:
-    """Give a parsed document positions: keep existing ones, grid the rest."""
+    """Give a parsed document positions: keep existing ones, grid the rest.
+
+    A document without positions starts at the top-left of the user's current
+    viewport, not at world origin. A panned canvas used to make an imported SQL
+    file look as if it had vanished far off screen.
+    """
     existing = _existing_nodes_by_name(canvas)
     columns = max(1, int(len(nodes) ** 0.5))
+    viewport = canvas.get("viewport") or {}
+    zoom = float(viewport.get("zoom") or 1.0)
+    if zoom <= 0:
+        zoom = 1.0
+    start_x = (-float(viewport.get("x") or 0.0) + _VIEW_MARGIN) / zoom
+    start_y = (-float(viewport.get("y") or 0.0) + _VIEW_MARGIN) / zoom
     for index, node in enumerate(nodes):
         previous = existing.get(node["name"].lower())
         if previous:
             node["x"] = previous["x"]
             node["y"] = previous["y"]
         else:
-            node["x"] = (index % columns) * _GRID_X
-            node["y"] = (index // columns) * _GRID_Y
+            node["x"] = start_x + (index % columns) * _GRID_X
+            node["y"] = start_y + (index // columns) * _GRID_Y
     return nodes
 
 
@@ -235,8 +249,10 @@ def _merge_into_canvas(
             name=node["name"],
             table_id=node["table_id"],
             columns=node["columns"],
+            column_order=node.get("column_order"),
             x=node["x"],
             y=node["y"],
+            width=node.get("width"),
         )
         created[node["name"].lower()] = created_node["id"]
     for rel in relationships:
@@ -286,12 +302,13 @@ def import_canvas(zone_id: str, body: ImportRequest) -> dict:
         areas = []
     if body.replace:
         payload = dal.replace_canvas_contents(canvas["id"], nodes, relationships)
-        if notes:
-            dal.replace_notes(canvas["id"], notes)
-        if areas:
-            dal.replace_areas(canvas["id"], areas)
-        if notes or areas:
-            payload = dal.get_canvas(zone_id) or payload
+        # Replacing a canvas means replacing all of it: a SQL/DBML document
+        # has no notes or areas, so keeping the previous ones would leave
+        # unrelated objects behind and make the next "fit to view" show a
+        # huge, mostly empty sheet.
+        dal.replace_notes(canvas["id"], notes)
+        dal.replace_areas(canvas["id"], areas)
+        payload = dal.get_canvas(zone_id) or payload
     else:
         _merge_into_canvas(canvas, nodes, relationships, warnings)
         payload = dal.get_canvas(zone_id) or canvas
@@ -357,8 +374,10 @@ def export_canvas(
                         "table_id": node["table_id"],
                         "x": node["x"],
                         "y": node["y"],
+                        "width": node["width"],
                         "collapsed": node["collapsed"],
                         "columns": node["columns"],
+                        "column_order": node["column_order"],
                         "indexes": node["indexes"],
                         "note": node["note"],
                     }

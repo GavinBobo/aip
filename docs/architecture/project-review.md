@@ -26,7 +26,7 @@
 
 | Schema | 归属 | 迁移工具 | 内容 |
 | --- | --- | --- | --- |
-| `public` | 后端 | Alembic（`alembic/versions/`，当前 head `f5c5755297f7`） | 目录元数据、语义层、ER 画布、zone、规则等 |
+| `public` | 后端 | Alembic（`alembic/versions/`，当前 head `c4d81a7f2e35`） | 目录元数据、语义层、ER 画布、zone、规则等 |
 | `frontend` | 前端 | Prisma `db push`（`frontend/prisma/schema.prisma`，`schemas = ["frontend"]`） | 用户、会话、对话、邀请、API token |
 
 两边**互不越界**，Prisma 只声明 `frontend`，Alembic 的 autogenerate 也过滤掉对方的表。任何结构调整都不能打破这条线，否则一方的 `db push` 会尝试删除另一方的表（历史上 `alembic_version` 就差点被 Prisma 删掉）。
@@ -199,7 +199,7 @@ P0/P1 成本最低、收益立竿见影，且不改变运行时行为，先做�
 | 原生启动编排 | `dev_tools/start-dev.ps1` / `stop-dev.ps1` / `dev-common.ps1` | 把"隐式启动顺序"变成可执行脚本：Postgres 真实可连 → 后端 health → 摄取 → 前端 |
 | 数据库就绪探针 | `dev_tools/wait_for_db.py` | 用 `.env` 里的真实凭据连库，替代"容器 healthy 就算就绪" |
 | 端到端自检 | `dev_tools/smoke-test.ps1` | 登录、页面、画布 API 一条命令验证 |
-| 迁移版本对齐 | `helm/all-ontology/values.yaml` | `alembicRevision` 曾落后于 head（`b7d4f2a19c31`），会让 Helm 的 schema gate 永久等待；现在跟随 head `f5c5755297f7` |
+| 迁移版本对齐 | `helm/all-ontology/values.yaml` | `alembicRevision` 曾落后于 head（`b7d4f2a19c31`），会让 Helm 的 schema gate 永久等待；现在每次迁移都在同一提交里同步 bump |
 | ORM 实体层 | `all_ontology/dal/models.py` | 41 张表各一个实体类，中文文档；与 `schema.py` 共用 `Table` 对象，对迁移零影响 |
 | ORM 会话 | `all_ontology/dal/session.py: orm_session()` | 在 `write_transaction()` 内借用同一连接，ORM 与 Core 同事务 |
 | ORM 范式改造 | `all_ontology/dal/zones.py` | 实体 CRUD 改走 ORM，集合查询保持 Core；15 个既有测试原样通过 |

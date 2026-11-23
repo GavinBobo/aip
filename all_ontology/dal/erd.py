@@ -38,6 +38,18 @@ from all_ontology.dal.zones import zone_covers_table
 #: below; the UI's own "auto arrange" refines this.
 GRID_X = 360.0
 GRID_Y = 300.0
+DEFAULT_NODE_WIDTH = 248.0
+MIN_NODE_WIDTH = 200.0
+MAX_NODE_WIDTH = 720.0
+
+
+def _normalize_node_width(raw: Any) -> float:
+    """A card width clamped to the canvas's usable range."""
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return DEFAULT_NODE_WIDTH
+    return min(MAX_NODE_WIDTH, max(MIN_NODE_WIDTH, value))
 
 
 def _canvas_row(zone_id: str) -> dict[str, Any] | None:
@@ -198,7 +210,9 @@ def _node_rows(canvas_id: str) -> list[dict[str, Any]]:
             s.erd_node.c.x,
             s.erd_node.c.y,
             s.erd_node.c.collapsed,
+            s.erd_node.c.width,
             s.erd_node.c.columns,
+            s.erd_node.c.column_order,
             s.erd_node.c.indexes,
             s.erd_node.c.note,
         )
@@ -270,6 +284,42 @@ def _clean_note(raw: Any) -> str | None:
     return text or None
 
 
+def _normalize_column_order(raw: Any) -> list[str] | None:
+    """A de-duplicated list of column names, or ``None`` when empty."""
+    if not isinstance(raw, list):
+        return None
+    order: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        name = str(item).strip() if item is not None else ""
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        order.append(name)
+    return order or None
+
+
+def _ordered_columns(
+    columns: list[dict[str, Any]], order: list[str] | None
+) -> list[dict[str, Any]]:
+    """Apply a saved display order, appending columns the order does not name.
+
+    Unknown names are ignored: a catalog can drop a column without the canvas
+    having to clean up first. Ties keep the incoming catalog/declared order.
+    """
+    if not order:
+        return columns
+    position = {name: index for index, name in enumerate(order)}
+    indexed = list(enumerate(columns))
+    indexed.sort(
+        key=lambda pair: (
+            position.get(str(pair[1].get("name")), len(position) + pair[0]),
+            pair[0],
+        )
+    )
+    return [column for _, column in indexed]
+
+
 def _column_note_map(raw: Any) -> dict[str, str]:
     """``column name -> alias`` from a node's stored ``columns`` blob.
 
@@ -327,6 +377,7 @@ def _catalog_columns(
     catalog: dict[str, list[dict[str, Any]]],
     primary_keys: dict[str, list[str]],
     notes: dict[str, str],
+    order: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     """The catalog's columns for one table, with the modeller's aliases on top."""
     pk = primary_keys.get(table_id, [])
@@ -338,7 +389,7 @@ def _catalog_columns(
             "note": notes.get(column["name"]) or None,
         }
         columns.append(item)
-    return columns
+    return _ordered_columns(columns, order)
 
 
 def _normalize_indexes(raw: Any) -> list[dict[str, Any]]:
@@ -378,6 +429,7 @@ def _node_payload(
     diagram-only node keeps the whole column list it declared.
     """
     table_id = row["table_id"]
+    column_order = _normalize_column_order(row.get("column_order"))
     if table_id:
         if catalog is None or primary_keys is None:
             catalog, primary_keys = _columns_by_table([table_id])
@@ -386,9 +438,12 @@ def _node_payload(
             catalog,
             primary_keys,
             _column_note_map(row.get("columns")),
+            column_order,
         )
     else:
-        columns = _normalize_virtual_columns(row.get("columns"))
+        columns = _ordered_columns(
+            _normalize_virtual_columns(row.get("columns")), column_order
+        )
     return {
         "id": row["id"],
         "table_id": table_id,
@@ -396,7 +451,9 @@ def _node_payload(
         "x": float(row["x"]),
         "y": float(row["y"]),
         "collapsed": bool(row["collapsed"]),
+        "width": _normalize_node_width(row.get("width")),
         "columns": columns,
+        "column_order": column_order,
         "indexes": _normalize_indexes(row.get("indexes")),
         "note": row.get("note"),
     }
@@ -544,13 +601,15 @@ def update_node(
     x: float | None,
     y: float | None,
     collapsed: bool | None,
+    width: float | None = None,
     name: str | None = None,
     columns: list[dict[str, Any]] | None = None,
+    column_order: list[str] | None = None,
     column_notes: dict[str, Any] | None = None,
     indexes: list[dict[str, Any]] | None = None,
     note: str | None = None,
 ) -> dict[str, Any] | None:
-    """Move, collapse, or edit one node. Unspecified fields are left alone.
+    """Move, resize, collapse, or edit one node. Unspecified fields are left alone.
 
     Only diagram-only tables may be renamed or have their columns rewritten:
     a catalog-backed node mirrors the source database, and editing it here
@@ -560,6 +619,10 @@ def update_node(
     ``column_notes`` is the exception: a per-column alias is documentation
     rather than schema, so it is accepted on either kind of node. On a
     catalog-backed node it is the only way to attach a note to a column.
+
+    ``column_order`` is also presentation-only and accepted on either kind of
+    node: a catalog table keeps its real schema while the card draws columns in
+    the order the modeller chose.
     """
     values: dict[str, Any] = {}
     if x is not None:
@@ -568,6 +631,8 @@ def update_node(
         values["y"] = float(y)
     if collapsed is not None:
         values["collapsed"] = collapsed
+    if width is not None:
+        values["width"] = _normalize_node_width(width)
     # A note is documentation, not schema, so it is allowed on either kind of
     # node — unlike a rename or a column rewrite.
     if note is not None:
@@ -575,6 +640,7 @@ def update_node(
     if (
         name is not None
         or columns is not None
+        or column_order is not None
         or column_notes is not None
         or indexes is not None
     ):
@@ -599,6 +665,14 @@ def update_node(
             values["name"] = trimmed
         if columns is not None:
             values["columns"] = columns
+            # A rewritten column list is already in the order the editor drew.
+            # Drop a display order from an earlier drag unless this same call
+            # explicitly supplies a new one, so renamed columns cannot be
+            # rearranged by a stale list of names.
+            if column_order is None:
+                values["column_order"] = None
+        if column_order is not None:
+            values["column_order"] = _normalize_column_order(column_order)
         if column_notes is not None:
             # Aliases land in the same JSONB blob the virtual columns use; on a
             # catalog node only the `note` key of each entry is ever read.
@@ -614,7 +688,9 @@ def update_node(
         s.erd_node.c.x,
         s.erd_node.c.y,
         s.erd_node.c.collapsed,
+        s.erd_node.c.width,
         s.erd_node.c.columns,
+        s.erd_node.c.column_order,
         s.erd_node.c.indexes,
         s.erd_node.c.note,
     )
@@ -638,8 +714,10 @@ def create_node(
     columns: list[dict[str, Any]] | None,
     x: float,
     y: float,
+    width: float | None = None,
     indexes: list[dict[str, Any]] | None = None,
     note: str | None = None,
+    column_order: list[str] | None = None,
 ) -> dict[str, Any]:
     """Add a node by hand — a virtual table, or a table the zone does not cover."""
     rows = store().query_write(
@@ -650,7 +728,9 @@ def create_node(
             name=name,
             x=float(x),
             y=float(y),
+            width=_normalize_node_width(width),
             columns=columns or None,
+            column_order=_normalize_column_order(column_order),
             indexes=_normalize_indexes(indexes) or None,
             note=note,
         )
@@ -661,7 +741,9 @@ def create_node(
             s.erd_node.c.x,
             s.erd_node.c.y,
             s.erd_node.c.collapsed,
+            s.erd_node.c.width,
             s.erd_node.c.columns,
+            s.erd_node.c.column_order,
             s.erd_node.c.indexes,
             s.erd_node.c.note,
         )
@@ -703,7 +785,9 @@ def restore_node(node_id: str) -> dict[str, Any] | None:
             s.erd_node.c.x,
             s.erd_node.c.y,
             s.erd_node.c.collapsed,
+            s.erd_node.c.width,
             s.erd_node.c.columns,
+            s.erd_node.c.column_order,
             s.erd_node.c.note,
         )
     )
@@ -1190,7 +1274,9 @@ def replace_canvas_contents(
                     x=float(node.get("x", 0)),
                     y=float(node.get("y", 0)),
                     collapsed=bool(node.get("collapsed", False)),
+                    width=_normalize_node_width(node.get("width")),
                     columns=node.get("columns") or None,
+                    column_order=_normalize_column_order(node.get("column_order")),
                     indexes=_normalize_indexes(node.get("indexes")) or None,
                     note=node.get("note"),
                 )
@@ -1210,7 +1296,7 @@ def replace_canvas_contents(
                     target_node_id=target_id,
                     source_columns=rel.get("source_columns") or [],
                     target_columns=rel.get("target_columns") or [],
-                    cardinality=rel.get("cardinality", "many-to-one"),
+                    cardinality=rel.get("cardinality", "one-to-one"),
                     label=rel.get("label"),
                 )
             )
@@ -1253,7 +1339,9 @@ def restore_canvas_state(
             s.erd_node.c.x,
             s.erd_node.c.y,
             s.erd_node.c.collapsed,
+            s.erd_node.c.width,
             s.erd_node.c.columns,
+            s.erd_node.c.column_order,
             s.erd_node.c.indexes,
             s.erd_node.c.note,
         ).where(s.erd_node.c.canvas_id == canvas_id, s.erd_node.c.hidden.is_(True))
@@ -1282,7 +1370,9 @@ def restore_canvas_state(
                 "x": float(node.get("x", 0)),
                 "y": float(node.get("y", 0)),
                 "collapsed": bool(node.get("collapsed", False)),
+                "width": _normalize_node_width(node.get("width")),
                 "columns": node.get("columns") or None,
+                "column_order": _normalize_column_order(node.get("column_order")),
                 "indexes": _normalize_indexes(node.get("indexes")) or None,
                 "note": node.get("note"),
             }
@@ -1305,7 +1395,7 @@ def restore_canvas_state(
                 "target_node_id": rel["target_node_id"],
                 "source_columns": rel.get("source_columns") or [],
                 "target_columns": rel.get("target_columns") or [],
-                "cardinality": rel.get("cardinality", "many-to-one"),
+                "cardinality": rel.get("cardinality", "one-to-one"),
                 "label": rel.get("label"),
             }
             if rel.get("id"):
@@ -1322,7 +1412,9 @@ def restore_canvas_state(
                     x=row["x"],
                     y=row["y"],
                     collapsed=row["collapsed"],
+                    width=row["width"],
                     columns=row["columns"],
+                    column_order=row["column_order"],
                     indexes=row["indexes"],
                     note=row["note"],
                     hidden=True,

@@ -13,6 +13,7 @@ import {
 	columnRowHeight,
 	columnTop,
 	nodeHeight,
+	nodeWidth,
 } from './geometry';
 import type { ErdColumn, ErdNode } from '@/types/erd';
 
@@ -66,6 +67,12 @@ describe('card geometry', () => {
 		const port = columnPort(table, 'a', 'right');
 		expect(port.x).toBe(100 + CARD_WIDTH);
 		expect(port.y).toBe(50 + CARD_HEADER_HEIGHT + CARD_ROW_HEIGHT / 2);
+	});
+
+	it('uses a table’s own width for its right-hand ports', () => {
+		const table = { ...node([column('a')]), width: 360 };
+		expect(nodeWidth(table)).toBe(360);
+		expect(columnPort(table, 'a', 'right').x).toBe(460);
 	});
 
 	it('falls back to the card centre for table-level and collapsed anchors', () => {

@@ -26,8 +26,11 @@ export type ErdNode = {
 	name: string;
 	x: number;
 	y: number;
+	width?: number;
 	collapsed: boolean;
 	columns: ErdColumn[];
+	/** Canvas display order for catalog columns, by name. Null follows the catalog. */
+	column_order?: string[] | null;
 	indexes: ErdIndex[];
 	note: string | null;
 };

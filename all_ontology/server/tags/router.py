@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
@@ -26,6 +28,7 @@ from all_ontology.server.responses import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 #: Longest name a tag may have, counted after trimming. Mirrored by the create
 #: dialog, which shows it as "(Max. 25)" and stops typing there — this is the
@@ -307,6 +310,17 @@ def attach_tag(request: Request, tag_id: str, body: TagTarget) -> dict:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     if tags is None:
         raise _target_or_tag_missing(tag_id, body.type, body.id)
+    if body.type.value == dal.TARGET_COLUMN:
+        tag = dal.get_tag(tag_id)
+        if tag and str(tag["name"]).strip().lower() == dal.PII_TAG_NAME.lower():
+            try:
+                from all_ontology.semantic.pii_values import (
+                    withhold_pii_column_values,
+                )
+
+                withhold_pii_column_values([body.id])
+            except Exception:
+                logger.exception("Could not withhold PII values for column %s", body.id)
     return _chips(tags)
 
 

@@ -38,6 +38,8 @@ Where the credentials live depends on whether Vault is configured:
 A comma- or newline-separated list of connection URLs supplied at deploy time
 (`.env` for Docker Compose, `--set connectionStrings=...` for Helm). It carries
 no schema or table filters. `GET /api/connections/source` reports whether it is set.
+Commas inside a SQL Server address such as `HOST,1433` are preserved; only a
+comma followed by another URL scheme starts a new connection.
 
 The URL scheme selects the connector:
 
@@ -70,6 +72,7 @@ is optional — when empty the connector picks the newest one installed.
 mssql://USER:PASSWORD@HOST:1433/DATABASE
 mssql://USER:PASSWORD@HOST/DATABASE?driver=ODBC+Driver+17+for+SQL+Server
     &trust_server_certificate=yes
+mssql://USER:PASSWORD@HOST/DATABASE?instance=SQLEXPRESS
 ```
 
 Path segments are URL-encoded, so a password containing `@`, `/`, or `?` must
@@ -78,6 +81,26 @@ default and rejects a self-signed certificate: set
 `trust_server_certificate=yes` (the "Trust Server Certificate" checkbox in the
 UI) for an on-premise server whose certificate is not issued by a public CA.
 `encrypt=no` is available for a listener that has no TLS at all.
+Both spellings used by other SQL Server tools are accepted, so
+`TrustServerCertificate=True&Encrypt=True` works in a pasted URL.
+
+Use the **Instance Name** field for a named instance such as `SQLEXPRESS`.
+`HOST\INSTANCE` and `HOST,1433` in the Host field are also understood. A named
+instance resolves its own dynamic port through SQL Browser, so the connector
+does not assume 1433; set a port explicitly only when the administrator gave
+you one, and make sure UDP 1434 reaches the SQL Server host.
+
+The connection test reports the likely cause for common failures. In
+particular:
+
+- `certificate chain was issued by an authority that is not trusted` - enable
+  **Trust Server Certificate**, or install the issuing CA on the backend host.
+- `Login failed for user` - verify mixed-mode authentication is enabled and the
+  SQL login is not disabled or expired.
+- `Cannot open database` - the login needs `CONNECT` on that database.
+- `server was not found or was not accessible` - the backend cannot reach the
+  host/port. In Docker Compose, `localhost` means the backend container, not
+  your laptop; use the host's LAN address or `host.docker.internal`.
 
 One connection covers one database; schemas inside it (`dbo`, `sales`, …) can
 be scoped with the schema picker the connection test returns. Windows and

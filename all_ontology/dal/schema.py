@@ -48,6 +48,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     Double,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -290,6 +291,12 @@ catalog_column = Table(
     # A JSON string, read back as a string by callers. Promoting it to jsonb is
     # a deliberate follow-up with its consumers updated, not a free change.
     Column("sample_values", Text, nullable=True),
+    # The lowest distinct non-null values in the warehouse's own order, JSON
+    # encoded like `sample_values` but never mixed with it: those are the most
+    # common values, these are a contiguous bottom of the value range. Written
+    # only for suspected key columns, so semantic FK resolution can test
+    # whether one column's values sit inside another's.
+    Column("distinct_values", Text, nullable=True),
     # How the values are *written*, not what they are: 'YYMMDD', 'YYYY-MM-DD'.
     # Generic storage notation despite only date inference filling it today
     # (`all_ontology.semantic.date_format`) -- an address or id profiler would write the
@@ -301,6 +308,11 @@ catalog_column = Table(
     # wrong guess yields SQL that runs, returns nothing, and looks right.
     Column("format", Text, nullable=True),
     Column("is_unique", Boolean, nullable=True),
+    # Share of the sampled non-null values that were distinct. `is_unique` is
+    # set when this reaches 0.95, so a key with a few dirty duplicates still
+    # reads as a key; readers that need exact uniqueness require 1.0. NULL
+    # means no ratio was measured (a model import, or an older profile).
+    Column("distinct_ratio", Float, nullable=True),
     # A real Boolean. It used to hold the *strings* `information_schema`
     # reports, 'YES' and 'NO', which read back as truthy either way -- so
     # `bool(stored)` was True for every column and every export claimed the
@@ -505,6 +517,43 @@ table__term = Table(
     Column(
         "term_id", Text, ForeignKey(term.c.id, ondelete="CASCADE"), primary_key=True
     ),
+)
+
+# A TermFamily is one version of a schema that a database keeps several copies
+# of, told apart by a table-name prefix: OLD_ROOMS and NEW_ROOMS are twins, OLD
+# and NEW are two families. Derived, never edited: every compile replaces a
+# database's families outright, so nothing here may carry a user's change.
+term_family = Table(
+    "term_family",
+    METADATA,
+    _id(),
+    Column(
+        "schema_id",
+        Text,
+        ForeignKey(catalog_schema.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("prefix", Text, nullable=False),
+    UniqueConstraint("schema_id", "prefix", name="uq_term_family_schema_prefix"),
+)
+
+# MEMBER_OF: Term -> TermFamily. `base_name` is the table name without the
+# family's prefix; two members of sibling families with the same `base_name`
+# are twins. UNIQUE(term_id): a Term belongs to at most one family.
+term__term_family = Table(
+    "term__term_family",
+    METADATA,
+    Column(
+        "term_id", Text, ForeignKey(term.c.id, ondelete="CASCADE"), primary_key=True
+    ),
+    Column(
+        "family_id",
+        Text,
+        ForeignKey(term_family.c.id, ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column("base_name", Text, nullable=False),
+    UniqueConstraint("term_id"),
 )
 
 column_attribute = Table(
@@ -1479,12 +1528,19 @@ erd_node = Table(
     Column("x", Double, nullable=False, server_default=text("0")),
     Column("y", Double, nullable=False, server_default=text("0")),
     Column("collapsed", Boolean, nullable=False, server_default=text("false")),
+    # Card width in world units. The canvas lets a modeller widen a table to
+    # fit long names; this is presentation only and does not touch the catalog.
+    Column("width", Double, nullable=False, server_default=text("248")),
     # Column snapshot for a virtual table. Catalog nodes draw their column list
     # from ``catalog_column`` instead, so a re-ingest shows up on the canvas
     # without rewriting every node — all they keep here is the modeller's
     # per-column alias (``[{"name": ..., "note": ...}]``), read back as
     # ``ErdColumn.note``.
     Column("columns", JSONB, nullable=True),
+    # Display order chosen on the canvas, by column name. A catalog table's
+    # columns still come from ``catalog_column``; this only changes where the
+    # modeller put them on the card, never the source schema.
+    Column("column_order", JSONB, nullable=True),
     # Indexes a modeller declared on a canvas-only table. A catalog table's real
     # indexes live in the source database and are not ingested, so this is only
     # meaningful (and only editable) for virtual nodes.
@@ -1709,6 +1765,13 @@ TABLE_COMMENTS: dict[str, str] = {
     "semantic_compilation_history": "语义编译运行历史：每次运行的状态与起止时间",
 }
 
+TABLE_COMMENTS.update(
+    {
+        "term_family": "Term families: copies of one schema told apart by a table-name prefix",
+        "term__term_family": "Term membership in a term family; base_name is the table name without the prefix",
+    }
+)
+
 for _table_name, _table_comment in TABLE_COMMENTS.items():
     METADATA.tables[_table_name].comment = _table_comment
 
@@ -1760,4 +1823,6 @@ __all__ = [
     "erd_note",
     "erd_area",
     "erd_canvas_version",
+    "term_family",
+    "term__term_family",
 ]

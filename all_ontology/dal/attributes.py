@@ -33,6 +33,8 @@ from sqlalchemy.dialects.postgresql import insert
 from all_ontology.dal import schema as s
 from all_ontology.dal.datasources import fetch_col_table_contexts
 from all_ontology.dal.session import store, write_transaction
+from all_ontology.dal.tags import PII_TAG_NAME
+from all_ontology.dal.term_families import attribute_family_prefix
 from all_ontology.semantic.constants import SEMANTIC_SOURCE
 
 logger = logging.getLogger(__name__)
@@ -468,6 +470,7 @@ def find_unlinked_fk_columns(
             s.catalog_column.c.name,
             s.catalog_column.c.description,
             s.catalog_column.c.sample_values,
+            s.catalog_column.c.distinct_values,
             s.catalog_column.c.is_unique,
             s.catalog_table.c.id.label("table_id"),
             s.catalog_table.c.name.label("table_name"),
@@ -515,6 +518,196 @@ def find_unlinked_fk_columns(
         )
 
     return [dict(r) for r in store().query_read(statement)]
+
+
+def fetch_value_key_candidates(database_name: str) -> list[dict[str, Any]]:
+    """Attributes whose owning column can be a value-compared FK target.
+
+    One row per Attribute on a column profiled unique, carrying the column's
+    stored ``distinct_values`` (``None`` until a probe has written them). A
+    PII-tagged column is never a candidate: a candidate without stored values
+    gets them probed.
+    """
+    owner = s.column__has_attribute
+    column = s.catalog_column
+    table = s.catalog_table
+    schema = s.catalog_schema
+    database = s.catalog_database
+    pii_tagged = (
+        select(literal(1))
+        .select_from(s.tag_target.join(s.tag, s.tag.c.id == s.tag_target.c.tag_id))
+        .where(
+            s.tag_target.c.column_id == s.catalog_column.c.id,
+            func.lower(func.trim(s.tag.c.name)) == PII_TAG_NAME.lower(),
+        )
+        .exists()
+    )
+    statement = (
+        select(
+            owner.c.attribute_id,
+            column.c.id.label("column_id"),
+            column.c.name.label("column_name"),
+            column.c.data_type,
+            column.c.distinct_values,
+            table.c.id.label("table_id"),
+            table.c.name.label("table_name"),
+            schema.c.name.label("schema_name"),
+        )
+        .select_from(
+            owner.join(column, column.c.id == owner.c.column_id)
+            .join(table, table.c.id == column.c.table_id)
+            .join(schema, schema.c.id == table.c.schema_id)
+            .join(database, database.c.id == schema.c.database_id)
+        )
+        .where(
+            database.c.name == database_name,
+            column.c.is_unique.is_(True),
+            ~pii_tagged,
+        )
+        .order_by(table.c.name, column.c.name, owner.c.attribute_id)
+    )
+    return [dict(row) for row in store().query_read(statement)]
+
+
+def fetch_attributes_to_describe(database_name: str) -> list[dict[str, Any]]:
+    """Every semantic ColumnAttribute of *database_name* with no description yet."""
+    blank = func.trim(func.coalesce(s.column_attribute.c.description, "")) == ""
+    pii_tagged = (
+        select(literal(1))
+        .select_from(s.tag_target.join(s.tag, s.tag.c.id == s.tag_target.c.tag_id))
+        .where(
+            s.tag_target.c.column_id == s.catalog_column.c.id,
+            func.lower(func.trim(s.tag.c.name)) == PII_TAG_NAME.lower(),
+        )
+        .exists()
+    )
+    statement = (
+        select(
+            s.column_attribute.c.id.label("attribute_id"),
+            s.column_attribute.c.name.label("attribute_name"),
+            s.term.c.name.label("term_name"),
+            s.term.c.description.label("term_description"),
+            s.catalog_table.c.id.label("table_id"),
+            s.catalog_table.c.name.label("table_name"),
+            s.catalog_table.c.description.label("table_description"),
+            s.catalog_column.c.id.label("column_id"),
+            s.catalog_column.c.name.label("column_name"),
+            s.catalog_column.c.description.label("column_description"),
+            s.catalog_column.c.data_type,
+            case(
+                (pii_tagged, literal(None)),
+                else_=s.catalog_column.c.sample_values,
+            ).label("sample_values"),
+            s.catalog_column.c.format,
+            attribute_family_prefix(s.column_attribute.c.id).label("family_prefix"),
+        )
+        .select_from(
+            s.column_attribute.join(
+                s.column__has_attribute,
+                s.column__has_attribute.c.attribute_id == s.column_attribute.c.id,
+            )
+            .join(
+                s.catalog_column,
+                s.catalog_column.c.id == s.column__has_attribute.c.column_id,
+            )
+            .join(s.catalog_table, s.catalog_table.c.id == s.catalog_column.c.table_id)
+            .join(
+                s.catalog_schema, s.catalog_schema.c.id == s.catalog_table.c.schema_id
+            )
+            .join(
+                s.catalog_database,
+                s.catalog_database.c.id == s.catalog_schema.c.database_id,
+            )
+            .join(
+                s.column_attribute__term,
+                s.column_attribute__term.c.attribute_id == s.column_attribute.c.id,
+            )
+            .join(s.term, s.term.c.id == s.column_attribute__term.c.term_id)
+        )
+        .where(
+            s.catalog_database.c.name == database_name,
+            s.column_attribute.c.source == SEMANTIC_SOURCE,
+            blank,
+        )
+        .order_by(s.catalog_table.c.name, s.catalog_column.c.ordinal_position)
+    )
+    return [dict(row) for row in store().query_read(statement)]
+
+
+def fetch_semantic_fk_ends(database_name: str) -> list[dict[str, Any]]:
+    """Both ends of every SEMANTIC_FK whose source column is in *database_name*."""
+    source_column = s.catalog_column.alias("fk_end_source_column")
+    source_table = s.catalog_table.alias("fk_end_source_table")
+    source_schema = s.catalog_schema.alias("fk_end_source_schema")
+    target_column = s.catalog_column.alias("fk_end_target_column")
+    target_table = s.catalog_table.alias("fk_end_target_table")
+    statement = (
+        select(
+            source_column.c.id.label("source_column_id"),
+            source_table.c.name.label("source_table_name"),
+            source_column.c.name.label("source_column_name"),
+            s.column__semantic_fk.c.attribute_id.label("target_attribute_id"),
+            target_table.c.id.label("target_table_id"),
+            target_table.c.name.label("target_table_name"),
+            target_column.c.id.label("target_column_id"),
+            target_column.c.name.label("target_column_name"),
+        )
+        .select_from(
+            s.column__semantic_fk.join(
+                source_column,
+                source_column.c.id == s.column__semantic_fk.c.column_id,
+            )
+            .join(source_table, source_table.c.id == source_column.c.table_id)
+            .join(source_schema, source_schema.c.id == source_table.c.schema_id)
+            .join(
+                s.column__has_attribute,
+                s.column__has_attribute.c.attribute_id
+                == s.column__semantic_fk.c.attribute_id,
+            )
+            .join(
+                target_column,
+                target_column.c.id == s.column__has_attribute.c.column_id,
+            )
+            .join(target_table, target_table.c.id == target_column.c.table_id)
+        )
+        .where(source_schema.c.database_id == _database_id(database_name))
+    )
+    return [dict(row) for row in store().query_read(statement)]
+
+
+def _database_id(database_name: str):
+    """Scalar subquery for a database id by name."""
+    return (
+        select(s.catalog_database.c.id)
+        .where(s.catalog_database.c.name == database_name)
+        .scalar_subquery()
+    )
+
+
+def store_attribute_descriptions(descriptions: dict[str, str]) -> int:
+    """Write descriptions onto attributes that still have none."""
+    if not descriptions:
+        return 0
+    attribute = s.column_attribute
+    rows = store().query_write(
+        update(attribute)
+        .where(
+            attribute.c.id.in_(list(descriptions)),
+            func.trim(func.coalesce(attribute.c.description, "")) == "",
+        )
+        .values(
+            description=case(
+                {
+                    attr_id: literal(text, attribute.c.description.type)
+                    for attr_id, text in descriptions.items()
+                },
+                value=attribute.c.id,
+                else_=attribute.c.description,
+            )
+        )
+        .returning(attribute.c.id)
+    )
+    return len(rows)
 
 
 def _same_database(src_column_id: str, tgt_attr_id: str) -> bool:

@@ -16,11 +16,12 @@ import {
 
 import {
 	bezierPath,
-	CARD_WIDTH,
+	clampCardWidth,
 	columnPort,
 	MAX_ZOOM,
 	MIN_ZOOM,
 	nodeHeight,
+	nodeWidth,
 	nodesBounds,
 	screenToWorld,
 	zoomAtPoint,
@@ -67,11 +68,17 @@ type ErdCanvasProps = {
 	onToggleCollapse: (nodeId: string) => void;
 	onEditNode: (nodeId: string) => void;
 	onDeleteNode: (nodeId: string) => void;
+	onReorderColumns: (nodeId: string, fromIndex: number, toIndex: number) => void;
+	onNodeResizeStart: () => void;
+	onNodeResize: (nodeId: string, width: number) => void;
+	onNodeResizeEnd: (nodeId: string) => void;
 	onConnect: (source: ColumnConnection, target: ColumnConnection) => void;
 	onSelectRelationship: (id: string | null) => void;
 	onNoteDragStart: () => void;
 	onNoteMove: (noteId: string, x: number, y: number) => void;
 	onNoteMoveEnd: (noteId: string) => void;
+	onNoteResize: (noteId: string, width: number, height: number) => void;
+	onNoteResizeEnd: (noteId: string) => void;
 	onNoteTextChange: (noteId: string, text: string) => void;
 	onNoteTextCommit: (noteId: string) => void;
 	onNoteDelete: (noteId: string) => void;
@@ -112,11 +119,27 @@ type NoteDrag = {
 	zoom: number;
 };
 
+type NoteResize = {
+	noteId: string;
+	clientX: number;
+	clientY: number;
+	startWidth: number;
+	startHeight: number;
+	zoom: number;
+};
+
 type NodeDrag = {
 	clientX: number;
 	clientY: number;
 	zoom: number;
 	origins: { id: string; x: number; y: number }[];
+};
+
+type NodeResize = {
+	nodeId: string;
+	clientX: number;
+	startWidth: number;
+	zoom: number;
 };
 
 type PanDrag = {
@@ -156,11 +179,17 @@ export const ErdCanvas = forwardRef<ErdCanvasHandle, ErdCanvasProps>(
 			onToggleCollapse,
 			onEditNode,
 			onDeleteNode,
+			onReorderColumns,
+			onNodeResizeStart,
+			onNodeResize,
+			onNodeResizeEnd,
 			onConnect,
 			onSelectRelationship,
 			onNoteDragStart,
 			onNoteMove,
 			onNoteMoveEnd,
+			onNoteResize,
+			onNoteResizeEnd,
 			onNoteTextChange,
 			onNoteTextCommit,
 			onNoteDelete,
@@ -179,6 +208,8 @@ export const ErdCanvas = forwardRef<ErdCanvasHandle, ErdCanvasProps>(
 		const panDrag = useRef<PanDrag | null>(null);
 		const connectDrag = useRef<ConnectDrag | null>(null);
 		const noteDrag = useRef<NoteDrag | null>(null);
+		const noteResize = useRef<NoteResize | null>(null);
+		const nodeResize = useRef<NodeResize | null>(null);
 		const areaDrag = useRef<AreaDrag | null>(null);
 		const areaResize = useRef<AreaResize | null>(null);
 		const [rubberBand, setRubberBand] = useState<{ from: Point; to: Point } | null>(null);
@@ -201,10 +232,14 @@ export const ErdCanvas = forwardRef<ErdCanvasHandle, ErdCanvasProps>(
 			onNodesMoveEnd,
 			onNoteMove,
 			onNoteMoveEnd,
+			onNoteResize,
+			onNoteResizeEnd,
 			onAreaMove,
 			onAreaMoveEnd,
 			onAreaResize,
 			onAreaResizeEnd,
+			onNodeResize,
+			onNodeResizeEnd,
 			onConnect,
 		});
 
@@ -220,10 +255,14 @@ export const ErdCanvas = forwardRef<ErdCanvasHandle, ErdCanvasProps>(
 				onNodesMoveEnd,
 				onNoteMove,
 				onNoteMoveEnd,
+				onNoteResize,
+				onNoteResizeEnd,
 				onAreaMove,
 				onAreaMoveEnd,
 				onAreaResize,
 				onAreaResizeEnd,
+				onNodeResize,
+				onNodeResizeEnd,
 				onConnect,
 			};
 		}, [
@@ -232,10 +271,14 @@ export const ErdCanvas = forwardRef<ErdCanvasHandle, ErdCanvasProps>(
 			onNodesMoveEnd,
 			onNoteMove,
 			onNoteMoveEnd,
+			onNoteResize,
+			onNoteResizeEnd,
 			onAreaMove,
 			onAreaMoveEnd,
 			onAreaResize,
 			onAreaResizeEnd,
+			onNodeResize,
+			onNodeResizeEnd,
 			onConnect,
 		]);
 
@@ -377,6 +420,27 @@ export const ErdCanvas = forwardRef<ErdCanvasHandle, ErdCanvasProps>(
 						drag.startX + (event.clientX - drag.clientX) / drag.zoom,
 						drag.startY + (event.clientY - drag.clientY) / drag.zoom,
 					);
+				} else if (nodeResize.current) {
+					const resize = nodeResize.current;
+					handlers.current.onNodeResize(
+						resize.nodeId,
+						clampCardWidth(
+							resize.startWidth + (event.clientX - resize.clientX) / resize.zoom,
+						),
+					);
+				} else if (noteResize.current) {
+					const resize = noteResize.current;
+					handlers.current.onNoteResize(
+						resize.noteId,
+						Math.max(
+							120,
+							resize.startWidth + (event.clientX - resize.clientX) / resize.zoom,
+						),
+						Math.max(
+							80,
+							resize.startHeight + (event.clientY - resize.clientY) / resize.zoom,
+						),
+					);
 				} else if (areaDrag.current) {
 					const drag = areaDrag.current;
 					const dx = (event.clientX - drag.clientX) / drag.zoom;
@@ -416,6 +480,14 @@ export const ErdCanvas = forwardRef<ErdCanvasHandle, ErdCanvasProps>(
 				if (noteDrag.current) {
 					handlers.current.onNoteMoveEnd(noteDrag.current.noteId);
 					noteDrag.current = null;
+				}
+				if (nodeResize.current) {
+					handlers.current.onNodeResizeEnd(nodeResize.current.nodeId);
+					nodeResize.current = null;
+				}
+				if (noteResize.current) {
+					handlers.current.onNoteResizeEnd(noteResize.current.noteId);
+					noteResize.current = null;
 				}
 				if (areaDrag.current) {
 					handlers.current.onAreaMoveEnd(areaDrag.current.areaId);
@@ -522,6 +594,21 @@ export const ErdCanvas = forwardRef<ErdCanvasHandle, ErdCanvasProps>(
 			};
 		};
 
+		const startNodeResize = (event: ReactPointerEvent, nodeId: string) => {
+			if (event.button !== 0) return;
+			const node = nodes.find((row) => row.id === nodeId);
+			if (!node) return;
+			event.stopPropagation();
+			event.preventDefault();
+			onNodeResizeStart();
+			nodeResize.current = {
+				nodeId,
+				clientX: event.clientX,
+				startWidth: nodeWidth(node),
+				zoom: viewport.zoom,
+			};
+		};
+
 		const onColumnPointerDown = (event: ReactPointerEvent, nodeId: string, column: string) => {
 			if (event.button !== 0) return;
 			event.stopPropagation();
@@ -550,6 +637,23 @@ export const ErdCanvas = forwardRef<ErdCanvasHandle, ErdCanvasProps>(
 			};
 		};
 
+		const startNoteResize = (event: ReactPointerEvent, noteId: string) => {
+			if (event.button !== 0) return;
+			const note = notes.find((row) => row.id === noteId);
+			if (!note) return;
+			event.stopPropagation();
+			event.preventDefault();
+			onNoteDragStart();
+			noteResize.current = {
+				noteId,
+				clientX: event.clientX,
+				clientY: event.clientY,
+				startWidth: note.width,
+				startHeight: note.height,
+				zoom: viewport.zoom,
+			};
+		};
+
 		const onAreaPointerDown = (event: ReactPointerEvent, areaId: string) => {
 			if (event.button !== 0) return;
 			event.stopPropagation();
@@ -559,7 +663,7 @@ export const ErdCanvas = forwardRef<ErdCanvasHandle, ErdCanvasProps>(
 			// should not teleport on the next frame.
 			const origins = nodes
 				.filter((node) => {
-					const centreX = node.x + CARD_WIDTH / 2;
+					const centreX = node.x + nodeWidth(node) / 2;
 					const centreY = node.y + nodeHeight(node) / 2;
 					return (
 						centreX >= area.x &&
@@ -690,6 +794,8 @@ export const ErdCanvas = forwardRef<ErdCanvasHandle, ErdCanvasProps>(
 							onHeaderPointerDown={onHeaderPointerDown}
 							onColumnPointerDown={onColumnPointerDown}
 							onColumnClick={onColumnClick}
+							onReorderColumns={onReorderColumns}
+							onResizeStart={startNodeResize}
 							armedColumn={armed?.nodeId === node.id ? armed.column : null}
 							onToggleCollapse={onToggleCollapse}
 							onEdit={onEditNode}
@@ -702,6 +808,7 @@ export const ErdCanvas = forwardRef<ErdCanvasHandle, ErdCanvasProps>(
 							note={note}
 							readOnly={readOnly}
 							onDragStart={onNotePointerDown}
+							onResizeStart={startNoteResize}
 							onTextChange={onNoteTextChange}
 							onTextCommit={onNoteTextCommit}
 							onDelete={onNoteDelete}

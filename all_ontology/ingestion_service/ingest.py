@@ -77,6 +77,15 @@ def _run_pii_detection(columns_df: Any, database_name: str) -> None:
             database_name,
         )
     run_pii_propagation(database_name)
+    try:
+        from all_ontology.semantic.pii_values import withhold_pii_column_values
+
+        withhold_pii_column_values()
+    except Exception:
+        logger.exception(
+            "PII value withholding failed for database %s; the next pass retries",
+            database_name,
+        )
 
 
 def run_ingest(connector: SQLDatabase) -> None:

@@ -25,6 +25,15 @@ from all_ontology.semantic.models import (
 
 logger = logging.getLogger(__name__)
 
+
+def declared_pk_column_names(table: dict[str, Any]) -> set[str]:
+    """The table's declared primary-key column names, from ``catalog_table.pk``."""
+    pk = table.get("pk") or []
+    if isinstance(pk, str):
+        return {pk} if pk else set()
+    return {str(name) for name in pk if name}
+
+
 _SYSTEM = """\
 You review relational table metadata and produce three outputs:
 

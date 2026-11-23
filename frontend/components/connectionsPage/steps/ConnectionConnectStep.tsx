@@ -65,7 +65,7 @@ export const ConnectionConnectStep = ({
 				{fields.map((field) => {
 					const onChange = ({
 						target,
-					}: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+					}: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
 						onFieldChange(field.key, target.value);
 					const inputClassName =
 						'rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-heading outline-none focus:border-[#76b900] focus:ring-2 focus:ring-[#76b900]/30 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100';
@@ -172,6 +172,20 @@ export const ConnectionConnectStep = ({
 									data-testid={`connection-field-${field.key}`}
 									className={`${className} resize-y`}
 								/>
+							) : field.options != null ? (
+								<select
+									value={values[field.key] ?? ''}
+									onChange={onChange}
+									disabled={readOnly}
+									data-testid={`connection-field-${field.key}`}
+									className={className}
+								>
+									{field.options.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</select>
 							) : (
 								<input
 									type={field.secret ? 'password' : 'text'}

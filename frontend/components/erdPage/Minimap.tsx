@@ -7,7 +7,7 @@
 import { useRef, type PointerEvent as ReactPointerEvent } from 'react';
 
 import { t } from '@/i18n';
-import { CARD_WIDTH, nodeHeight, type Bounds } from '@/lib/erd/geometry';
+import { nodeHeight, nodeWidth, type Bounds } from '@/lib/erd/geometry';
 import type { ErdArea, ErdNode, ErdNote, ErdViewport } from '@/types/erd';
 
 const WIDTH = 176;
@@ -43,7 +43,7 @@ export const Minimap = ({
 		...nodes.map((node) => ({
 			x: node.x,
 			y: node.y,
-			width: CARD_WIDTH,
+			width: nodeWidth(node),
 			height: nodeHeight(node),
 			fill: '#a1a1aa',
 		})),

@@ -22,6 +22,7 @@ export type ClipboardNode = {
 	note: string | null;
 	x: number;
 	y: number;
+	width?: number;
 };
 
 export type ClipboardRelationship = {

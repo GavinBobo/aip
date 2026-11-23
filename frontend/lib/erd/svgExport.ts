@@ -7,11 +7,11 @@ import {
 	CARD_COLUMN_NOTE_HEIGHT,
 	CARD_HEADER_HEIGHT,
 	CARD_ROW_HEIGHT,
-	CARD_WIDTH,
 	columnPort,
 	columnTop,
 	edgeSides,
 	nodeHeight,
+	nodeWidth,
 } from './geometry';
 import type { ErdCardinality, ErdNode, ErdNote, ErdRelationship } from '@/types/erd';
 
@@ -78,7 +78,7 @@ export const buildSvgDiagram = (
 		...(notes.length ? notes.map((note) => note.y) : [0]),
 	);
 	const maxX = Math.max(
-		...(nodes.length ? nodes.map((node) => node.x + CARD_WIDTH) : [0]),
+		...(nodes.length ? nodes.map((node) => node.x + nodeWidth(node)) : [0]),
 		...(notes.length ? notes.map((note) => note.x + note.width) : [0]),
 	);
 	const maxY = Math.max(
@@ -122,17 +122,18 @@ export const buildSvgDiagram = (
 
 	for (const node of nodes) {
 		const heightOfNode = nodeHeight(node);
+		const widthOfNode = nodeWidth(node);
 		parts.push(
 			`<g transform="translate(${node.x}, ${node.y})">`,
-			`<rect width="${CARD_WIDTH}" height="${heightOfNode}" rx="8" fill="#ffffff" stroke="#d4d4d8"/>`,
-			`<path d="M0 8 a8 8 0 0 1 8 -8 H${CARD_WIDTH - 8} a8 8 0 0 1 8 8 V${CARD_HEADER_HEIGHT} H0 Z" fill="#f4f4f5"/>`,
+			`<rect width="${widthOfNode}" height="${heightOfNode}" rx="8" fill="#ffffff" stroke="#d4d4d8"/>`,
+			`<path d="M0 8 a8 8 0 0 1 8 -8 H${widthOfNode - 8} a8 8 0 0 1 8 8 V${CARD_HEADER_HEIGHT} H0 Z" fill="#f4f4f5"/>`,
 			`<text x="10" y="${CARD_HEADER_HEIGHT / 2 + 4}" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#18181b">${escapeXml(
 				node.name,
 			)}</text>`,
 		);
 		if (node.table_id == null) {
 			parts.push(
-				`<text x="${CARD_WIDTH - 10}" y="${CARD_HEADER_HEIGHT / 2 + 4}" text-anchor="end" font-family="system-ui, sans-serif" font-size="9" fill="#b45309">virtual</text>`,
+				`<text x="${widthOfNode - 10}" y="${CARD_HEADER_HEIGHT / 2 + 4}" text-anchor="end" font-family="system-ui, sans-serif" font-size="9" fill="#b45309">virtual</text>`,
 			);
 		}
 		if (!node.collapsed) {
@@ -144,7 +145,7 @@ export const buildSvgDiagram = (
 					}${escapeXml(column.name)}</text>`,
 				);
 				parts.push(
-					`<text x="${CARD_WIDTH - 10}" y="${rowY + CARD_ROW_HEIGHT / 2 + 4}" text-anchor="end" font-family="system-ui, sans-serif" font-size="9" fill="#71717a">${escapeXml(
+					`<text x="${widthOfNode - 10}" y="${rowY + CARD_ROW_HEIGHT / 2 + 4}" text-anchor="end" font-family="system-ui, sans-serif" font-size="9" fill="#71717a">${escapeXml(
 						column.data_type ?? '',
 					)}</text>`,
 				);

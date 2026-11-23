@@ -121,10 +121,12 @@ def put_canvas_state(zone_id: str, body: CanvasState) -> dict:
 
 @router.patch("/erd/nodes/{node_id}", response_model=ErdNodeResponse)
 def patch_node(node_id: str, body: NodeUpdate) -> dict:
-    """Move or collapse one table card, or annotate its columns.
+    """Move, resize or collapse one table card, or annotate its columns.
 
     Column aliases (``column_notes``) and the table note are accepted for
-    catalog tables as well; renaming or rewriting columns is not.
+    catalog tables as well; renaming or rewriting columns is not. A
+    ``column_order`` and ``width`` are presentation-only and work for either
+    kind of table.
     """
     try:
         node = dal.update_node(
@@ -132,8 +134,10 @@ def patch_node(node_id: str, body: NodeUpdate) -> dict:
             x=body.x,
             y=body.y,
             collapsed=body.collapsed,
+            width=body.width,
             name=body.name,
             columns=body.columns,
+            column_order=body.column_order,
             column_notes=body.column_notes,
             indexes=body.indexes,
             note=body.note,
@@ -164,10 +168,12 @@ def post_node(body: NodeCreate) -> dict:
         name=name,
         table_id=body.table_id,
         columns=body.columns,
+        column_order=body.column_order,
         indexes=body.indexes,
         note=body.note,
         x=body.x,
         y=body.y,
+        width=body.width,
     )
     return {"data": node}
 

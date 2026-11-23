@@ -23,6 +23,7 @@ export type NodePatch = {
 	x?: number;
 	y?: number;
 	collapsed?: boolean;
+	width?: number;
 	name?: string;
 	columns?:
 		| {
@@ -34,6 +35,8 @@ export type NodePatch = {
 				note?: string | null;
 		  }[]
 		| null;
+	/** Canvas display order by column name. Works for catalog tables too. */
+	column_order?: string[] | null;
 	/** `column name -> alias`. Accepted for catalog tables as well. */
 	column_notes?: Record<string, string> | null;
 	indexes?: ErdIndex[] | null;
@@ -45,10 +48,12 @@ export type NodeCreateInput = {
 	name: string;
 	table_id?: string | null;
 	columns?: { name: string; data_type?: string | null }[] | null;
+	column_order?: string[] | null;
 	indexes?: ErdIndex[] | null;
 	note?: string | null;
 	x: number;
 	y: number;
+	width?: number;
 };
 
 export type RelationshipInput = {

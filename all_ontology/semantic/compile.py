@@ -11,10 +11,14 @@ import os
 import time
 
 from all_ontology.semantic.bridge_tables import build_bridge_tables_sql_attributes
+from all_ontology.semantic.attribute_descriptions import describe_column_attributes
 from all_ontology.semantic.cancellation import is_cancelled
 from all_ontology.semantic.domain import DomainSummary, load_domain_summary
 from all_ontology.semantic.embed import build_semantic_embedder
+from all_ontology.semantic.pii_values import withhold_pii_column_values
 from all_ontology.semantic.semantic_fk import resolve_semantic_fks
+from all_ontology.semantic.term_families import resolve_term_families
+from all_ontology.semantic.unmatched_fks import attach_unmatched_fk_columns
 
 from all_ontology.semantic.pipeline import compile_semantic_layer
 from all_ontology.utils.llm_invoke import limit_inflight
@@ -54,6 +58,13 @@ def _run_semantic_compilation(
     started = time.monotonic()
     embedder = build_semantic_embedder(database_name, reset=False)
 
+    try:
+        withhold_pii_column_values()
+    except Exception:
+        logger.warning(
+            "Could not withhold PII values before compilation", exc_info=True
+        )
+
     logger.info("=" * 60)
     logger.info(
         "Semantic compilation (database=%r)",
@@ -77,8 +88,9 @@ def _run_semantic_compilation(
     # rather than spending minutes on work nobody is waiting for.
     if is_cancelled():
         logger.info(
-            "Semantic compilation cancelled (database=%r) — skipping the FK, "
-            "SqlAttribute and bridge-table stages; %d table(s) compiled in %.1fs",
+            "Semantic compilation cancelled (database=%r) — skipping the term-"
+            "family, FK, unmatched-FK, SqlAttribute, bridge-table and "
+            "description stages; %d table(s) compiled in %.1fs",
             database_name,
             count,
             time.monotonic() - started,
@@ -86,10 +98,24 @@ def _run_semantic_compilation(
         return count
 
     logger.info("=" * 60)
-    logger.info("Resolving semantic FK edges…")
+    logger.info("Resolving term families")
+    logger.info("=" * 60)
+    family_count = resolve_term_families(database_name, embedder)
+    logger.info("Term families found: %d", family_count)
+
+    logger.info("=" * 60)
+    logger.info("Resolving semantic FK edges")
     logger.info("=" * 60)
     fk_count = resolve_semantic_fks(database_name)
     logger.info("Semantic FK edges created: %d", fk_count)
+
+    logger.info("=" * 60)
+    logger.info("Attaching unmatched FK columns")
+    logger.info("=" * 60)
+    unmatched_count = attach_unmatched_fk_columns(
+        database_name, embedder, domain_summary=summary
+    )
+    logger.info("Unmatched FK columns attached: %d", unmatched_count)
 
     from all_ontology.semantic.sql_attribute_suggester import suggest_sql_attributes
 
@@ -105,6 +131,12 @@ def _run_semantic_compilation(
     bridge_table_count = build_bridge_tables_sql_attributes(database_name)
     logger.info("Bridge tables built: %d", bridge_table_count)
 
+    logger.info("=" * 60)
+    logger.info("Describing ColumnAttributes")
+    logger.info("=" * 60)
+    described_count = describe_column_attributes(database_name, embedder)
+    logger.info("ColumnAttributes described: %d", described_count)
+
     # One line carrying every stage's result. Until now the last thing a
     # completed compilation logged was the bridge-table count, which is a stage
     # result and not a verdict — there was no way to tell a finished run from one
@@ -113,13 +145,18 @@ def _run_semantic_compilation(
     logger.info("=" * 60)
     logger.info(
         "Semantic calculation finished successfully (database=%r) — "
-        "%d table(s), %d semantic FK edge(s), %d SqlAttribute(s), "
-        "%d bridge table(s) in %.1fs",
+        "%d table(s), %d term family(ies), %d semantic FK edge(s), "
+        "%d unmatched FK column(s) attached, "
+        "%d SqlAttribute(s), "
+        "%d bridge table(s), %d ColumnAttribute(s) described in %.1fs",
         database_name,
         count,
+        family_count,
         fk_count,
+        unmatched_count,
         attr_count,
         bridge_table_count,
+        described_count,
         time.monotonic() - started,
     )
     logger.info("=" * 60)

@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/aip.iml" filepath="$PROJECT_DIR$/.idea/aip.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/all-ontology-mcp.iml" filepath="$PROJECT_DIR$/.idea/all-ontology-mcp.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/all-ontology-server.iml" filepath="$PROJECT_DIR$/.idea/all-ontology-server.iml" />
     </modules>
   </component>
 </project>

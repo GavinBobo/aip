@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import re
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
@@ -40,18 +41,49 @@ Rules:
 - Return exactly one entry per column provided, using the physical column name."""
 
 
+def _is_word_char(char: str) -> bool:
+    """Letters, digits and combining marks in any script.
+
+    Marks count so that Devanagari vowel signs or a decomposed accent stay
+    inside their word; Python's ``\\w`` leaves them out.
+    """
+    return char.isalnum() or unicodedata.category(char).startswith("M")
+
+
+def _words(text: str) -> list[str]:
+    words: list[str] = []
+    current: list[str] = []
+    for char in text:
+        if _is_word_char(char):
+            current.append(char)
+        elif current:
+            words.append("".join(current))
+            current = []
+    if current:
+        words.append("".join(current))
+    return words
+
+
 def to_term_name(table_name: str) -> str:
-    """Return a human-readable fallback Term name from a physical table name."""
+    """Return a human-readable fallback Term name from a physical table name.
+
+    Words in any script are kept: ``고객`` stays ``고객`` and
+    ``Société_Générale`` becomes ``Société Générale``. An ASCII-only split used
+    to turn non-Latin names into ``""``, a Term that is never embedded and so
+    never retrieved. If nothing word-like remains, the stripped table name
+    itself is returned, never an empty name.
+    """
+    stripped = unicodedata.normalize("NFC", table_name.strip())
     separated = re.sub(
         r"(?<=[A-Z])(?=[A-Z][a-z])",
         " ",
-        table_name.strip(),
+        stripped,
     )
     separated = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", separated)
-    parts = re.split(r"[^A-Za-z0-9]+", separated)
-    return " ".join(
-        part if part.isupper() else part.capitalize() for part in parts if part
+    name = " ".join(
+        part if part.isupper() else part.capitalize() for part in _words(separated)
     )
+    return name or stripped
 
 
 _FORMAT_MARKER = "format:"
@@ -138,11 +170,24 @@ def _describe_column_batch(
 
     prompt = "Columns:\n" + "\n".join(lines)
 
+    return describe_columns(
+        _DESCRIPTION_SYSTEM,
+        prompt,
+        [c.get("name", "") for c in columns if c.get("name")],
+    )
+
+
+def describe_columns(
+    system_prompt: str,
+    prompt: str,
+    requested_names: list[str],
+) -> dict[str, str]:
+    """Run one column-description prompt and key its answers by column name."""
     try:
         result = invoke_with_structured_output(
             get_llm_client(temperature=0.0),
             [
-                SystemMessage(content=_DESCRIPTION_SYSTEM),
+                SystemMessage(content=system_prompt),
                 HumanMessage(content=prompt),
             ],
             ColumnDescriptionResult,
@@ -162,7 +207,6 @@ def _describe_column_batch(
     # the column_name (e.g. "Academic Year (TEXT)"). Resolve each returned name
     # to the requested physical name: exact match first, then the longest
     # requested name the returned string starts with.
-    requested_names = [c.get("name", "") for c in columns if c.get("name")]
     requested_set = set(requested_names)
     out: dict[str, str] = {}
     for d in result.descriptions:

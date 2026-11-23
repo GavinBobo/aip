@@ -25,6 +25,10 @@ logger = logging.getLogger(__name__)
 # JSONB, not a blanket loosening.
 _MAX_EMBEDDED_SAMPLE_LEN = 30
 
+#: Opens the sample values in a ColumnAttribute's vector text. Searched for by
+#: ``all_ontology.semantic.pii_values`` to find vectors still holding values.
+SAMPLE_VALUES_MARKER = "Sample values:"
+
 # Same idea, but for JSONB columns specifically: their sample_values entries
 # are visit_enter.py's formatted `key [e.g. 'value']` strings (brackets and
 # quotes included), which need more headroom than a bare value does — using
@@ -56,16 +60,27 @@ class SemanticEmbedder:
         in the embedded row's metadata.
         Returns the number of rows actually written to the VDB.
         """
+        with_embeddings = self.embed_term_rows(term, attrs)
+        if with_embeddings:
+            write_embedded_rows(self.vdb, with_embeddings)
+        return len(with_embeddings)
+
+    def embed_term_rows(
+        self,
+        term: dict[str, Any],
+        attrs: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """The rows :meth:`embed_term` would write, embedded but not written."""
         rows = _build_rows(self.database_name, term, attrs)
         if not rows:
-            return 0
+            return []
 
         embedded_df = batch_embed(rows, self.embed_params)
         if embedded_df is None or embedded_df.empty:
             logger.warning(
                 "Inline embed produced no rows for Term %s", term.get("name")
             )
-            return 0
+            return []
 
         with_embeddings = [
             row
@@ -78,10 +93,8 @@ class SemanticEmbedder:
                 len(rows),
                 term.get("name"),
             )
-            return 0
-
-        write_embedded_rows(self.vdb, with_embeddings)
-        return len(with_embeddings)
+            return []
+        return with_embeddings
 
     def embed_column_attributes(self, attrs: list[dict[str, Any]]) -> int:
         """Embed only ColumnAttribute rows, without rewriting the parent Term row."""
@@ -200,7 +213,7 @@ def _format_sample_values(raw: Any, data_type: str | None = None) -> str:
     values = stringify_sample_values(raw, max_len=max_len)
     if not values:
         return ""
-    return " Sample values: " + ", ".join(values) + "."
+    return f" {SAMPLE_VALUES_MARKER} " + ", ".join(values) + "."
 
 
 def _build_rows(
@@ -242,9 +255,12 @@ def _build_rows(
         if not attr_name:
             continue
         owner = a.get("term_name") or term_name or ""
+        family = a.get("family_prefix")
+        family_suffix = f", family {family}" if family else ""
         sample_block = _format_sample_values(a.get("sample_values"), a.get("datatype"))
         text = (
-            f"ColumnAttribute: {attr_name} of Term {owner}{synonym_suffix}. "
+            f"ColumnAttribute: {attr_name} of Term {owner}{synonym_suffix}"
+            f"{family_suffix}. "
             f"{a.get('description') or ''}"
             f"{sample_block}"
         ).strip()

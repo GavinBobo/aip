@@ -8,6 +8,7 @@
 | --- | --- |
 | [architecture/project-review.md](./architecture/project-review.md) | 这个仓库长什么样、有哪些结构问题、按什么顺序重构、哪些已经做完 |
 | [architecture/deployment-plan.md](./architecture/deployment-plan.md) | 用公司现有 PostgreSQL 怎么部署：DBA 前置条件、两个 schema 的初始化顺序、三种部署形态、连接数预算与故障排查 |
+| [architecture/semantic-quality-1.3.md](./architecture/semantic-quality-1.3.md) | Auto-Ontology 1.3 的语义质量功能哪些已移植、哪些是独立架构迁移 |
 
 ## 领域说明
 

@@ -121,13 +121,17 @@ export type ApiConnectionParams = {
 export type MssqlConnectionParams = {
 	type: ConnectionType.MSSQL;
 	host: string;
-	/** Defaults to 1433 when empty. */
+	/** Optional named instance, e.g. SQLEXPRESS. */
+	instance?: string;
+	/** Defaults to 1433 for the default instance when empty. */
 	port: string;
 	user: string;
 	password: string;
 	database: string;
 	/** ODBC driver name; empty means "newest SQL Server driver installed". */
 	driver?: string;
+	/** ODBC Encrypt keyword: yes, no, or strict. Empty leaves the driver default. */
+	encrypt?: string;
 	/** Trust a self-signed server certificate (ODBC Driver 18 encrypts by default). */
 	trust_server_certificate?: boolean;
 	/** Optional ingestion allowlist: only these schemas are ingested. Empty/absent = all. */

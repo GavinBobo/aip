@@ -13,7 +13,9 @@ from pytest import MonkeyPatch
 from all_ontology.connectors.base import StatementTimeout
 from all_ontology.connectors.connection_string_factory import build_connection_string
 from all_ontology.connectors.mssql import (
+    MSSQLConnectionError,
     MSSQLDatabase,
+    _connection_error_message,
     _odbc_connection_string,
     _parse_connection_string,
 )
@@ -39,6 +41,7 @@ def test_parse_connection_string() -> None:
     assert fields == {
         "host": "example.com",
         "port": 1434,
+        "instance": "",
         "user": "user@domain",
         "password": "secret/value",
         "database": "Beaver DB",
@@ -54,6 +57,7 @@ def test_parse_connection_string_defaults_the_port() -> None:
     assert fields["port"] == 1433
     assert fields["database"] == "master"
     assert fields["driver"] == ""
+    assert fields["instance"] == ""
     assert fields["trust_server_certificate"] is False
 
 
@@ -82,6 +86,42 @@ def test_parse_connection_string_requires_a_database() -> None:
 def test_parse_connection_string_rejects_an_unknown_encrypt_value() -> None:
     with pytest.raises(ValueError, match="encrypt"):
         _parse_connection_string("mssql://sa:pw@localhost/db?encrypt=sometimes")
+
+
+def test_parse_connection_string_accepts_camel_case_options() -> None:
+    fields = _parse_connection_string(
+        "mssql://sa:pw@localhost/db"
+        "?TrustServerCertificate=True&Encrypt=True"
+        "&Driver=ODBC+Driver+18+for+SQL+Server"
+    )
+
+    assert fields["trust_server_certificate"] is True
+    assert fields["encrypt"] == "yes"
+    assert fields["driver"] == "ODBC Driver 18 for SQL Server"
+
+
+def test_parse_named_instance_does_not_assume_the_default_port() -> None:
+    fields = _parse_connection_string(
+        "mssql://sa:pw@db.example.com/sales?instance=SQLEXPRESS"
+    )
+
+    assert fields["host"] == "db.example.com"
+    assert fields["instance"] == "SQLEXPRESS"
+    assert fields["port"] is None
+
+
+def test_parse_host_with_backslash_instance_and_embedded_port() -> None:
+    instance = _parse_connection_string(
+        "mssql://sa:pw@db.example.com\\SQLEXPRESS/sales"
+    )
+    embedded = _parse_connection_string("mssql://sa:pw@db.example.com,1444/sales")
+
+    # urlparse lowercases the netloc; SQL Server instance names are
+    # case-insensitive, so compare without case.
+    assert instance["instance"].casefold() == "sqlexpress"
+    assert instance["host"] == "db.example.com"
+    assert embedded["host"] == "db.example.com"
+    assert embedded["port"] == 1444
 
 
 def test_build_connection_string_round_trips_through_the_parser() -> None:
@@ -122,6 +162,37 @@ def test_build_connection_string_uses_the_default_port() -> None:
     assert connection_string == "mssql://sa:pw@db:1433/master"
 
 
+def test_build_connection_string_keeps_named_instances_portless() -> None:
+    connection_string = build_connection_string(
+        {
+            "type": "mssql",
+            "host": "db",
+            "instance": "SQLEXPRESS",
+            "user": "sa",
+            "password": "pw",
+            "database": "master",
+        }
+    )
+
+    assert connection_string == (
+        "mssql://sa:pw@db/master?instance=SQLEXPRESS"
+    )
+
+
+def test_build_connection_string_reconciles_a_port_in_the_host() -> None:
+    connection_string = build_connection_string(
+        {
+            "type": "mssql",
+            "host": "db.example.com,1444",
+            "user": "sa",
+            "password": "pw",
+            "database": "master",
+        }
+    )
+
+    assert connection_string == "mssql://sa:pw@db.example.com:1444/master"
+
+
 def test_odbc_connection_string_braces_values_and_sets_tls_options() -> None:
     connection = _odbc_connection_string(
         {
@@ -142,6 +213,38 @@ def test_odbc_connection_string_braces_values_and_sets_tls_options() -> None:
     # A literal ``;`` and ``}`` in a password must not break the string.
     assert "PWD={p;w}}d}" in connection
     assert "TrustServerCertificate=yes" in connection
+
+
+def test_odbc_connection_string_brackets_ipv6_and_supports_instances() -> None:
+    ipv6 = _odbc_connection_string(
+        {
+            "host": "::1",
+            "port": 1433,
+            "instance": "",
+            "user": "sa",
+            "password": "pw",
+            "database": "master",
+            "driver": "ODBC Driver 18 for SQL Server",
+            "encrypt": "",
+            "trust_server_certificate": False,
+        }
+    )
+    named = _odbc_connection_string(
+        {
+            "host": "db.example.com",
+            "port": None,
+            "instance": "SQLEXPRESS",
+            "user": "sa",
+            "password": "pw",
+            "database": "master",
+            "driver": "ODBC Driver 18 for SQL Server",
+            "encrypt": "",
+            "trust_server_certificate": False,
+        }
+    )
+
+    assert "SERVER={tcp:[::1],1433}" in ipv6
+    assert "SERVER={tcp:db.example.com\\SQLEXPRESS}" in named
 
 
 def test_odbc_connection_string_prefers_the_newest_installed_driver(
@@ -188,6 +291,63 @@ def test_missing_driver_names_what_to_install(monkeypatch: MonkeyPatch) -> None:
         )
 
 
+def test_connection_errors_name_the_likely_fix() -> None:
+    fields = {
+        "host": "db.example.com",
+        "port": 1433,
+        "instance": "",
+    }
+
+    certificate = _connection_error_message(
+        pyodbc.OperationalError(
+            "08001",
+            "[08001] [Microsoft][ODBC Driver 18 for SQL Server]SSL Provider: "
+            "The certificate chain was issued by an authority that is not trusted.",
+        ),
+        fields,
+    )
+    login = _connection_error_message(
+        pyodbc.OperationalError("28000", "Login failed for user 'reporter'."),
+        fields,
+    )
+    network = _connection_error_message(
+        pyodbc.OperationalError(
+            "08001",
+            "[08001] TCP Provider: A network-related error occurred while "
+            "establishing a connection.",
+        ),
+        fields,
+    )
+    redacted = _connection_error_message(
+        pyodbc.OperationalError("08001", "failed PWD=hunter2;UID=reporter"),
+        fields,
+    )
+
+    assert "Trust Server Certificate" in certificate
+    assert "SQL authentication" in login
+    assert "host/port is unreachable" in network
+    assert "db.example.com,1433" in certificate
+    assert "hunter2" not in redacted
+
+
+def test_connect_failure_is_raised_as_a_connection_error(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "all_ontology.connectors.mssql.pyodbc.connect",
+        lambda *_a, **_k: (_ for _ in ()).throw(
+            pyodbc.OperationalError(
+                "08001",
+                "SSL Provider: The certificate chain was issued by an "
+                "authority that is not trusted.",
+            )
+        ),
+    )
+
+    with pytest.raises(MSSQLConnectionError, match="Trust Server Certificate"):
+        MSSQLDatabase(_connection_string())
+
+
 def test_registry_creates_mssql_connector(monkeypatch: MonkeyPatch) -> None:
     connections: list["Connection"] = []
 
@@ -227,6 +387,24 @@ def test_execute_returns_a_dataframe_and_closes_everything(
     assert executed == ("SELECT ? AS value", [1])
     assert connections[1].cursor_instance.closed
     assert connections[1].closed
+
+
+def test_execute_treats_an_empty_parameter_list_as_no_parameters(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    connections: list["Connection"] = []
+
+    def connect(*_args: Any, **_kwargs: Any) -> "Connection":
+        connection = Connection()
+        connections.append(connection)
+        return connection
+
+    monkeypatch.setattr("all_ontology.connectors.mssql.pyodbc.connect", connect)
+    database = MSSQLDatabase(_connection_string())
+
+    database.execute("SELECT 1", [])
+
+    assert connections[1].cursor_instance.executed == ("SELECT 1", None)
 
 
 def test_execute_sets_the_query_timeout_on_its_own_connection(
@@ -363,6 +541,24 @@ def test_query_history_degrades_to_empty_without_permission(
         raise pyodbc.ProgrammingError("42000", "permission denied")
 
     monkeypatch.setattr(database, "execute", denied)
+
+    result = database.get_queries()
+    assert list(result.columns) == ["end_time", "query_text"]
+    assert result.empty
+
+
+def test_query_history_degrades_when_the_server_is_unreachable(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "all_ontology.connectors.mssql.pyodbc.connect", lambda *_a, **_k: Connection()
+    )
+    database = MSSQLDatabase(_connection_string())
+
+    def unreachable(*_args: Any, **_kwargs: Any) -> pd.DataFrame:
+        raise MSSQLConnectionError("Could not connect to SQL Server db")
+
+    monkeypatch.setattr(database, "execute", unreachable)
 
     result = database.get_queries()
     assert list(result.columns) == ["end_time", "query_text"]

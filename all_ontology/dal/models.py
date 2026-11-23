@@ -462,6 +462,26 @@ class TableTerm(Base):
     term_id: Mapped[str]
 
 
+class TermFamily(Base):
+    """One prefix of one schema, grouping the Terms of its member tables."""
+
+    __table__ = s.term_family
+
+    id: Mapped[str]
+    schema_id: Mapped[str]
+    prefix: Mapped[str]
+
+
+class TermFamilyMembership(Base):
+    """A Term's membership in a term family, with its prefix-stripped name."""
+
+    __table__ = s.term__term_family
+
+    term_id: Mapped[str]
+    family_id: Mapped[str]
+    base_name: Mapped[str]
+
+
 # ---------------------------------------------------------------------------
 # 标签与规则
 # ---------------------------------------------------------------------------
@@ -616,6 +636,8 @@ class ErdNode(Base):
 
     ``table_id`` 为空表示“只存在于图上的虚拟表”。``columns`` 对虚拟表是完整的
     列定义，对目录表只存建模者写的列别名（``[{"name": ..., "note": ...}]``）。
+    ``column_order`` 是画布上目录表字段的显示顺序（按列名），不改变源库列定义。
+    ``width`` 是卡片在画布上的宽度，同样只影响展示。
     ``hidden`` 是删除目录表时留下的墓碑，避免下一次对账把它又加回来。
     """
 
@@ -628,7 +650,9 @@ class ErdNode(Base):
     x: Mapped[float]
     y: Mapped[float]
     collapsed: Mapped[bool]
+    width: Mapped[float]
     columns: Mapped[list[dict[str, Any]] | None]
+    column_order: Mapped[list[str] | None]
     indexes: Mapped[list[dict[str, Any]] | None]
     note: Mapped[str | None]
     hidden: Mapped[bool]

@@ -103,6 +103,12 @@ def test_to_term_name() -> None:
     assert to_term_name("XMLHttpRequest") == "XML Http Request"
 
 
+def test_to_term_name_keeps_non_latin_words() -> None:
+    assert to_term_name("고객_주문") == "고객 주문"
+    assert to_term_name("Société_Générale") == "Société Générale"
+    assert to_term_name("客户") == "客户"
+
+
 def test_fk_targets_deduped() -> None:
     fks = [
         {"target_table": "customers"},

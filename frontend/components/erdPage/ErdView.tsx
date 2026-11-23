@@ -21,6 +21,7 @@ import { downloadText } from '@/lib/erd/download';
 import type { CanvasSnapshot } from '@/lib/erd/history';
 import { CanvasHistory } from '@/lib/erd/history';
 import { gridLayout, layeredLayout } from '@/lib/erd/layout';
+import { moveItem } from '@/lib/erd/ordering';
 import { buildSvgDiagram, downloadPng, downloadSvg } from '@/lib/erd/svgExport';
 import { validateCanvas, type ErdIssue } from '@/lib/erd/validation';
 import { zoneQueries } from '@/lib/queries/zones';
@@ -81,6 +82,7 @@ export const ErdView = () => {
 	const [versionsBusy, setVersionsBusy] = useState(false);
 	const [templatesOpen, setTemplatesOpen] = useState(false);
 	const [templatesBusy, setTemplatesBusy] = useState(false);
+	const [fitRequest, setFitRequest] = useState(0);
 	const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null);
 	const [savingTable, setSavingTable] = useState(false);
 	const [busy, setBusy] = useState(false);
@@ -93,6 +95,8 @@ export const ErdView = () => {
 	const areasRef = useRef<ErdArea[]>([]);
 	const areaNameTimer = useRef<number | null>(null);
 	const viewportTimer = useRef<number | null>(null);
+	const columnReorderSeq = useRef(new Map<string, number>());
+	const columnWriteQueue = useRef(new Map<string, Promise<unknown>>());
 	const canvasRefMirror = useRef<ErdCanvasModel | null>(null);
 	// Undo/redo state lives in its own object so the stack rules are not
 	// repeated in every handler that mutates the canvas.
@@ -110,6 +114,12 @@ export const ErdView = () => {
 	useEffect(() => {
 		areasRef.current = areas;
 	}, [areas]);
+
+	useEffect(() => {
+		if (fitRequest === 0) return undefined;
+		const id = window.setTimeout(() => canvasRef.current?.fit(), 0);
+		return () => window.clearTimeout(id);
+	}, [fitRequest]);
 
 	useEffect(() => {
 		// Deferred so the first paint matches the server (localStorage is not
@@ -238,9 +248,7 @@ export const ErdView = () => {
 		if (!userId || !zonesQuery.data) return;
 		const requested = new URLSearchParams(window.location.search).get('zone');
 		const fallback =
-			zonesQuery.data.find((zone) => zone.id === requested) ??
-			zonesQuery.data[0] ??
-			null;
+			zonesQuery.data.find((zone) => zone.id === requested) ?? zonesQuery.data[0] ?? null;
 		// Keep the zone already open (including the remembered one) when the
 		// loaded list still contains it; only fall back when it does not.
 		if (zoneId && zonesQuery.data.some((zone) => zone.id === zoneId)) return;
@@ -273,7 +281,7 @@ export const ErdView = () => {
 			const isDefaultView =
 				next.viewport.x === 0 && next.viewport.y === 0 && next.viewport.zoom === 1;
 			if (next.nodes.length > 0 && isDefaultView) {
-				window.setTimeout(() => canvasRef.current?.fit(), 0);
+				setFitRequest((value) => value + 1);
 			}
 		});
 		return () => {
@@ -345,6 +353,69 @@ export const ErdView = () => {
 			});
 		});
 	}, []);
+
+	const handleNodeResize = useCallback((nodeId: string, width: number) => {
+		const nextNodes = nodesRef.current.map((node) =>
+			node.id === nodeId ? { ...node, width } : node,
+		);
+		nodesRef.current = nextNodes;
+		setNodes(nextNodes);
+	}, []);
+
+	const handleNodeResizeEnd = useCallback((nodeId: string) => {
+		const node = nodesRef.current.find((row) => row.id === nodeId);
+		if (!node || node.width == null) return;
+		void erdApi.updateNode(nodeId, { width: node.width }).then((response) => {
+			if (response.error) setError(response.message ?? t('Failed to save the table'));
+		});
+	}, []);
+
+	const handleReorderColumns = useCallback(
+		(nodeId: string, fromIndex: number, toIndex: number) => {
+			if (readOnly) return;
+			if (fromIndex === toIndex) return;
+			const node = nodesRef.current.find((row) => row.id === nodeId);
+			if (!node) return;
+			const columns = moveItem(node.columns, fromIndex, toIndex);
+
+			pushHistory();
+			const order = columns.map((column) => column.name);
+			const nextNodes = nodesRef.current.map((row) =>
+				row.id === nodeId ? { ...row, columns, column_order: order } : row,
+			);
+			// Keep the ref in step immediately: a second drag can land before
+			// React has committed the optimistic update.
+			nodesRef.current = nextNodes;
+			setNodes(nextNodes);
+
+			const sequence = (columnReorderSeq.current.get(nodeId) ?? 0) + 1;
+			columnReorderSeq.current.set(nodeId, sequence);
+			// Serialise writes per card. Two drags in quick succession must not
+			// race and leave the server holding the earlier order.
+			const previous = columnWriteQueue.current.get(nodeId) ?? Promise.resolve();
+			const write = previous.then(() => erdApi.updateNode(nodeId, { column_order: order }));
+			columnWriteQueue.current.set(nodeId, write);
+			void write.then((response) => {
+				if (columnReorderSeq.current.get(nodeId) !== sequence) return;
+				if (response.error || !response.data) {
+					setError(response.message ?? t('Failed to save the table'));
+					return;
+				}
+				const updated = response.data;
+				setNodes((current) =>
+					current.map((row) => {
+						if (row.id !== nodeId) return row;
+						return {
+							...row,
+							columns: updated.columns,
+							column_order: updated.column_order ?? order,
+						};
+					}),
+				);
+			});
+		},
+		[pushHistory, readOnly],
+	);
 
 	const handleToggleCollapse = useCallback(
 		(nodeId: string) => {
@@ -448,6 +519,7 @@ export const ErdView = () => {
 					note: node.note,
 					x: node.x + 40,
 					y: node.y + 40,
+					width: node.width,
 				});
 				if (response.error || !response.data) {
 					setError(response.message ?? t('Failed to duplicate the table'));
@@ -541,6 +613,7 @@ export const ErdView = () => {
 				note: node.note,
 				x: node.x,
 				y: node.y,
+				width: node.width,
 			})),
 			relationships,
 			offset: 40,
@@ -575,6 +648,7 @@ export const ErdView = () => {
 				note: node.note,
 				x: node.x + clip.offset,
 				y: node.y + clip.offset,
+				width: node.width,
 			});
 			if (response.error || !response.data) {
 				setError(response.message ?? t('Failed to paste the table'));
@@ -636,9 +710,11 @@ export const ErdView = () => {
 	}, [canvas, pushHistory, readOnly]);
 
 	const handleNoteMove = useCallback((noteId: string, x: number, y: number) => {
-		setNotes((current) =>
-			current.map((note) => (note.id === noteId ? { ...note, x, y } : note)),
+		const nextNotes = notesRef.current.map((note) =>
+			note.id === noteId ? { ...note, x, y } : note,
 		);
+		notesRef.current = nextNotes;
+		setNotes(nextNotes);
 	}, []);
 
 	const handleNoteMoveEnd = useCallback((noteId: string) => {
@@ -647,6 +723,26 @@ export const ErdView = () => {
 		void erdApi.updateNote(noteId, { x: note.x, y: note.y }).then((response) => {
 			if (response.error) setError(response.message ?? t('Failed to save the note'));
 		});
+	}, []);
+
+	const handleNoteResize = useCallback((noteId: string, width: number, height: number) => {
+		const nextNotes = notesRef.current.map((note) =>
+			note.id === noteId ? { ...note, width, height } : note,
+		);
+		notesRef.current = nextNotes;
+		setNotes(nextNotes);
+	}, []);
+
+	const handleNoteResizeEnd = useCallback((noteId: string) => {
+		const note = notesRef.current.find((row) => row.id === noteId);
+		if (!note) return;
+		void erdApi
+			.updateNote(noteId, { width: note.width, height: note.height })
+			.then((response) => {
+				if (response.error) {
+					setError(response.message ?? t('Failed to save the note'));
+				}
+			});
 	}, []);
 
 	const handleNoteTextChange = useCallback((noteId: string, text: string) => {
@@ -699,7 +795,7 @@ export const ErdView = () => {
 				setAreas((current) => [...current, response.data]);
 				// The new region sits below the existing diagram; bring it into
 				// view instead of leaving the user staring at the old framing.
-				window.setTimeout(() => canvasRef.current?.fit(), 0);
+				setFitRequest((value) => value + 1);
 			});
 	}, [canvas, pushHistory, readOnly]);
 
@@ -900,7 +996,7 @@ export const ErdView = () => {
 			}
 			setTemplatesBusy(false);
 			setTemplatesOpen(false);
-			window.setTimeout(() => canvasRef.current?.fit(), 0);
+			setFitRequest((value) => value + 1);
 		},
 		[canvas, pushHistory, readOnly],
 	);
@@ -916,7 +1012,7 @@ export const ErdView = () => {
 					target_node_id: target.nodeId,
 					source_columns: source.column ? [source.column] : [],
 					target_columns: [target.column],
-					cardinality: 'many-to-one',
+					cardinality: 'one-to-one',
 				})
 				.then((response) => {
 					if (response.error || !response.data) {
@@ -1006,7 +1102,7 @@ export const ErdView = () => {
 				y: placement[node.id]?.y ?? node.y,
 			})),
 		);
-		window.setTimeout(() => canvasRef.current?.fit(), 0);
+		setFitRequest((value) => value + 1);
 		nodes.forEach((node) => {
 			const next = placement[node.id];
 			if (!next) return;
@@ -1061,7 +1157,7 @@ export const ErdView = () => {
 				setViewport(result.canvas.viewport);
 				setSelectedNodeIds(new Set());
 				setWarnings(result.warnings);
-				window.setTimeout(() => canvasRef.current?.fit(), 0);
+				setFitRequest((value) => value + 1);
 			});
 		},
 		[pushHistory, zoneId],
@@ -1358,7 +1454,7 @@ export const ErdView = () => {
 								target_node_id: action.target_node_id as string,
 								source_columns: action.source_columns ?? [],
 								target_columns: action.target_columns ?? [],
-								cardinality: action.cardinality ?? 'many-to-one',
+								cardinality: action.cardinality ?? 'one-to-one',
 								label: action.label ?? null,
 							});
 							ok = !response.error;
@@ -1516,11 +1612,17 @@ export const ErdView = () => {
 							onToggleCollapse={handleToggleCollapse}
 							onEditNode={setEditingNodeId}
 							onDeleteNode={handleDeleteNode}
+							onReorderColumns={handleReorderColumns}
+							onNodeResizeStart={pushHistory}
+							onNodeResize={handleNodeResize}
+							onNodeResizeEnd={handleNodeResizeEnd}
 							onConnect={handleConnect}
 							onSelectRelationship={setSelectedRelationshipId}
 							onNoteDragStart={pushHistory}
 							onNoteMove={handleNoteMove}
 							onNoteMoveEnd={handleNoteMoveEnd}
+							onNoteResize={handleNoteResize}
+							onNoteResizeEnd={handleNoteResizeEnd}
 							onNoteTextChange={handleNoteTextChange}
 							onNoteTextCommit={handleNoteTextCommit}
 							onNoteDelete={handleNoteDelete}

@@ -20,14 +20,18 @@ class ViewportUpdate(BaseModel):
 
 
 class NodeUpdate(BaseModel):
-    """A move, a collapse, or both. Omitted fields are left alone."""
+    """A move, resize or collapse. Omitted fields are left alone."""
 
     x: float | None = None
     y: float | None = None
     collapsed: bool | None = None
+    width: float | None = None
     # Only accepted for a diagram-only table; see ``update_node``.
     name: str | None = None
     columns: list[dict[str, Any]] | None = None
+    # Display order by column name. Accepted for catalog tables too: it changes
+    # the card, never the source schema.
+    column_order: list[str] | None = None
     # ``column name -> alias``. Documentation rather than schema, so it is
     # accepted for catalog tables too.
     column_notes: dict[str, str] | None = None
@@ -42,10 +46,12 @@ class NodeCreate(BaseModel):
     name: str
     table_id: str | None = None
     columns: list[dict[str, Any]] | None = None
+    column_order: list[str] | None = None
     indexes: list[dict[str, Any]] | None = None
     note: str | None = None
     x: float = 0.0
     y: float = 0.0
+    width: float = 248.0
 
 
 class RelationshipCreate(BaseModel):
@@ -56,7 +62,7 @@ class RelationshipCreate(BaseModel):
     target_node_id: str
     source_columns: list[str] = Field(default_factory=list)
     target_columns: list[str] = Field(default_factory=list)
-    cardinality: str = "many-to-one"
+    cardinality: str = "one-to-one"
     label: str | None = None
 
 
@@ -85,8 +91,10 @@ class NodeSnapshot(BaseModel):
     name: str
     x: float = 0.0
     y: float = 0.0
+    width: float = 248.0
     collapsed: bool = False
     columns: list[dict[str, Any]] | None = None
+    column_order: list[str] | None = None
     indexes: list[dict[str, Any]] | None = None
     note: str | None = None
 
@@ -99,7 +107,7 @@ class RelationshipSnapshot(BaseModel):
     target_node_id: str
     source_columns: list[str] = Field(default_factory=list)
     target_columns: list[str] = Field(default_factory=list)
-    cardinality: str = "many-to-one"
+    cardinality: str = "one-to-one"
     label: str | None = None
 
 
@@ -193,7 +201,7 @@ class AssistantRelationship(BaseModel):
     target: str
     source_columns: list[str] = Field(default_factory=list)
     target_columns: list[str] = Field(default_factory=list)
-    cardinality: str = "many-to-one"
+    cardinality: str = "one-to-one"
     label: str | None = None
 
 

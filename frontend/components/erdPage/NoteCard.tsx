@@ -14,6 +14,7 @@ type NoteCardProps = {
 	note: ErdNote;
 	readOnly: boolean;
 	onDragStart: (event: ReactPointerEvent, noteId: string) => void;
+	onResizeStart: (event: ReactPointerEvent, noteId: string) => void;
 	onTextChange: (noteId: string, text: string) => void;
 	onTextCommit: (noteId: string) => void;
 	onDelete: (noteId: string) => void;
@@ -23,6 +24,7 @@ export const NoteCard = ({
 	note,
 	readOnly,
 	onDragStart,
+	onResizeStart,
 	onTextChange,
 	onTextCommit,
 	onDelete,
@@ -79,6 +81,18 @@ export const NoteCard = ({
 				placeholder={t('Write a note…')}
 				className="h-[calc(100%-1.5rem)] w-full resize-none rounded-b-lg bg-transparent px-2 py-1.5 text-[11px] leading-relaxed text-amber-950 outline-none placeholder:text-amber-900/40"
 			/>
+			{!readOnly && (
+				<span
+					className="absolute -bottom-1.5 -right-1.5 z-10 h-3.5 w-3.5 cursor-nwse-resize rounded-sm border border-amber-500 bg-white"
+					onPointerDown={(event) => {
+						event.stopPropagation();
+						onResizeStart(event, note.id);
+					}}
+					role="button"
+					aria-label={t('Resize note')}
+					title={t('Drag to resize note')}
+				/>
+			)}
 		</div>
 	);
 };

@@ -66,12 +66,23 @@ _connectors: list[SQLDatabase] | None = None
 
 
 def parse_connection_strings(raw: str) -> list[str]:
-    """Return connection URLs separated by commas, newlines, or both."""
-    return [
-        connection_string.strip()
-        for connection_string in re.split(r"[,\r\n]+", raw)
-        if connection_string.strip()
-    ]
+    """Return connection URLs separated by commas, newlines, or both.
+
+    A comma is only a separator when the next token starts another URL scheme.
+    SQL Server accepts ``host,1433`` as its server address, and splitting that
+    on every comma turns one valid connection into two broken fragments.
+    """
+    connections: list[str] = []
+    for line in re.split(r"[\r\n]+", raw):
+        for connection_string in re.split(
+            r",\s*(?=[A-Za-z][A-Za-z0-9+.-]*://)", line
+        ):
+            # A trailing comma before a newline is a separator with nothing
+            # after it; drop it rather than leaving it on the URL.
+            connection_string = connection_string.strip().rstrip(",").strip()
+            if connection_string:
+                connections.append(connection_string)
+    return connections
 
 
 def _redact(connection_string: str) -> str:

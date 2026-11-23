@@ -338,6 +338,42 @@ def test_resolution_logs_candidate_progress(caplog: pytest.LogCaptureFixture) ->
     )
 
 
+def test_declared_fk_to_another_column_of_the_same_table_is_kept() -> None:
+    column = {
+        "id": "manager-column",
+        "name": "manager_id",
+        "table_id": "employees",
+        "table_name": "employees",
+        "fk_target_col_id": "id-column",
+        "fk_target_table_id": "employees",
+    }
+    with (
+        patch(
+            "all_ontology.semantic.semantic_fk.find_unlinked_fk_columns",
+            return_value=[column],
+        ),
+        patch(
+            "all_ontology.semantic.semantic_fk.find_column_attribute_by_column_id",
+            return_value="id-attribute",
+        ),
+        patch(
+            "all_ontology.semantic.semantic_fk.merge_semantic_fk",
+            return_value=True,
+        ) as merge,
+        patch(
+            "all_ontology.semantic.semantic_fk.prune_disjoint_semantic_fks",
+            return_value=0,
+        ),
+        patch(
+            "all_ontology.semantic.semantic_fk.select_semantic_fk_join_defaults",
+            return_value=0,
+        ),
+    ):
+        assert semantic_fk.resolve_semantic_fks("hr") == 1
+
+    merge.assert_called_once_with("manager-column", "id-attribute")
+
+
 def _join_group_row(column_id: str, column_name: str) -> dict:
     return {
         "source_table_id": "orders-table",

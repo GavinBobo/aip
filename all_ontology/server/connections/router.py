@@ -52,6 +52,8 @@ class FileSourcePreviewBody(BaseModel):
 class FileSourceSettings(FileSourcePreviewBody):
     header_row: int = 0
     columns: list[str] | None = None
+    #: Zero-based positions to keep; omit to keep every column.
+    keep_columns: list[int] | None = None
 
 
 class FileSourceBody(FileSourceSettings):
@@ -133,6 +135,28 @@ def _parse_columns(raw: str | None) -> list[str] | None:
             status_code=422, detail="columns must be a JSON array of names"
         )
     return [str(item) for item in value]
+
+
+def _parse_keep_columns(raw: str | None) -> list[int] | None:
+    """Decode the ``keep_columns`` form field, a JSON array of indexes."""
+    if raw is None or not raw.strip():
+        return None
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=422, detail="keep_columns must be a JSON array of indexes"
+        ) from exc
+    if not isinstance(value, list):
+        raise HTTPException(
+            status_code=422, detail="keep_columns must be a JSON array of indexes"
+        )
+    try:
+        return [int(item) for item in value]
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422, detail="keep_columns must be a JSON array of indexes"
+        ) from exc
 
 
 @router.get("/connections/source", response_model=bool)
@@ -258,6 +282,9 @@ async def create_file_connection(
     columns: str | None = Form(
         default=None, description="JSON array of column names, in order"
     ),
+    keep_columns: str | None = Form(
+        default=None, description="JSON array of 0-based column indexes to keep"
+    ),
 ) -> dict:
     """Create a connection from an uploaded file.
 
@@ -266,6 +293,7 @@ async def create_file_connection(
     columns positionally; blank names fall back to the file's own header.
     """
     column_names = _parse_columns(columns)
+    keep = _parse_keep_columns(keep_columns)
     filename, content = await _read_upload(file)
     try:
         row = await run_in_threadpool(
@@ -277,6 +305,7 @@ async def create_file_connection(
             delimiter=delimiter,
             header_row=header_row,
             columns=column_names,
+            keep_columns=keep,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -300,6 +329,7 @@ def create_file_connection_from_path(body: FileSourceBody) -> dict:
             header_row=body.header_row,
             columns=body.columns,
             delimiter=body.delimiter,
+            keep_columns=body.keep_columns,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -392,6 +422,7 @@ async def replace_file_dataset(
     delimiter: str | None = Form(default=None),
     header_row: int = Form(default=0),
     columns: str | None = Form(default=None),
+    keep_columns: str | None = Form(default=None),
 ) -> dict:
     """Replace a file connection's data, keeping its name.
 
@@ -399,6 +430,7 @@ async def replace_file_dataset(
     header row, and column names can all change. The catalog is rebuilt.
     """
     column_names = _parse_columns(columns)
+    keep = _parse_keep_columns(keep_columns)
     filename, content = await _read_upload(file)
     try:
         row = await run_in_threadpool(
@@ -410,6 +442,7 @@ async def replace_file_dataset(
             delimiter=delimiter,
             header_row=header_row,
             columns=column_names,
+            keep_columns=keep,
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -440,6 +473,7 @@ def replace_file_dataset_from_path(
             header_row=body.header_row,
             columns=body.columns,
             delimiter=body.delimiter,
+            keep_columns=body.keep_columns,
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

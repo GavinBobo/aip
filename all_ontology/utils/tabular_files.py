@@ -325,6 +325,21 @@ def _clean_columns(requested: Sequence[str] | None, width: int) -> list[str]:
     return names
 
 
+def _kept_indices(requested: Sequence[int], width: int) -> list[int]:
+    """Validate and order the operator's column selection."""
+    try:
+        kept = sorted({int(index) for index in requested})
+    except (TypeError, ValueError) as exc:
+        raise TabularFileError(
+            "Column selection must be a list of column indexes"
+        ) from exc
+    if not kept:
+        raise TabularFileError("Select at least one column")
+    if kept[0] < 0 or kept[-1] >= width:
+        raise TabularFileError("A selected column is outside the file")
+    return kept
+
+
 def build_frame(
     filename: str,
     content: bytes,
@@ -333,12 +348,15 @@ def build_frame(
     header_row: int = 0,
     columns: Sequence[str] | None = None,
     delimiter: str | None = None,
+    keep_columns: Sequence[int] | None = None,
 ) -> pd.DataFrame:
     """Return the table the uploaded file describes.
 
     *header_row* is a zero-based row number inside the file; every row above it
     is skipped and that row becomes the column names. *columns* overrides those
-    names positionally.
+    names positionally. *keep_columns* is a set of zero-based positions to keep:
+    anything else is dropped before the names are applied, so the stored table
+    only carries the columns the operator selected.
     """
     delimiter = normalize_delimiter(delimiter)
     file_format = detect_format(filename)
@@ -347,8 +365,17 @@ def build_frame(
             frame = pd.read_parquet(io.BytesIO(content))
         except Exception as exc:  # noqa: BLE001 - surfaced as a 422
             raise TabularFileError(f"Could not read the Parquet file: {exc}") from exc
+        names = (
+            [str(name) for name in columns]
+            if columns is not None
+            else [str(name) for name in frame.columns]
+        )
+        if keep_columns is not None:
+            kept = _kept_indices(keep_columns, frame.shape[1])
+            frame = frame.iloc[:, kept]
+            names = [names[index] for index in kept]
         frame.columns = _clean_columns(
-            columns if columns is not None else [str(c) for c in frame.columns],
+            names,
             frame.shape[1],
         )
     else:
@@ -378,6 +405,10 @@ def build_frame(
                 raise TabularFileError(f"Could not read the workbook: {exc}") from exc
         else:
             frame, _ = _read_csv(content, header=header, delimiter=delimiter)
+        if keep_columns is not None:
+            kept = _kept_indices(keep_columns, frame.shape[1])
+            frame = frame.iloc[:, kept]
+            columns = [columns[index] for index in kept]
         frame.columns = _clean_columns(columns, frame.shape[1])
 
     # Excel files routinely carry trailing blank rows from formatting; they

@@ -205,7 +205,7 @@ export const ChatSidebar = ({
 
 			{/* Sidebar panel */}
 			<aside
-				className={`fixed inset-y-0 left-12 z-20 flex w-[296px] flex-col border-r border-zinc-200 bg-white transition-transform duration-200 dark:border-zinc-800 dark:bg-zinc-950 lg:static lg:translate-x-0 ${
+				className={`fixed inset-y-0 left-0 z-20 flex w-[296px] flex-col border-r border-zinc-200 bg-white transition-transform duration-200 dark:border-zinc-800 dark:bg-zinc-950 lg:static lg:translate-x-0 ${
 					isOpen ? 'translate-x-0' : '-translate-x-full'
 				}`}
 			>

@@ -33,6 +33,8 @@ export type FileConnectionInput = {
 	delimiter?: string | null;
 	header_row: number;
 	columns: string[];
+	/** Zero-based positions to keep; omit to keep every column. */
+	keep_columns?: number[];
 };
 
 export type FileServerPathInput = Omit<FileConnectionInput, 'database'> & {
@@ -120,6 +122,7 @@ export const connectionsApi = {
 				delimiter: input.delimiter,
 				header_row: input.header_row,
 				columns: input.columns,
+				keep_columns: input.keep_columns,
 			}),
 		),
 
@@ -135,6 +138,7 @@ export const connectionsApi = {
 				delimiter: input.delimiter,
 				header_row: input.header_row,
 				columns: input.columns,
+				keep_columns: input.keep_columns,
 			}),
 		),
 

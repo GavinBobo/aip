@@ -5,6 +5,7 @@
 'use client';
 
 import { t } from '@/i18n';
+import { connectionNameErrorMessage } from '@/components/connectionsPage/connection-name';
 
 import type { ChangeEvent } from 'react';
 import { Spinner } from '@nvidia/foundations-react-core';
@@ -112,6 +113,13 @@ export const ApiConnectionStep = ({
 								'Letters, digits, and underscores; must not start with a digit. One endpoint becomes one table.',
 							)}
 				</span>
+				{!nameReadOnly &&
+					values.database.trim() !== '' &&
+					connectionNameErrorMessage(values.database) != null && (
+						<span className="text-xs text-red-500">
+							{connectionNameErrorMessage(values.database)}
+						</span>
+					)}
 			</label>
 
 			<div className="flex gap-2">

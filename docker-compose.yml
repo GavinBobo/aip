@@ -4,7 +4,9 @@
 
 services:
   postgres:
-    image: pgvector/pgvector:pg17
+    # Locally built PostgreSQL 16 + pgvector, used because this machine cannot
+    # reach Docker Hub reliably. Build it with deploy/postgres/Dockerfile.
+    image: allontology/postgres-pgvector:16
     container_name: postgres
     restart: unless-stopped
     ports:

@@ -117,6 +117,24 @@ def test_build_frame_uses_the_header_row_when_no_names_are_given() -> None:
     assert list(frame.columns) == ["Customer ID", "Name", "Amount", "Region"]
 
 
+def test_build_frame_keeps_only_selected_columns() -> None:
+    frame = build_frame(
+        "sales.csv",
+        b"id,name,qty\n1,alpha,10\n2,beta,20\n",
+        keep_columns=[0, 2],
+    )
+
+    assert list(frame.columns) == ["id", "qty"]
+    assert frame.shape == (2, 2)
+
+
+def test_build_frame_rejects_an_empty_or_out_of_range_selection() -> None:
+    with pytest.raises(TabularFileError, match="at least one"):
+        build_frame("sales.csv", b"id,qty\n1,10\n", keep_columns=[])
+    with pytest.raises(TabularFileError, match="outside the file"):
+        build_frame("sales.csv", b"id,qty\n1,10\n", keep_columns=[2])
+
+
 def test_tab_separated_file_is_detected() -> None:
     frame = build_frame("x.tsv", b"id\tlabel\n1\talpha\n2\tbeta\n")
 

@@ -13,6 +13,11 @@ import {
 	type FileSourceMode,
 } from '@/components/connectionsPage/steps/FileConnectionStep';
 import { ConnectionSelectDataStep } from '@/components/connectionsPage/steps/ConnectionSelectDataStep';
+import {
+	connectionNameErrorMessage,
+	isValidConnectionName,
+	RESERVED_CONNECTION_NAMES,
+} from '@/components/connectionsPage/connection-name';
 import { t } from '@/i18n';
 import { ConnectionTypeStep } from '@/components/connectionsPage/steps/ConnectionTypeStep';
 import {
@@ -99,8 +104,11 @@ const defaultConnectionName = (fileName: string): string => {
 	let name = stem.replace(/[^0-9A-Za-z_]+/g, '_').replace(/^_+|_+$/g, '');
 	if (name === '') name = 'dataset';
 	if (/^[0-9]/.test(name)) name = `t_${name}`;
+	if (RESERVED_CONNECTION_NAMES.has(name.toLowerCase())) name = `${name}_dataset`;
 	return name.slice(0, 64);
 };
+
+const connectionNameProblem = connectionNameErrorMessage;
 
 /** Stored JSON settings rendered for a textarea; empty objects become blank. */
 const jsonText = (value: unknown): string => {
@@ -185,6 +193,8 @@ export const ConnectionModal = ({
 	);
 	const [fileHeaderRow, setFileHeaderRow] = useState(storedFile?.header_row ?? 0);
 	const [fileColumns, setFileColumns] = useState<string[]>(storedFile?.columns ?? []);
+	/** One flag per preview column; unchecked columns are not materialised. */
+	const [fileKeep, setFileKeep] = useState<boolean[]>([]);
 	// A file can arrive through a browser upload or from a shared folder the
 	// backend can already read. Editing remembers which one it came from.
 	const [fileSourceMode, setFileSourceMode] = useState<FileSourceMode>(
@@ -363,6 +373,7 @@ export const ConnectionModal = ({
 		setFileSheet(preview.sheet);
 		setFileHeaderRow(preview.detected_header_row);
 		setFileColumns(preview.column_names);
+		setFileKeep(Array.from({ length: preview.column_count }, () => true));
 		setFileError(null);
 	}, []);
 
@@ -381,6 +392,7 @@ export const ConnectionModal = ({
 			if ('error' in res && res.error) {
 				setFilePreview(null);
 				setFileColumns([]);
+				setFileKeep([]);
 				setFileError(res.message ?? t('Could not read the file.'));
 				return;
 			}
@@ -404,6 +416,7 @@ export const ConnectionModal = ({
 			if ('error' in res && res.error) {
 				setFilePreview(null);
 				setFileColumns([]);
+				setFileKeep([]);
 				setFileError(res.message ?? t('Could not read the file.'));
 				return;
 			}
@@ -423,6 +436,7 @@ export const ConnectionModal = ({
 			setFileSheet(null);
 			setFileHeaderRow(0);
 			setFileColumns([]);
+			setFileKeep([]);
 			setFileError(null);
 			setAlert(null);
 			if (mode === 'upload' && selectedFile != null) {
@@ -549,6 +563,23 @@ export const ConnectionModal = ({
 		);
 	}, []);
 
+	const handleColumnToggle = useCallback((index: number): void => {
+		setFileKeep((previous) => {
+			const next = previous.length === fileColumns.length
+				? [...previous]
+				: Array.from({ length: fileColumns.length }, () => true);
+			next[index] = !next[index];
+			return next;
+		});
+	}, [fileColumns.length]);
+
+	const handleSelectAllColumns = useCallback(
+		(select: boolean): void => {
+			setFileKeep(Array.from({ length: fileColumns.length }, () => select));
+		},
+		[fileColumns.length],
+	);
+
 	/** The connection payload for the API endpoints (form text → JSON). */
 	const buildApiConnection = useCallback((): Record<string, unknown> => {
 		const columns =
@@ -643,6 +674,11 @@ export const ConnectionModal = ({
 				setAlert(t('A name is required.'));
 				return;
 			}
+			const apiNameProblem = connectionNameProblem(apiValues.database);
+			if (apiNameProblem) {
+				setAlert(apiNameProblem);
+				return;
+			}
 
 			setLoading(true);
 			setAlert(null);
@@ -657,9 +693,10 @@ export const ConnectionModal = ({
 				const message =
 					'message' in res && typeof res.message === 'string' ? res.message : undefined;
 				setAlert(
-					(message ?? editing)
-						? t('Failed to update the connection.')
-						: t('Failed to create the connection.'),
+					message ??
+						(editing
+							? t('Failed to update the connection.')
+							: t('Failed to create the connection.')),
 				);
 				return;
 			}
@@ -682,14 +719,32 @@ export const ConnectionModal = ({
 				setAlert(t('A name is required.'));
 				return;
 			}
+			const fileNameProblem = connectionNameProblem(fileDatabase);
+			if (fileNameProblem) {
+				setAlert(fileNameProblem);
+				return;
+			}
 
 			setLoading(true);
 			setAlert(null);
+			const keepColumns = (
+				fileKeep.length === fileColumns.length
+					? fileKeep
+					: Array.from({ length: fileColumns.length }, () => true)
+			)
+				.map((selected, index) => (selected ? index : -1))
+				.filter((index) => index >= 0);
+			if (keepColumns.length === 0) {
+				setLoading(false);
+				setAlert(t('Select at least one column.'));
+				return;
+			}
 			const fileSettings = {
 				sheet: fileSheet,
 				delimiter: effectiveDelimiter || null,
 				header_row: fileHeaderRow,
 				columns: fileColumns,
+				keep_columns: keepColumns,
 			};
 			let res: { data: Connection } | { error: boolean; message?: string };
 			if (fileSourceMode === 'server') {
@@ -728,9 +783,10 @@ export const ConnectionModal = ({
 				const message =
 					'message' in res && typeof res.message === 'string' ? res.message : undefined;
 				setAlert(
-					(message ?? editing)
-						? t('Failed to update the connection.')
-						: t('Failed to create the connection.'),
+						message ??
+							(editing
+								? t('Failed to update the connection.')
+								: t('Failed to create the connection.')),
 				);
 				return;
 			}
@@ -747,9 +803,18 @@ export const ConnectionModal = ({
 			return;
 		}
 
+		const input = buildConnection();
+		if (connection == null) {
+			const sqlNameProblem = connectionNameProblem(
+				String((input as Record<string, unknown>).database ?? ''),
+			);
+			if (sqlNameProblem) {
+				setAlert(sqlNameProblem);
+				return;
+			}
+		}
 		setLoading(true);
 		setAlert(null);
-		const input = buildConnection();
 		const res =
 			connection == null
 				? await connectionsApi.create(input)
@@ -758,9 +823,10 @@ export const ConnectionModal = ({
 
 		if ('error' in res && res.error) {
 			setAlert(
-				(res.message ?? editing)
-					? t('Failed to update the connection.')
-					: t('Failed to create the connection.'),
+				res.message ??
+					(editing
+						? t('Failed to update the connection.')
+						: t('Failed to create the connection.')),
 			);
 			return;
 		}
@@ -777,6 +843,7 @@ export const ConnectionModal = ({
 		fileDatabase,
 		effectiveDelimiter,
 		fileHeaderRow,
+		fileKeep,
 		filePreview,
 		fileSheet,
 		fileSourceMode,
@@ -814,12 +881,15 @@ export const ConnectionModal = ({
 						customDelimiter={customDelimiter}
 						headerRow={fileHeaderRow}
 						columnNames={fileColumns}
+						selectedColumns={fileKeep}
 						onSelectFile={handleSelectFile}
 						onSheetChange={handleSheetChange}
 						onDelimiterChange={handleDelimiterChange}
 						onCustomDelimiterChange={handleCustomDelimiterChange}
 						onHeaderRowChange={handleHeaderRowChange}
 						onColumnNameChange={handleColumnNameChange}
+						onColumnToggle={handleColumnToggle}
+						onSelectAllColumns={handleSelectAllColumns}
 					/>
 				);
 			case API_STEP:
@@ -890,8 +960,14 @@ export const ConnectionModal = ({
 		// Require a successful test before advancing so the schema list can load.
 		const fileHasSource =
 			fileSourceMode === 'server' ? serverPath.trim() !== '' : selectedFile != null;
-		const fileReady = fileHasSource && filePreview != null && fileDatabase.trim() !== '';
-		const apiReady = apiPreview != null && apiValues.database.trim() !== '';
+		// Deliberately does not include the name: an empty or invalid name is
+		// reported on submit with a specific message instead of leaving the
+		// operator with a disabled button and no visible reason.
+		const fileReady = fileHasSource && filePreview != null;
+		const apiReady =
+			apiPreview != null &&
+			apiValues.database.trim() !== '' &&
+			(editing || isValidConnectionName(apiValues.database));
 		const blocked = isFileType
 			? loading || fileBusy || !fileReady
 			: isApiType
@@ -920,7 +996,6 @@ export const ConnectionModal = ({
 		canContinue,
 		editing,
 		fileBusy,
-		fileDatabase,
 		filePreview,
 		fileSourceMode,
 		handleBack,

@@ -260,57 +260,6 @@ export const DataTreeSelect = ({
 		setOpenIds((prev) => ({ ...prev, [table.id]: !(prev[table.id] === true) }));
 	};
 
-	const loadTablesForSchema = async (
-		schema: Schema,
-		loadingId: string = schema.id,
-	): Promise<void> => {
-		if (schema.tables.length > 0 || schema.tables_count === 0) return;
-		setLoading(loadingId, true);
-		try {
-			await onLoadTables(schema.id);
-		} finally {
-			setLoading(loadingId, false);
-		}
-	};
-
-	const getCompactDatabaseLabel = (db: Database): string => {
-		const shouldCompactSchema = db.num_of_schemas === 1 && db.schemas.length === 1;
-		if (!shouldCompactSchema) return db.name;
-		const [schema] = db.schemas;
-		if (schema.tables_count === 1 && schema.tables.length === 1) {
-			return `${db.name}/${schema.schema_name}/${schema.tables[0].name}`;
-		}
-		return `${db.name}/${schema.schema_name}`;
-	};
-
-	const hasCompactDatabaseChildren = (db: Database): boolean => {
-		if (db.num_of_schemas !== 1) return true;
-		const [schema] = db.schemas;
-		if (schema == null) return true;
-		return schema.tables_count > 1;
-	};
-
-	const toggleCompactDatabase = async (db: Database): Promise<void> => {
-		const isOpen = openIds[db.id] === true;
-		const nextOpen = !isOpen;
-		setOpenIds((prev) => ({ ...prev, [db.id]: nextOpen }));
-		if (!nextOpen) return;
-		let schemas = db.schemas;
-		if (schemas.length === 0) {
-			setLoading(db.id, true);
-			try {
-				schemas = await onLoadSchemas(db.id);
-			} finally {
-				setLoading(db.id, false);
-			}
-		}
-		const [schema] = schemas;
-		if (schema == null) return;
-		if (schema.tables_count > 0) {
-			await loadTablesForSchema(schema, db.id);
-		}
-	};
-
 	const row = ({
 		depth,
 		id,
@@ -401,54 +350,27 @@ export const DataTreeSelect = ({
 		>
 			<div className="max-h-[min(50vh,420px)] overflow-y-auto">
 				{databases.map((db) => {
-					// Folding a lone schema into its database's row saves a
-					// step on the way to the tables. With tables hidden there
-					// is no way down to save, and the fold would hide the one
-					// schema the caller came to tick. Schemas themselves are
-					// not drawn when `showSchemas` is off, so there is nothing
-					// to fold into the database row either.
-					const isCompactDb = showTableRows && db.num_of_schemas === 1;
 					const dbOpen = openIds[db.id] === true;
 					const dbDescendantIds = getDatabaseDescendantIds(db);
-					const dbSelectionDescendantIds = isCompactDb
-						? db.schemas.flatMap((schema) => getSchemaDescendantIds(schema))
-						: dbDescendantIds;
-					const dbSelectionState = getSelectionState(db.id, dbSelectionDescendantIds);
+					const dbSelectionState = getSelectionState(db.id, dbDescendantIds);
 					return (
 						<div key={db.id}>
 							{row({
 								depth: 0,
 								id: db.id,
-								label: isCompactDb ? getCompactDatabaseLabel(db) : db.name,
-								// A folded row names a path but is still the
-								// database's row, and the database is the part
-								// of that path the icon can speak for.
+								label: db.name,
 								node: DataModels.DB,
 								hasChildren: showSchemas
-									? isCompactDb
-										? hasCompactDatabaseChildren(db)
-										: db.num_of_schemas > 0
+									? db.num_of_schemas > 0
 									: false,
 								isOpen: dbOpen,
 								selectionState: dbSelectionState,
 								onSelectionChange: () =>
 									toggleSelection(db.id, dbDescendantIds, dbSelectionState),
-								onToggle: () =>
-									isCompactDb ? toggleCompactDatabase(db) : toggleDatabase(db),
+								onToggle: () => toggleDatabase(db),
 							})}
 							{showSchemas && dbOpen
-								? isCompactDb
-									? (() => {
-											const [schema] = db.schemas;
-											if (schema == null) return null;
-											if (schema.tables_count > 1) {
-												return schema.tables.map((table) =>
-													renderTableRow(table, 1),
-												);
-											}
-											return null;
-										})()
-									: db.schemas.map((schema) => {
+								? db.schemas.map((schema) => {
 											const schemaOpen = openIds[schema.id] === true;
 											const schemaDescendantIds =
 												getSchemaDescendantIds(schema);

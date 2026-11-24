@@ -173,6 +173,12 @@ def test_valid_connection_names_are_accepted(name: str) -> None:
     assert files.validate_name(name) == name
 
 
+@pytest.mark.parametrize("name", ["test", "source", "file", "api", "TEST"])
+def test_reserved_connection_names_are_rejected(name: str) -> None:
+    with pytest.raises(ValueError, match="reserved"):
+        files.validate_name(name)
+
+
 def test_replace_rebuilds_the_catalog(
     monkeypatch: MonkeyPatch,
 ) -> None:

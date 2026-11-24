@@ -9,10 +9,13 @@ SPDX-License-Identifier: Apache-2.0
 .DESCRIPTION
     Brings up, in order and only once:
 
-      1. Postgres            Docker container `postgres` (the only containerised piece)
+      1. Postgres            the database described by POSTGRES_* in .env
       2. FastAPI backend     .venv python -m uvicorn, --reload, 127.0.0.1:3001
       3. Ingestion service   .venv python -m all_ontology.ingestion_service, 3002
       4. Next.js frontend    pnpm dev, 3010
+
+    Nothing here starts Docker. The database is whatever .env points at, so an
+    external or already-running PostgreSQL works unchanged.
 
     Each step waits for the previous one to actually answer before the next
     starts, so the "connection timeout expired / schema revision unreadable"
@@ -38,10 +41,6 @@ param(
     [switch]$NoIngestion,
     # Do not wait for the database at all (rarely useful).
     [switch]$SkipPostgres,
-    # Start the bundled Postgres container from docker-compose.yml. Off by
-    # default: the database is whatever POSTGRES_* in .env points at, which is
-    # normally an instance this repository does not manage.
-    [switch]$WithDockerPostgres,
     # How long to wait for the backend /health endpoint.
     [int]$HealthTimeoutSec = 240,
     [int]$FrontendTimeoutSec = 300
@@ -83,46 +82,26 @@ if (-not (Test-Path -LiteralPath $python)) {
 # --------------------------------------------------------------------------- #
 # 1. Postgres
 #
-# The database is whatever POSTGRES_* in .env points at. This repository does
-# not own it: in a company setup it is a managed instance, and starting a
-# container would either be pointless or shadow the real one. `-WithDockerPostgres`
-# is the opt-in for the bundled compose service, which is only useful on a
-# machine that has nothing else.
+# The database is whatever POSTGRES_* in .env points at. This script never
+# starts a container: an existing PostgreSQL (local service, managed instance,
+# or one you started yourself) is used as-is.
 # --------------------------------------------------------------------------- #
 if ($SkipPostgres) {
     Write-Warn 'skipping the database wait (-SkipPostgres)'
 } else {
     Write-Step 'Postgres'
-    if ($WithDockerPostgres) {
-        if (-not (Test-DockerEngine)) {
-            $desktop = 'C:\Program Files\Docker\Docker\Docker Desktop.exe'
-            if (Test-Path -LiteralPath $desktop) {
-                Write-Warn 'Docker engine is not responding; launching Docker Desktop'
-                Start-Process -FilePath $desktop | Out-Null
-            }
-            $deadline = (Get-Date).AddSeconds(180)
-            while ((Get-Date) -lt $deadline -and -not (Test-DockerEngine)) { Start-Sleep -Seconds 3 }
-            if (-not (Test-DockerEngine)) {
-                Write-Fail 'Docker engine did not come up within 180s - start Docker Desktop and retry'
-                exit 1
-            }
-        }
+    $dbHost = Get-DotEnvValue -Path (Join-Path $repo '.env') -Key 'POSTGRES_HOST'
+    $dbPort = Get-DotEnvValue -Path (Join-Path $repo '.env') -Key 'POSTGRES_PORT'
+    $dbName = Get-DotEnvValue -Path (Join-Path $repo '.env') -Key 'POSTGRES_DATABASE'
+    Write-Host "  ..  using the database configured in .env: ${dbHost}:${dbPort}/${dbName}" -ForegroundColor DarkGray
 
-        & docker compose up -d --wait postgres
-        if ($LASTEXITCODE -ne 0) {
-            Write-Fail 'docker compose up -d --wait postgres failed'
-            exit 1
-        }
-    }
-
-    # Either way, prove the app's own credentials and target database work before
-    # starting anything that reads the Alembic revision at import time. A
-    # `--wait` that only watched a container healthcheck is not that proof.
+    # Prove the app's own credentials and target database work before starting
+    # anything that reads the Alembic revision at import time.
     & $python -m dev_tools.wait_for_db 180
     if ($LASTEXITCODE -ne 0) {
         Write-Fail 'the database in .env never accepted a connection'
         Write-Host "  host: $((Get-DotEnvValue -Path (Join-Path $repo '.env') -Key 'POSTGRES_HOST'))" -ForegroundColor DarkGray
-        if ($WithDockerPostgres) { & docker compose logs --tail 40 postgres }
+        Write-Host '  start that PostgreSQL instance (or point POSTGRES_* at another one) and retry.' -ForegroundColor DarkGray
         exit 1
     }
     Write-Ok 'database accepting connections'

@@ -44,6 +44,12 @@ MAX_UPLOAD_BYTES = int(os.environ.get("FILE_UPLOAD_MAX_BYTES", str(100 * 1024 * 
 #: The prompt renders that unquoted, so the name has to be a plain identifier.
 _NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
 
+#: Names shadowed by fixed ``/connections/<name>`` routes. The Next.js route
+#: handlers for ``test``, ``source``, ``file``, and ``api`` win over the
+#: dynamic ``[database_name]`` handler, so a connection with one of these
+#: names could be created yet never read, updated, or deleted.
+_RESERVED_NAMES = frozenset({"test", "source", "file", "api"})
+
 
 def validate_name(name: str) -> str:
     """Return a cleaned connection name or raise ``ValueError``."""
@@ -52,6 +58,12 @@ def validate_name(name: str) -> str:
         raise ValueError(
             "Database name must start with a letter or underscore and contain "
             "only letters, digits, and underscores (up to 64 characters)"
+        )
+    if cleaned.lower() in _RESERVED_NAMES:
+        # These collide with fixed /connections/<name> routes on both the
+        # FastAPI and Next.js sides; the connection would become unreachable.
+        raise ValueError(
+            "That connection name is reserved by the API; choose a different name"
         )
     return cleaned
 
@@ -255,6 +267,7 @@ def _materialise(
     header_row: int,
     columns: Sequence[str] | None,
     delimiter: str | None,
+    keep_columns: Sequence[int] | None = None,
 ) -> tuple[bytes, list[str], int]:
     """Build the stored Parquet plus the column names and row count."""
     _checked_content(filename, content)
@@ -266,6 +279,7 @@ def _materialise(
             header_row=header_row,
             columns=columns,
             delimiter=delimiter,
+            keep_columns=keep_columns,
         )
     except TabularFileError:
         raise
@@ -283,6 +297,7 @@ def create_file_connection(
     header_row: int = 0,
     columns: Sequence[str] | None = None,
     delimiter: str | None = None,
+    keep_columns: Sequence[int] | None = None,
     source_path: str | None = None,
 ) -> dict[str, Any]:
     """Store the upload and register it as a connection."""
@@ -298,6 +313,7 @@ def create_file_connection(
         header_row=header_row,
         columns=columns,
         delimiter=delimiter,
+        keep_columns=keep_columns,
     )
     table_name = sanitize_table_name(database)
     upsert_dataset(
@@ -337,6 +353,7 @@ def replace_file_dataset(
     header_row: int = 0,
     columns: Sequence[str] | None = None,
     delimiter: str | None = None,
+    keep_columns: Sequence[int] | None = None,
     source_path: str | None = None,
 ) -> dict[str, Any]:
     """Replace a file connection's data and re-ingest it.
@@ -359,6 +376,7 @@ def replace_file_dataset(
         header_row=header_row,
         columns=columns,
         delimiter=delimiter,
+        keep_columns=keep_columns,
     )
     table_name = sanitize_table_name(database_name)
     upsert_dataset(
@@ -397,6 +415,7 @@ def create_file_connection_from_path(
     header_row: int = 0,
     columns: Sequence[str] | None = None,
     delimiter: str | None = None,
+    keep_columns: Sequence[int] | None = None,
 ) -> dict[str, Any]:
     """Create a file connection by reading a file from a shared folder."""
     source, _, _ = _resolve_source_path(path)
@@ -409,6 +428,7 @@ def create_file_connection_from_path(
         header_row=header_row,
         columns=columns,
         delimiter=delimiter,
+        keep_columns=keep_columns,
         source_path=str(source),
     )
 
@@ -421,6 +441,7 @@ def replace_file_dataset_from_path(
     header_row: int = 0,
     columns: Sequence[str] | None = None,
     delimiter: str | None = None,
+    keep_columns: Sequence[int] | None = None,
 ) -> dict[str, Any]:
     """Replace a file connection's rows from a shared-folder file."""
     source, _, _ = _resolve_source_path(path)
@@ -433,5 +454,6 @@ def replace_file_dataset_from_path(
         header_row=header_row,
         columns=columns,
         delimiter=delimiter,
+        keep_columns=keep_columns,
         source_path=str(source),
     )

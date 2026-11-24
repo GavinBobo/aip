@@ -453,8 +453,8 @@ To use self-hosted NIM or any OpenAI-compatible endpoint, set
 unset falls back to `DEFAULT_MODELS_<FIELD>`, so the simplest setup fills in
 `DEFAULT_MODELS_*` and overrides only what differs. Use models
 that support structured output, and keep the embedding model the same for
-ingestion and queries. [`.env.example`](./.env.example) documents every
-variable.
+ingestion and queries. [`.env.example`](./.env.example) lists the settings you
+normally need to change.
 
 ### Predictions
 

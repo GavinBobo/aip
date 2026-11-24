@@ -9,6 +9,7 @@ import { useState, type ChangeEvent } from 'react';
 import { Spinner } from '@nvidia/foundations-react-core';
 import { Icon, IconName } from '@/common/icons';
 import type { FilePreview, ServerPathListing } from '@/types/connection';
+import { connectionNameErrorMessage } from '@/components/connectionsPage/connection-name';
 
 /** Extensions the backend accepts; `.pq` is parquet's short form. */
 const ACCEPT = '.csv,.tsv,.txt,.xlsx,.xls,.xlsm,.parquet,.pq';
@@ -43,12 +44,16 @@ export type FileConnectionStepProps = {
 	customDelimiter: string;
 	headerRow: number;
 	columnNames: string[];
+	/** One flag per preview column; unchecked columns are dropped on create. */
+	selectedColumns: boolean[];
 	onSelectFile: (file: File) => void;
 	onSheetChange: (sheet: string) => void;
 	onDelimiterChange: (value: string) => void;
 	onCustomDelimiterChange: (value: string) => void;
 	onHeaderRowChange: (row: number) => void;
 	onColumnNameChange: (index: number, name: string) => void;
+	onColumnToggle: (index: number) => void;
+	onSelectAllColumns: (select: boolean) => void;
 };
 
 const inputClassName =
@@ -91,12 +96,15 @@ export const FileConnectionStep = ({
 	customDelimiter,
 	headerRow,
 	columnNames,
+	selectedColumns,
 	onSelectFile,
 	onSheetChange,
 	onDelimiterChange,
 	onCustomDelimiterChange,
 	onHeaderRowChange,
 	onColumnNameChange,
+	onColumnToggle,
+	onSelectAllColumns,
 }: FileConnectionStepProps) => {
 	const [browserOpen, setBrowserOpen] = useState(false);
 	const [browseBusy, setBrowseBusy] = useState(false);
@@ -160,6 +168,13 @@ export const FileConnectionStep = ({
 								'Letters, digits, and underscores; must not start with a digit. Shown in the catalog and used to route questions. One file becomes one table.',
 							)}
 				</span>
+				{!nameReadOnly &&
+					databaseName.trim() !== '' &&
+					connectionNameErrorMessage(databaseName) != null && (
+						<span className="text-xs text-red-500">
+							{connectionNameErrorMessage(databaseName)}
+						</span>
+					)}
 			</label>
 
 			<div className="flex flex-col gap-2">
@@ -474,8 +489,64 @@ export const FileConnectionStep = ({
 						</div>
 					)}
 
+					<div className="flex items-center justify-between gap-2">
+						<span className="text-xs text-secondary dark:text-zinc-400">
+							{t('Click a column header to include or exclude it.')}
+						</span>
+						<button
+							type="button"
+							onClick={() =>
+								onSelectAllColumns(
+									!(
+										selectedColumns.length > 0 &&
+										selectedColumns.every(Boolean)
+									),
+								)
+							}
+							className="shrink-0 text-xs font-medium text-[#76b900] hover:underline"
+						>
+							{selectedColumns.length > 0 && selectedColumns.every(Boolean)
+								? t('Deselect all')
+								: t('Select all')}
+						</button>
+					</div>
+
 					<div className="max-h-[260px] overflow-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
 						<table className="min-w-full border-collapse text-xs">
+							<thead>
+								<tr className="sticky top-0 z-10 bg-zinc-50 text-[11px] dark:bg-zinc-900">
+									<th className="w-10 border-r border-zinc-200 bg-zinc-100 px-2 py-1 dark:border-zinc-700 dark:bg-zinc-800" />
+									{columnNames.map((name, index) => {
+										const selected = selectedColumns[index] !== false;
+										return (
+											<th
+												key={index}
+												className={`max-w-[220px] border-r border-zinc-200 p-0 text-left font-medium transition-colors dark:border-zinc-700 ${
+													selected
+														? 'bg-zinc-200 text-heading hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600'
+														: 'bg-zinc-100 text-zinc-400 hover:bg-zinc-200 dark:bg-zinc-800/60 dark:text-zinc-500 dark:hover:bg-zinc-700'
+												}`}
+											>
+												<button
+													type="button"
+													onClick={() => onColumnToggle(index)}
+													aria-pressed={selected}
+													title={t('Include column {0}', {
+														0: index + 1,
+													})}
+													className="flex w-full items-center gap-1 px-2 py-1"
+												>
+													<span
+														className={`truncate ${selected ? '' : 'line-through'}`}
+													>
+														{name || `${t('Column')} ${index + 1}`}
+													</span>
+												</button>
+											</th>
+										);
+									})}
+								</tr>
+							</thead>
 							<tbody>
 								{preview.rows.map((row, rowIndex) => (
 									<tr
@@ -498,14 +569,22 @@ export const FileConnectionStep = ({
 										</td>
 										{Array.from(
 											{ length: preview.column_count },
-											(_, columnIndex) => (
-												<td
-													key={columnIndex}
-													className="max-w-[220px] truncate whitespace-nowrap border-r border-zinc-100 px-2 py-1 last:border-r-0 dark:border-zinc-800"
-												>
-													{row[columnIndex] ?? ''}
-												</td>
-											),
+											(_, columnIndex) => {
+												const selected =
+													selectedColumns[columnIndex] !== false;
+												return (
+													<td
+														key={columnIndex}
+														className={`max-w-[220px] truncate whitespace-nowrap border-r border-zinc-100 px-2 py-1 last:border-r-0 dark:border-zinc-800 ${
+															selected
+																? 'bg-zinc-100/70 dark:bg-zinc-800/40'
+																: 'text-zinc-400 opacity-70 dark:text-zinc-500'
+														}`}
+													>
+														{row[columnIndex] ?? ''}
+													</td>
+												);
+											},
 										)}
 									</tr>
 								))}
@@ -516,6 +595,9 @@ export const FileConnectionStep = ({
 					<div className="flex flex-col gap-2">
 						<span className="text-sm font-medium text-heading dark:text-zinc-200">
 							{t('Column names')}{' '}
+						</span>
+						<span className="text-xs text-secondary dark:text-zinc-400">
+							{t('Columns you deselect are left out of the connection.')}
 						</span>
 						<div className="grid max-h-[220px] grid-cols-2 gap-2 overflow-y-auto pr-1">
 							{columnNames.map((name, index) => (
@@ -529,8 +611,13 @@ export const FileConnectionStep = ({
 										onChange={({ target }) =>
 											onColumnNameChange(index, target.value)
 										}
+										disabled={selectedColumns[index] === false}
 										data-testid={`file-connection-column-${index}`}
-										className={`${inputClassName} px-2 py-1 text-xs`}
+										className={`${inputClassName} px-2 py-1 text-xs ${
+											selectedColumns[index] === false
+												? 'cursor-not-allowed opacity-50'
+												: ''
+										}`}
 									/>
 								</label>
 							))}

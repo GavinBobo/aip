@@ -36,7 +36,9 @@ export const ImportExportDialog = ({
 	const [format, setFormat] = useState<ErdExportFormat>('dbml');
 	const [dialect, setDialect] = useState<SqlDialect>('postgres');
 	const [content, setContent] = useState('');
-	const [replace, setReplace] = useState(true);
+	// Merge into the current canvas unless the operator explicitly asks to
+	// replace it; an import should not wipe the existing diagram by default.
+	const [replace, setReplace] = useState(false);
 	const [warningsHidden, setWarningsHidden] = useState(true);
 	const fileRef = useRef<HTMLInputElement | null>(null);
 

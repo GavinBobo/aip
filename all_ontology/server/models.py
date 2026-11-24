@@ -1523,6 +1523,7 @@ class ParsingTaskDocument(ApiModel):
     stage: str | None = None
     progress_done: int = 0
     progress_total: int = 0
+    progress_percent: int = 0
     page_count: int | None = None
     processing_time_ms: float | None = None
     error_code: str | None = None
@@ -1563,6 +1564,7 @@ class ParsingRunSummary(ApiModel):
     stage: str | None = None
     progress_done: int = 0
     progress_total: int = 0
+    progress_percent: int = 0
     page_count: int | None = None
     processing_time_ms: float | None = None
     quality: dict[str, Any] = Field(default_factory=dict)
@@ -1588,6 +1590,7 @@ class ParsingRunDetail(ApiModel):
     stage: str | None = None
     progress_done: int = 0
     progress_total: int = 0
+    progress_percent: int = 0
     page_count: int | None = None
     options: dict[str, Any] = Field(default_factory=dict)
     model_snapshot: dict[str, Any] = Field(default_factory=dict)

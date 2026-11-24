@@ -132,6 +132,7 @@ export type ParsingTaskDocument = {
 	stage: string | null;
 	progress_done: number;
 	progress_total: number;
+	progress_percent: number;
 	page_count: number | null;
 	processing_time_ms: number | null;
 	error_code: string | null;
@@ -159,6 +160,7 @@ export type ParsingTask = {
 		status: string;
 		progress_done: number;
 		progress_total: number;
+		progress_percent: number;
 		result_path: string | null;
 		error_code: string | null;
 		error_message: string | null;
@@ -180,6 +182,7 @@ export type ParsingRunSummary = {
 	stage: string | null;
 	progress_done: number;
 	progress_total: number;
+	progress_percent: number;
 	page_count: number | null;
 	processing_time_ms: number | null;
 	quality: Record<string, unknown>;
@@ -216,6 +219,33 @@ export type ParsingHealth = {
 	ok: boolean;
 	backend: Record<string, unknown>;
 	layout: Record<string, unknown>;
+};
+
+export type ParsingSourceEntry = {
+	name: string;
+	path: string;
+	kind: 'directory' | 'file';
+	size?: number;
+	is_root?: boolean;
+};
+
+export type ParsingSourceListing = {
+	roots: string[];
+	path: string | null;
+	parent: string | null;
+	entries: ParsingSourceEntry[];
+};
+
+export type ParsingSourceScan = {
+	path: string;
+	count: number;
+	limit: number;
+	files: {
+		name: string;
+		path: string;
+		relative: string;
+		size: number;
+	}[];
 };
 
 export const parsingApi = {
@@ -258,6 +288,27 @@ export const parsingApi = {
 
 	/** Probe both services. `ok` is the only trustworthy success flag. */
 	health: () => requests.get<{ data: ParsingHealth }>('parsing/health'),
+
+	/** Allowlisted Windows/server shared folders. */
+	browseSources: (path?: string | null) =>
+		requests.get<{ data: ParsingSourceListing }>(
+			'parsing/sources',
+			path == null || path === '' ? {} : { path },
+		),
+
+	/** Recursively find every PDF below one selected shared folder. */
+	scanSources: (path: string) =>
+		requests.post<{ data: ParsingSourceScan }>('parsing/sources/scan', { path }),
+
+	/** Create one durable batch task from every PDF below the selected folder. */
+	createTaskFromFolder: (input: {
+		path: string;
+		name?: string;
+		profile: string;
+		options: Record<string, unknown>;
+		page_start?: number;
+		page_end?: number;
+	}) => requests.post<{ data: ParsingTask }>('parsing/tasks/from-folder', input),
 
 	/** Create a durable batch task; the worker owns it from here. */
 	createTask: (form: FormData) => requests.postForm<{ data: ParsingTask }>('parsing/tasks', form),

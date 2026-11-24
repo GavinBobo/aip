@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { parsingApi, type ParsingTask } from '@/api/parsing';
 import { Button } from '@/common/Button';
@@ -13,6 +14,7 @@ import { Spinner } from '@/common/Spinner';
 import { ButtonTheme, Size } from '@/enums/button';
 import { t } from '@/i18n';
 import { formatDuration, formatInstanceTime } from '@/lib/parsingInstances';
+import { ParsingFolderTaskModal } from './ParsingFolderTaskModal';
 
 const PAGE_SIZE = 20;
 
@@ -25,6 +27,7 @@ const statusClass = (status: string): string => {
 };
 
 export const ParsingTasksView = () => {
+	const router = useRouter();
 	const [tasks, setTasks] = useState<ParsingTask[] | null>(null);
 	const [total, setTotal] = useState(0);
 	const [page, setPage] = useState(0);
@@ -32,6 +35,7 @@ export const ParsingTasksView = () => {
 	const [status, setStatus] = useState('');
 	const [error, setError] = useState<string | null>(null);
 	const [reloadToken, setReloadToken] = useState(0);
+	const [folderModalOpen, setFolderModalOpen] = useState(false);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -70,12 +74,21 @@ export const ParsingTasksView = () => {
 						)}
 					</p>
 				</div>
-				<Link
-					href="/parsing"
-					className="inline-flex h-8 items-center rounded-lg bg-[#76b900] px-3 text-xs font-medium text-black transition-colors hover:bg-[#86c900]"
-				>
-					{t('New parsing task')}
-				</Link>
+				<div className="flex items-center gap-3">
+					<Link
+						href="/parsing"
+						className="text-xs text-[#5c9200] underline dark:text-[#a3e635]"
+					>
+						{t('Upload from browser')}
+					</Link>
+					<button
+						type="button"
+						className="inline-flex h-8 items-center rounded-lg bg-[#76b900] px-3 text-xs font-medium text-black transition-colors hover:bg-[#86c900]"
+						onClick={() => setFolderModalOpen(true)}
+					>
+						{t('New parsing task')}
+					</button>
+				</div>
 			</header>
 
 			<div className="flex flex-wrap items-center gap-2 px-6 pt-4">
@@ -227,6 +240,14 @@ export const ParsingTasksView = () => {
 					</div>
 				)}
 			</div>
+			<ParsingFolderTaskModal
+				open={folderModalOpen}
+				onClose={() => setFolderModalOpen(false)}
+				onCreated={(task) => {
+					setFolderModalOpen(false);
+					router.push(`/parsing/tasks/${encodeURIComponent(task.id)}`);
+				}}
+			/>
 		</div>
 	);
 };

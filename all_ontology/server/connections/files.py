@@ -202,6 +202,87 @@ def browse_source_path(raw_path: str | None = None) -> dict[str, Any]:
     }
 
 
+def resolve_source_directory(raw_path: str) -> Path:
+    """Resolve a shared-folder directory for another feature (parsing).
+
+    Kept public so the parsing page does not reimplement the allowlist. The
+    returned path has already been proved to live below ``FILE_SOURCE_ROOTS``.
+    """
+    directory, _, _ = _resolve_source_path(raw_path)
+    if not directory.is_dir():
+        raise ValueError(f"{raw_path!r} is not a directory")
+    return directory
+
+
+def scan_shared_files(
+    raw_path: str,
+    *,
+    suffixes: set[str],
+    max_files: int,
+) -> list[dict[str, Any]]:
+    """Recursively list matching files below one allowed shared directory.
+
+    Symlinked directories are not followed. Every candidate is resolved again
+    and checked against the roots, so a symlink or junction cannot walk out of
+    the configured allowlist.
+    """
+    directory, roots, _ = _resolve_source_path(raw_path)
+    if not directory.is_dir():
+        raise ValueError(f"{raw_path!r} is not a directory")
+
+    found: list[dict[str, Any]] = []
+    for current, dirnames, filenames in os.walk(directory, followlinks=False):
+        # Do not descend into a symlink/junction even if the OS lists it.
+        dirnames[:] = [
+            name for name in dirnames if not (Path(current) / name).is_symlink()
+        ]
+        for filename in filenames:
+            if Path(filename).suffix.lower() not in suffixes:
+                continue
+            candidate = Path(current) / filename
+            try:
+                resolved = candidate.resolve(strict=True)
+            except (OSError, RuntimeError):
+                continue
+            if _root_containing(resolved, roots) is None or not resolved.is_file():
+                continue
+            try:
+                size = resolved.stat().st_size
+            except OSError:
+                continue
+            found.append(
+                {
+                    "name": resolved.name,
+                    "path": str(resolved),
+                    "relative": resolved.relative_to(directory).as_posix(),
+                    "size": size,
+                }
+            )
+            if len(found) > max_files:
+                raise ValueError(
+                    f"该目录下找到超过 {max_files} 个文件，请选择更小的目录或分批处理"
+                )
+    found.sort(key=lambda item: item["relative"].lower())
+    return found
+
+
+def read_shared_bytes(raw_path: str, *, max_bytes: int) -> tuple[Path, bytes]:
+    """Read a shared-folder file for a consumer that has its own format checks."""
+    source, _, _ = _resolve_source_path(raw_path)
+    if not source.is_file():
+        raise ValueError(f"{raw_path!r} is not a file")
+    try:
+        size = source.stat().st_size
+    except OSError as exc:
+        raise ValueError(f"Could not read {str(source)!r}: {exc}") from exc
+    if size > max_bytes:
+        raise ValueError(f"{source.name} 超过 {max_bytes // (1024 * 1024)} MB 上限")
+    try:
+        return source, source.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"Could not read {str(source)!r}: {exc}") from exc
+
+
 def _read_source_file(raw_path: str) -> tuple[str, bytes]:
     source, _, _ = _resolve_source_path(raw_path)
     if not source.is_file():

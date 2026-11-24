@@ -544,7 +544,7 @@ export const ParsingWorkspace = () => {
 													<p className="mt-0.5 truncate text-[10px] text-secondary dark:text-zinc-500">
 														{document.error_message ??
 															(document.progress_total > 0
-																? `${document.stage ?? t('processing')} · ${progressText(
+																? `${document.stage ?? t('processing')} · ${document.progress_percent}% · ${progressText(
 																		document.progress_done,
 																		document.progress_total,
 																	)}`

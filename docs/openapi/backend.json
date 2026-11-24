@@ -6091,6 +6091,62 @@
         "title": "ParsingDocument",
         "type": "object"
       },
+      "ParsingFolderTaskBody": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "options": {
+            "additionalProperties": true,
+            "title": "Options",
+            "type": "object"
+          },
+          "page_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page End"
+          },
+          "page_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Start"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "profile": {
+            "default": "standard",
+            "title": "Profile",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "title": "ParsingFolderTaskBody",
+        "type": "object"
+      },
       "ParsingInstance": {
         "additionalProperties": true,
         "description": "One stored parse run, as the \u89e3\u6790\u5b9e\u4f8b list shows it.\n\nThe list keeps ``outputs`` out on purpose: a 200-page Markdown answer is\nhundreds of kilobytes, and a list of fifty of them is a page nobody can\nscroll but everybody has to download. ``has_markdown`` says whether the\ndetail view has one to show.",
@@ -6489,6 +6545,11 @@
             "title": "Progress Done",
             "type": "integer"
           },
+          "progress_percent": {
+            "default": 0,
+            "title": "Progress Percent",
+            "type": "integer"
+          },
           "progress_total": {
             "default": 0,
             "title": "Progress Total",
@@ -6684,6 +6745,11 @@
             "title": "Progress Done",
             "type": "integer"
           },
+          "progress_percent": {
+            "default": 0,
+            "title": "Progress Percent",
+            "type": "integer"
+          },
           "progress_total": {
             "default": 0,
             "title": "Progress Total",
@@ -6749,6 +6815,19 @@
           "status"
         ],
         "title": "ParsingRunSummary",
+        "type": "object"
+      },
+      "ParsingSourceScanBody": {
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "title": "ParsingSourceScanBody",
         "type": "object"
       },
       "ParsingTask": {
@@ -6933,6 +7012,11 @@
           "progress_done": {
             "default": 0,
             "title": "Progress Done",
+            "type": "integer"
+          },
+          "progress_percent": {
+            "default": 0,
+            "title": "Progress Percent",
             "type": "integer"
           },
           "progress_total": {
@@ -15117,6 +15201,98 @@
         ]
       }
     },
+    "/api/parsing/sources": {
+      "get": {
+        "description": "Browse the same allowlisted shared folders as the connection wizard.",
+        "operationId": "browse_parsing_sources_api_parsing_sources_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_dict_str__Any__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Browse Parsing Sources",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
+    "/api/parsing/sources/scan": {
+      "post": {
+        "description": "Recursively list PDFs below a selected shared folder.",
+        "operationId": "scan_parsing_sources_api_parsing_sources_scan_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParsingSourceScanBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_dict_str__Any__"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Scan Parsing Sources",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
     "/api/parsing/tasks": {
       "get": {
         "description": "The task centre: durable, filterable, and independent of any one tab.",
@@ -15238,6 +15414,48 @@
           }
         },
         "summary": "Create Parsing Task",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
+    "/api/parsing/tasks/from-folder": {
+      "post": {
+        "description": "Create one durable task from every PDF below a shared folder.\n\nThe source files are copied into the parsing upload directory, so the\nresult survives the shared folder being renamed or disconnected. Each file\nstill gets its own document row and run, which is what makes per-PDF\nprogress and later comparison possible.",
+        "operationId": "create_parsing_task_from_folder_api_parsing_tasks_from_folder_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParsingFolderTaskBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_ParsingTask_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Parsing Task From Folder",
         "tags": [
           "parsing"
         ]

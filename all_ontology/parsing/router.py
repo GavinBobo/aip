@@ -26,11 +26,13 @@ from typing import Any
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, Response, StreamingResponse
+from pydantic import BaseModel, Field
 
 from all_ontology.parsing import service
 from all_ontology.parsing import settings as parsing_settings
 from all_ontology.parsing import store
 from all_ontology.parsing.tasks import INSTANCE_ID, task_store
+from all_ontology.server.connections import files as connection_files
 from all_ontology.server.identity import resolve_internal_user
 from all_ontology.server.responses import (
     ParsingBackendStatusResponse,
@@ -44,6 +46,8 @@ from all_ontology.server.responses import (
     ParsingRunListResponse,
     ParsingRunOptionalResponse,
     ParsingRunResponse,
+    ParsingSourceListingResponse,
+    ParsingSourceScanResponse,
     ParsingTaskListResponse,
     ParsingTaskResponse,
 )
@@ -59,6 +63,20 @@ MAX_UPLOAD_BYTES = int(
     os.environ.get("PARSING_MAX_UPLOAD_BYTES", str(64 * 1024 * 1024))
 )
 MAX_FILES_PER_TASK = int(os.environ.get("PARSING_MAX_FILES_PER_TASK", "50"))
+MAX_SCAN_FILES = int(os.environ.get("PARSING_MAX_SCAN_FILES", "1000"))
+
+
+class ParsingSourceScanBody(BaseModel):
+    path: str
+
+
+class ParsingFolderTaskBody(ParsingSourceScanBody):
+    name: str | None = None
+    profile: str = "standard"
+    options: dict[str, Any] = Field(default_factory=dict)
+    page_start: int | None = None
+    page_end: int | None = None
+
 
 #: Signatures the parser can actually decode. The extension is the user's; the
 #: bytes are the fact. PDFs start with ``%PDF-``; the image types are checked
@@ -300,6 +318,135 @@ async def parsing_profiles() -> dict:
     """The built-in fast/standard/accurate presets."""
     profiles = store.list_profiles()
     return {"data": profiles, "count": len(profiles)}
+
+
+@router.get("/parsing/sources", response_model=ParsingSourceListingResponse)
+def browse_parsing_sources(path: str | None = None) -> dict:
+    """Browse the same allowlisted shared folders as the connection wizard."""
+    try:
+        return {"data": connection_files.browse_source_path(path)}
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+
+@router.post("/parsing/sources/scan", response_model=ParsingSourceScanResponse)
+def scan_parsing_sources(body: ParsingSourceScanBody) -> dict:
+    """Recursively list PDFs below a selected shared folder."""
+    try:
+        found = connection_files.scan_shared_files(
+            body.path,
+            suffixes={".pdf"},
+            max_files=MAX_SCAN_FILES,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {
+        "data": {
+            "path": body.path,
+            "count": len(found),
+            "files": found,
+            "limit": MAX_SCAN_FILES,
+        }
+    }
+
+
+@router.post(
+    "/parsing/tasks/from-folder",
+    response_model=ParsingTaskResponse,
+    status_code=202,
+)
+async def create_parsing_task_from_folder(
+    request: Request, body: ParsingFolderTaskBody
+) -> dict:
+    """Create one durable task from every PDF below a shared folder.
+
+    The source files are copied into the parsing upload directory, so the
+    result survives the shared folder being renamed or disconnected. Each file
+    still gets its own document row and run, which is what makes per-PDF
+    progress and later comparison possible.
+    """
+    options_data = body.options or {}
+    parsed_options, errors = service.build_options(
+        options_data.get("output_formats"),
+        json.dumps(
+            {"keep_header_footer": bool(options_data.get("keep_header_footer"))}
+        ),
+        json.dumps(options_data.get("model_options") or {}),
+        json.dumps(options_data.get("element_formats") or {}),
+    )
+    if parsed_options is None:
+        raise HTTPException(status_code=422, detail="参数错误: " + "；".join(errors))
+    if body.page_start is not None and body.page_start < 1:
+        raise HTTPException(status_code=422, detail="起始页必须从 1 开始。")
+    if (
+        body.page_end is not None
+        and body.page_start is not None
+        and body.page_end < body.page_start
+    ):
+        raise HTTPException(status_code=422, detail="结束页不能小于起始页。")
+
+    try:
+        found = connection_files.scan_shared_files(
+            body.path,
+            suffixes={".pdf"},
+            max_files=MAX_SCAN_FILES,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    if not found:
+        raise HTTPException(status_code=422, detail="该文件夹下没有找到 PDF 文件。")
+
+    await parsing_settings.ensure_current()
+    store.resolve_profile(body.profile)
+    documents: list[dict[str, Any]] = []
+    stored_instances: list[service.Instance] = []
+    try:
+        for item in found:
+            try:
+                source, payload = connection_files.read_shared_bytes(
+                    item["path"], max_bytes=MAX_UPLOAD_BYTES
+                )
+            except ValueError as error:
+                raise HTTPException(status_code=422, detail=str(error)) from error
+            _validate_payload(payload, source.name)
+            display_name = item["relative"].replace("\\", "/")
+            instance = service.create_instance(payload, display_name)
+            if instance is None:
+                raise HTTPException(
+                    status_code=503,
+                    detail="无法保存共享文件夹中的文件，请检查解析存储目录是否可写。",
+                )
+            stored_instances.append(instance)
+            documents.append(
+                {
+                    "id": str(uuid.uuid4()),
+                    "file_name": display_name,
+                    "source_name": source.name,
+                    "source_path": str(source),
+                    "instance_id": instance.id,
+                    "sha256": hashlib.sha256(payload).hexdigest(),
+                    "size_bytes": len(payload),
+                    "page_start": body.page_start,
+                    "page_end": body.page_end,
+                }
+            )
+        folder_name = Path(body.path).name or body.path
+        task = store.create_task(
+            name=(body.name or "").strip()
+            or f"{folder_name} · {len(documents)} 个 PDF",
+            created_by=resolve_internal_user(request, required=False),
+            profile=body.profile,
+            options=options_data,
+            documents=documents,
+        )
+        return {"data": task}
+    except Exception:
+        for instance in stored_instances:
+            try:
+                service.delete_instance(instance.document, instance.run)
+            except Exception:
+                logger.warning("Could not clean up folder task upload", exc_info=True)
+        raise
 
 
 @router.post("/parsing/tasks", response_model=ParsingTaskResponse, status_code=202)

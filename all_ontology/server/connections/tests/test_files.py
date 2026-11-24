@@ -250,6 +250,22 @@ def test_browse_lists_only_supported_files_and_stays_inside_the_root(
         files.browse_source_path(str(outside))
 
 
+def test_scan_shared_files_recurses_for_pdfs(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    shared = tmp_path / "shared"
+    (shared / "nested").mkdir(parents=True)
+    (shared / "a.pdf").write_bytes(b"%PDF-1.7")
+    (shared / "nested" / "b.PDF").write_bytes(b"%PDF-1.7")
+    (shared / "notes.txt").write_text("x", encoding="utf-8")
+    monkeypatch.setenv("FILE_SOURCE_ROOTS", str(shared))
+
+    found = files.scan_shared_files(str(shared), suffixes={".pdf"}, max_files=10)
+
+    assert [item["relative"] for item in found] == ["a.pdf", "nested/b.PDF"]
+    assert found[0]["size"] == len(b"%PDF-1.7")
+
+
 def test_preview_source_file_reads_a_shared_folder_file(
     tmp_path: Path, monkeypatch: MonkeyPatch
 ) -> None:

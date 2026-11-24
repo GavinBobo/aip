@@ -16,7 +16,9 @@ import asyncio
 import pytest
 
 from all_ontology.parsing import service
+from all_ontology.parsing.pipeline.progress import ParsingProgress
 from all_ontology.parsing.tasks import MemoryTaskStore
+from all_ontology.parsing.worker import _progress_percent
 
 
 def test_omitted_options_use_the_defaults() -> None:
@@ -119,6 +121,14 @@ def test_an_unreachable_probe_is_never_reported_as_ok() -> None:
     )
     assert result["ok"] is False
     assert result["detail"] == "connection refused"
+
+
+def test_progress_percent_uses_stage_bands() -> None:
+    """The task page shows one percentage, not a stage-specific ratio."""
+    assert _progress_percent(ParsingProgress("decode", 1, 1)) == 5
+    assert _progress_percent(ParsingProgress("layout", 5, 10)) == 20
+    assert _progress_percent(ParsingProgress("recognize", 1, 2)) == 62
+    assert _progress_percent(ParsingProgress("assemble", 1, 1)) == 100
 
 
 def test_a_started_job_is_referenced_until_it_finishes(

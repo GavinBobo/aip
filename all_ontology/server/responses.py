@@ -414,6 +414,8 @@ ParsingRunOptionalResponse = DataResponse[ParsingRunDetail | None]
 ParsingRunListResponse = PagedListResponse[ParsingRunSummary]
 ParsingProfileListResponse = ListResponse[ParsingProfile]
 ParsingHealthResponse = DataResponse[dict[str, Any]]
+ParsingSourceListingResponse = DataResponse[dict[str, Any]]
+ParsingSourceScanResponse = DataResponse[dict[str, Any]]
 #: ``model_backend.describe()`` / ``test()`` answers are free-form on purpose:
 #: they mirror whatever the backend manager reports about the local gateway or
 #: the vLLM endpoint, which OXR changes without a schema.

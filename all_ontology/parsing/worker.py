@@ -29,6 +29,21 @@ from all_ontology.version import get_app_version
 
 logger = logging.getLogger(__name__)
 
+#: How much of the end-to-end percentage each pipeline stage owns. The stage's
+#: own ``done/total`` supplies the remainder within that band.
+_STAGE_BANDS: dict[str, tuple[int, int]] = {
+    "decode": (0, 5),
+    "layout": (5, 35),
+    "recognize": (35, 90),
+    "assemble": (90, 100),
+}
+
+
+def _progress_percent(progress: ParsingProgress) -> int:
+    start, end = _STAGE_BANDS.get(progress.stage, (0, 100))
+    ratio = progress.done / progress.total if progress.total > 0 else 0.0
+    return max(0, min(100, int(start + (end - start) * ratio)))
+
 
 def _snapshot(described: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     model = {
@@ -226,6 +241,7 @@ class ParsingWorker:
                 progress.stage,
                 progress.done,
                 progress.total,
+                _progress_percent(progress),
             )
 
         async def watch_cancel() -> None:

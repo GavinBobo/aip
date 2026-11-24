@@ -230,7 +230,8 @@ def get_task(task_id: str) -> dict[str, Any] | None:
     runs = store().query_read(
         text(
             "SELECT id, document_id, attempt, status, progress_done, progress_total, "
-            "result_path, error_code, error_message, created, finished "
+            "progress_percent, result_path, error_code, error_message, "
+            "created, finished "
             "FROM parsing_run WHERE task_id = :id ORDER BY created"
         ),
         {"id": task_id},
@@ -395,26 +396,38 @@ def create_run(
 
 
 def update_progress(
-    run_id: str, document_id: str, stage: str, done: int, total: int
+    run_id: str,
+    document_id: str,
+    stage: str,
+    done: int,
+    total: int,
+    percent: int,
 ) -> None:
     store().query_write(
         text(
             "UPDATE parsing_run SET stage = :stage, progress_done = :done, "
-            "progress_total = :total "
+            "progress_total = :total, progress_percent = :percent "
             "WHERE id = :run_id AND status = 'running'"
         ),
-        {"stage": stage, "done": done, "total": total, "run_id": run_id},
+        {
+            "stage": stage,
+            "done": done,
+            "total": total,
+            "percent": percent,
+            "run_id": run_id,
+        },
     )
     store().query_write(
         text(
             "UPDATE parsing_document SET stage = :stage, progress_done = :done, "
-            "progress_total = :total "
+            "progress_total = :total, progress_percent = :percent "
             "WHERE id = :document_id AND status = 'running'"
         ),
         {
             "stage": stage,
             "done": done,
             "total": total,
+            "percent": percent,
             "document_id": document_id,
         },
     )
@@ -484,7 +497,8 @@ def finish_run_success(
         store().query_write(
             text(
                 "UPDATE parsing_run SET status = 'succeeded', "
-                "progress_done = :pages, progress_total = :pages, stage = 'done', "
+                "progress_done = :pages, progress_total = :pages, "
+                "progress_percent = 100, stage = 'done', "
                 "quality = CAST(:quality AS jsonb), finished = :now "
                 "WHERE id = :run_id"
             ),
@@ -499,7 +513,8 @@ def finish_run_success(
             text(
                 "UPDATE parsing_document SET status = 'succeeded', "
                 "page_count = :pages, processing_time_ms = :elapsed, "
-                "progress_done = :pages, progress_total = :pages, stage = 'done', "
+                "progress_done = :pages, progress_total = :pages, "
+                "progress_percent = 100, stage = 'done', "
                 "finished = :now, error_code = NULL, error_message = NULL "
                 "WHERE id = :document_id"
             ),
@@ -587,7 +602,7 @@ def retry_document(document_id: str) -> bool:
         store().query_write(
             text(
                 "UPDATE parsing_document SET status = 'queued', progress_done = 0, "
-                "progress_total = 0, stage = NULL, "
+                "progress_total = 0, progress_percent = 0, stage = NULL, "
                 "error_code = NULL, error_message = NULL, "
                 "started = NULL, finished = NULL WHERE id = :id"
             ),
@@ -691,7 +706,8 @@ def list_runs(
     rows = store().query_read(
         text(
             "SELECT r.id, r.task_id, r.document_id, r.attempt, r.profile, "
-            "r.status, r.stage, r.progress_done, r.progress_total, r.quality, "
+            "r.status, r.stage, r.progress_done, r.progress_total, "
+            "r.progress_percent, r.quality, "
             "r.error_code, r.error_message, r.reviewed, r.created, r.finished, "
             "d.file_name, d.source_name, d.page_count, d.processing_time_ms, "
             "t.name AS task_name "
@@ -796,7 +812,8 @@ def recover_stale(lease: timedelta = timedelta(minutes=20)) -> int:
         docs = store().query_write(
             text(
                 "UPDATE parsing_document SET status = 'queued', progress_done = 0, "
-                "progress_total = 0, started = NULL, finished = NULL "
+                "progress_total = 0, progress_percent = 0, "
+                "started = NULL, finished = NULL "
                 "WHERE status = 'running' AND started < :cutoff RETURNING id"
             ),
             {"cutoff": cutoff},

@@ -199,9 +199,28 @@ export const ParsingTaskDetailView = ({ taskId }: { taskId: string }) => {
 												</span>
 											</td>
 											<td className="px-3 py-2 text-body dark:text-zinc-300">
-												{document.progress_total > 0
-													? `${document.stage ?? t('processing')} ${document.progress_done}/${document.progress_total}`
-													: '—'}
+												{document.progress_total > 0 ? (
+													<div className="min-w-[110px]">
+														<div className="flex justify-between text-[10px]">
+															<span>
+																{document.stage ?? t('processing')}
+															</span>
+															<span>
+																{document.progress_percent}%
+															</span>
+														</div>
+														<div className="mt-1 h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+															<div
+																className="h-full rounded-full bg-[#76b900] transition-[width]"
+																style={{
+																	width: `${document.progress_percent}%`,
+																}}
+															/>
+														</div>
+													</div>
+												) : (
+													'—'
+												)}
 											</td>
 											<td className="px-3 py-2 text-body dark:text-zinc-300">
 												{document.page_count ?? '—'}

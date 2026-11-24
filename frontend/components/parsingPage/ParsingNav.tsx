@@ -16,8 +16,9 @@ type NavItem = {
 };
 
 const ITEMS: NavItem[] = [
-	{ label: 'Parsing Examples', href: '/parsing' },
-	{ label: 'New Batch Task', href: '/parsing/instances' },
+	{ label: 'Parsing Workspace', href: '/parsing' },
+	{ label: 'Parsing Tasks', href: '/parsing/tasks' },
+	{ label: 'Result Library', href: '/parsing/library' },
 ];
 
 const rowClassName = (selected: boolean): string =>
@@ -30,8 +31,8 @@ const rowClassName = (selected: boolean): string =>
 /** The 文档解析 section's second-level menu, styled like Settings'. */
 export const ParsingNav = () => {
 	const pathname = usePathname();
-	// The most specific href wins, so `/parsing/instances` does not also select
-	// the `/parsing` entry it is nested under.
+	// The most specific href wins, so `/parsing/tasks` does not also select the
+	// `/parsing` entry it is nested under.
 	const activeHref = activeSectionHref(
 		pathname,
 		ITEMS.map((item) => item.href),

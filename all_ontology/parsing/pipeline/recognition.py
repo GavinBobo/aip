@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from collections.abc import Awaitable, Callable
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -13,6 +14,7 @@ from all_ontology.parsing.pipeline.errors import (
     get_error_status_code,
 )
 from all_ontology.parsing.pipeline.models import Block, BlockType
+from all_ontology.parsing.pipeline.progress import notify, raise_if_cancelled
 from all_ontology.parsing.pipeline.postprocess.chemical_structure_postprocess import (
     postprocess_chemical_structure,
 )
@@ -260,12 +262,29 @@ async def recognize_pages(
     semaphore: asyncio.Semaphore,
     model_options: Optional[Dict[str, Any]] = None,
     element_formats: Optional[Dict[str, str]] = None,
+    progress_cb: Callable[..., Awaitable[None]] | None = None,
+    cancel_event: asyncio.Event | None = None,
 ) -> List[List[Block]]:
     """Run recognition for all blocks across all pages concurrently."""
     if len(pages_blocks) != len(pages_images):
         raise ValueError("Page block and image counts must match")
 
     tasks = []
+    completed_blocks = 0
+
+    async def tracked(task: Awaitable[Block]) -> Block:
+        nonlocal completed_blocks
+        raise_if_cancelled(cancel_event)
+        result = await task
+        completed_blocks += 1
+        await notify(
+            progress_cb,
+            "recognize",
+            completed_blocks,
+            total_blocks,
+        )
+        return result
+
     # keep track of which task belongs to which page and block index
     # tasks structure: (page_idx, block_idx, task)
     for page_idx, (blocks, image) in enumerate(zip(pages_blocks, pages_images)):
@@ -297,6 +316,11 @@ async def recognize_pages(
                     **kwargs,
                 )
             tasks.append((page_idx, block_idx, task))
+
+    total_blocks = len(tasks)
+    tasks = [
+        (page_idx, block_idx, tracked(task)) for page_idx, block_idx, task in tasks
+    ]
 
     # Run all tasks
     gathered_results = await gather_cancel_on_error(*(t[2] for t in tasks))

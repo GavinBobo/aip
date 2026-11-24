@@ -16,7 +16,7 @@ const err = (message: string): ApiError => ({ error: true, message });
 /** Fields the file endpoints read from the form body, plus the file itself. */
 const fileForm = (
 	file: File,
-	fields: Record<string, string | number | string[] | null | undefined>,
+	fields: Record<string, string | number | string[] | number[] | null | undefined>,
 ): FormData => {
 	const formData = new FormData();
 	formData.append('file', file);

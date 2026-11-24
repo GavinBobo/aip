@@ -115,6 +115,109 @@ export type ParsingInstanceDetail = {
 	metadata: Record<string, unknown>;
 };
 
+export type ParsingProfile = {
+	id: string;
+	name: string;
+	description: string | null;
+	options: Record<string, unknown>;
+	is_default: boolean;
+};
+
+export type ParsingTaskDocument = {
+	id: string;
+	file_name: string;
+	source_name: string | null;
+	instance_id: string | null;
+	status: string;
+	stage: string | null;
+	progress_done: number;
+	progress_total: number;
+	page_count: number | null;
+	processing_time_ms: number | null;
+	error_code: string | null;
+	error_message: string | null;
+};
+
+export type ParsingTask = {
+	id: string;
+	name: string;
+	created_by: string | null;
+	status: string;
+	profile: string;
+	options: Record<string, unknown>;
+	total_documents: number;
+	completed_documents: number;
+	failed_documents: number;
+	created: string | null;
+	started: string | null;
+	finished: string | null;
+	documents: ParsingTaskDocument[];
+	runs: {
+		id: string;
+		document_id: string;
+		attempt: number;
+		status: string;
+		progress_done: number;
+		progress_total: number;
+		result_path: string | null;
+		error_code: string | null;
+		error_message: string | null;
+		created: string | null;
+		finished: string | null;
+	}[];
+};
+
+export type ParsingRunSummary = {
+	id: string;
+	task_id: string;
+	document_id: string;
+	task_name: string | null;
+	file_name: string | null;
+	source_name: string | null;
+	attempt: number;
+	profile: string;
+	status: string;
+	stage: string | null;
+	progress_done: number;
+	progress_total: number;
+	page_count: number | null;
+	processing_time_ms: number | null;
+	quality: Record<string, unknown>;
+	error_code: string | null;
+	error_message: string | null;
+	reviewed: boolean;
+	created: string | null;
+	finished: string | null;
+};
+
+export type ParsingRunDetail = ParsingRunSummary & {
+	instance_id: string | null;
+	options: Record<string, unknown>;
+	model_snapshot: Record<string, unknown>;
+	layout_snapshot: Record<string, unknown>;
+	pipeline_version: string | null;
+	outputs: Record<string, unknown>;
+	metadata: Record<string, unknown>;
+	edits: Record<
+		string,
+		{
+			content: string;
+			format: string | null;
+			edited_by: string | null;
+			edited_at: string | null;
+		}
+	>;
+	reviewed_by: string | null;
+	reviewed_at: string | null;
+	review_note: string | null;
+};
+
+export type ParsingHealth = {
+	ok: boolean;
+	backend: Record<string, unknown>;
+	layout: Record<string, unknown>;
+};
+
 export const parsingApi = {
 	capabilities: () => requests.get<{ data: ParsingCapabilities }>('parsing/capabilities'),
 
@@ -149,4 +252,83 @@ export const parsingApi = {
 
 	/** Where the browser can fetch the stored source file from. */
 	instanceSourceUrl: (id: string): string => `/api/${instanceApiPath(id)}/source`,
+
+	/** Built-in fast/standard/accurate presets. */
+	profiles: () => requests.get<{ data: ParsingProfile[]; count: number }>('parsing/profiles'),
+
+	/** Probe both services. `ok` is the only trustworthy success flag. */
+	health: () => requests.get<{ data: ParsingHealth }>('parsing/health'),
+
+	/** Create a durable batch task; the worker owns it from here. */
+	createTask: (form: FormData) => requests.postForm<{ data: ParsingTask }>('parsing/tasks', form),
+
+	tasks: (
+		params: {
+			limit?: number;
+			offset?: number;
+			status?: string;
+			q?: string;
+		} = {},
+	) =>
+		requests.get<{ data: ParsingTask[]; count: number; total: number }>(
+			'parsing/tasks',
+			params,
+		),
+
+	task: (id: string) =>
+		requests.get<{ data: ParsingTask }>(`parsing/tasks/${encodeURIComponent(id)}`),
+
+	deleteTask: (id: string) =>
+		requests.delete<{ data: { id: string } }>(`parsing/tasks/${encodeURIComponent(id)}`),
+
+	cancelTask: (id: string) =>
+		requests.post<{ data: ParsingTask }>(`parsing/tasks/${encodeURIComponent(id)}/cancel`),
+
+	retryDocument: (id: string) =>
+		requests.post<{ data: ParsingTask }>(`parsing/documents/${encodeURIComponent(id)}/retry`),
+
+	runs: (
+		params: {
+			limit?: number;
+			offset?: number;
+			status?: string;
+			q?: string;
+			reviewed?: boolean;
+		} = {},
+	) =>
+		requests.get<{ data: ParsingRunSummary[]; count: number; total: number }>(
+			'parsing/runs',
+			params,
+		),
+
+	run: (id: string) =>
+		requests.get<{ data: ParsingRunDetail }>(`parsing/runs/${encodeURIComponent(id)}`),
+
+	previousRun: (id: string) =>
+		requests.get<{ data: ParsingRunDetail | null }>(
+			`parsing/runs/${encodeURIComponent(id)}/previous`,
+		),
+
+	updateBlocks: (id: string, blocks: Record<string, unknown>[]) =>
+		requests.patch<{ data: ParsingRunDetail }>(
+			`parsing/runs/${encodeURIComponent(id)}/blocks`,
+			{ blocks },
+		),
+
+	review: (id: string, reviewed: boolean, note?: string) =>
+		requests.post<{ data: ParsingRunDetail }>(`parsing/runs/${encodeURIComponent(id)}/review`, {
+			reviewed,
+			note,
+		}),
+
+	reparse: (id: string) =>
+		requests.post<{ data: ParsingTask }>(`parsing/runs/${encodeURIComponent(id)}/reparse`),
+
+	removeRun: (id: string) =>
+		requests.delete<{ data: { id: string } }>(`parsing/runs/${encodeURIComponent(id)}`),
+
+	runPageUrl: (id: string, page: number): string =>
+		`/api/parsing/runs/${encodeURIComponent(id)}/page/${page}`,
+
+	exportRunUrl: (id: string): string => `/api/parsing/runs/${encodeURIComponent(id)}/export`,
 };

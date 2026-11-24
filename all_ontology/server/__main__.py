@@ -58,6 +58,7 @@ from all_ontology.server.model_interchange.router import (  # noqa: E402
 )
 from all_ontology.server.search.router import router as search_router  # noqa: E402
 from all_ontology.parsing.router import router as parsing_router  # noqa: E402
+from all_ontology.parsing.worker import start_worker, stop_worker  # noqa: E402
 
 
 @asynccontextmanager
@@ -74,9 +75,13 @@ async def lifespan(_app: FastAPI):
     # itself is lazy on first use, but eagerly initialising here means the
     # very first chat request doesn't pay a cold start.
     get_pool()
+    # Parsing jobs are durable; this loop only needs to exist in one process per
+    # replica. Set PARSING_WORKER_ENABLED=false when running a dedicated worker.
+    await start_worker()
     try:
         yield
     finally:
+        await stop_worker()
         # Tear down warm subprocesses before exiting so we don't leak them.
         shutdown_pool()
         close_store()

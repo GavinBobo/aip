@@ -1,3 +1,7 @@
+class ParsingCancelledError(RuntimeError):
+    """Raised between pages/blocks when a user cancels a task."""
+
+
 class PipelineError(RuntimeError):
     def __init__(
         self,

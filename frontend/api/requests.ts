@@ -7,7 +7,10 @@ import { ApiError, PageParams, ResponseWithError } from './types';
 
 // Query params accepted by `requests.get`. Numbers/booleans are serialised by
 // axios at request time, so callers can pass them without stringifying first.
-export type QueryParams = Record<string, string | number | boolean | string[] | undefined>;
+export type QueryParams = Record<
+	string,
+	string | number | boolean | string[] | number[] | undefined
+>;
 
 /**
  * Query params for one page. Both are left out when they say nothing — the

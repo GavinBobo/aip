@@ -1701,6 +1701,182 @@ erd_canvas_version = Table(
 )
 
 # ---------------------------------------------------------------------------
+# Document parsing workbench
+#
+# Parsing output itself stays on disk: a 200-page Markdown answer is not a
+# useful row to carry through the pooled connection. These tables are the
+# durable index and lifecycle: what was submitted, what is running, where the
+# result went, and which blocks a person edited.
+# ---------------------------------------------------------------------------
+
+parsing_profile = Table(
+    "parsing_profile",
+    METADATA,
+    _id(),
+    Column("name", Text, nullable=False, unique=True),
+    Column("description", Text, nullable=True),
+    Column("options", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
+    Column("is_default", Boolean, nullable=False, server_default=text("false")),
+    Column(
+        "created",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    ),
+)
+
+parsing_task = Table(
+    "parsing_task",
+    METADATA,
+    _id(),
+    Column("name", Text, nullable=False),
+    Column("created_by", Text, nullable=True),
+    Column("status", Text, nullable=False, server_default=text("'queued'")),
+    Column("profile", Text, nullable=False, server_default=text("'standard'")),
+    Column("options", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
+    Column("total_documents", Integer, nullable=False, server_default=text("0")),
+    Column("completed_documents", Integer, nullable=False, server_default=text("0")),
+    Column("failed_documents", Integer, nullable=False, server_default=text("0")),
+    Column(
+        "created",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    ),
+    Column("started", DateTime(timezone=True), nullable=True),
+    Column("finished", DateTime(timezone=True), nullable=True),
+    CheckConstraint(
+        "status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled')",
+        name="known_status",
+    ),
+)
+
+parsing_document = Table(
+    "parsing_document",
+    METADATA,
+    _id(),
+    Column(
+        "task_id",
+        Text,
+        ForeignKey(parsing_task.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("file_name", Text, nullable=False),
+    Column("source_name", Text, nullable=True),
+    Column("source_path", Text, nullable=True),
+    Column("instance_id", Text, nullable=True),
+    Column("sha256", Text, nullable=True),
+    Column("size_bytes", BigInteger, nullable=True),
+    Column("page_count", Integer, nullable=True),
+    Column("page_start", Integer, nullable=True),
+    Column("page_end", Integer, nullable=True),
+    Column("processing_time_ms", Double, nullable=True),
+    Column("status", Text, nullable=False, server_default=text("'queued'")),
+    Column("stage", Text, nullable=True),
+    Column("progress_done", Integer, nullable=False, server_default=text("0")),
+    Column("progress_total", Integer, nullable=False, server_default=text("0")),
+    Column("error_code", Text, nullable=True),
+    Column("error_message", Text, nullable=True),
+    Column("attempt", Integer, nullable=False, server_default=text("0")),
+    Column(
+        "created",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    ),
+    Column("started", DateTime(timezone=True), nullable=True),
+    Column("finished", DateTime(timezone=True), nullable=True),
+    CheckConstraint(
+        "status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled')",
+        name="known_status",
+    ),
+)
+
+parsing_run = Table(
+    "parsing_run",
+    METADATA,
+    _id(),
+    Column(
+        "task_id",
+        Text,
+        ForeignKey(parsing_task.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "document_id",
+        Text,
+        ForeignKey(parsing_document.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("attempt", Integer, nullable=False, server_default=text("1")),
+    Column("profile", Text, nullable=False, server_default=text("'standard'")),
+    Column("options", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
+    Column("model_snapshot", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
+    Column(
+        "layout_snapshot", JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    ),
+    Column("pipeline_version", Text, nullable=True),
+    Column("instance_id", Text, nullable=True),
+    Column("result_path", Text, nullable=True),
+    Column("blocks_path", Text, nullable=True),
+    Column("status", Text, nullable=False, server_default=text("'queued'")),
+    Column("stage", Text, nullable=True),
+    Column("progress_done", Integer, nullable=False, server_default=text("0")),
+    Column("progress_total", Integer, nullable=False, server_default=text("0")),
+    Column("quality", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
+    Column("error_code", Text, nullable=True),
+    Column("error_message", Text, nullable=True),
+    Column("reviewed", Boolean, nullable=False, server_default=text("false")),
+    Column("reviewed_by", Text, nullable=True),
+    Column("reviewed_at", DateTime(timezone=True), nullable=True),
+    Column("review_note", Text, nullable=True),
+    Column(
+        "created",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    ),
+    Column("started", DateTime(timezone=True), nullable=True),
+    Column("finished", DateTime(timezone=True), nullable=True),
+    CheckConstraint(
+        "status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled')",
+        name="known_status",
+    ),
+)
+
+parsing_block_edit = Table(
+    "parsing_block_edit",
+    METADATA,
+    Column(
+        "run_id",
+        Text,
+        ForeignKey(parsing_run.c.id, ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column("page", Integer, primary_key=True),
+    Column("idx", Integer, primary_key=True),
+    Column("content", Text, nullable=False, server_default=text("''")),
+    Column("format", Text, nullable=True),
+    Column("edited_by", Text, nullable=True),
+    Column(
+        "edited_at",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    ),
+)
+
+Index("ix_parsing_task_created", parsing_task.c.created)
+Index(
+    "ix_parsing_document_task", parsing_document.c.task_id, parsing_document.c.created
+)
+Index(
+    "ix_parsing_document_status", parsing_document.c.status, parsing_document.c.created
+)
+Index("ix_parsing_run_document", parsing_run.c.document_id, parsing_run.c.created)
+Index("ix_parsing_run_task", parsing_run.c.task_id, parsing_run.c.created)
+
+# ---------------------------------------------------------------------------
 # 表的中文说明
 # ---------------------------------------------------------------------------
 
@@ -1709,7 +1885,7 @@ erd_canvas_version = Table(
 #: 放在一处而不是散在每个 ``Table(...)`` 里，是因为它有三个读者：DBA 在
 #: pgAdmin/Navicat 里看到的是同名 ``COMMENT ON TABLE``；读
 #: ``all_ontology/dal/models.py`` 的人看到的是同一个说法；写 SQL 的人在这里
-#: 一眼能看到全部 41 张表的分工。三处共用一份文本，才不会各说各话。
+#: 一眼能看到全部分表的分工。三处共用一份文本，才不会各说各话。
 #:
 #: 写入数据库由 alembic 迁移 ``add chinese table comments`` 完成；之后
 #: ``alembic check`` 会把这批注释当作 schema 的一部分比对，改动必须生成迁移。
@@ -1758,6 +1934,12 @@ TABLE_COMMENTS: dict[str, str] = {
     "erd_note": "画布便签",
     "erd_area": "画布区域分组：按矩形范围圈住表卡片",
     "erd_canvas_version": "画布版本快照：整块画布存成一份 JSON，可整体恢复",
+    # 文档解析
+    "parsing_profile": "解析档位：快速/标准/高精度等预设，保存 DPI、页范围与重试策略",
+    "parsing_task": "解析任务：一次批量提交，记录文件数、完成数与总体状态",
+    "parsing_document": "解析文件：任务里的单个文件，记录源文件、页数与页级进度",
+    "parsing_run": "解析运行：一次实际解析，记录模型快照、结果路径、质量与校对状态",
+    "parsing_block_edit": "解析块修订：人工改过的块内容，按 run/page/idx 覆盖原始结果",
     # 运行期
     "uploaded_dataset": "上传的数据集：Excel/CSV 连接上传的字节，以 Parquet 存在库里",
     "user_group": "用户组：一组账号与组级角色（admin/viewer）",
@@ -1823,6 +2005,11 @@ __all__ = [
     "erd_note",
     "erd_area",
     "erd_canvas_version",
+    "parsing_profile",
+    "parsing_task",
+    "parsing_document",
+    "parsing_run",
+    "parsing_block_edit",
     "term_family",
     "term__term_family",
 ]

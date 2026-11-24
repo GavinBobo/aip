@@ -62,7 +62,7 @@ export const ParsingInstanceDetailView = ({ document, run }: { document: string;
 			setError(response.message ?? t('Failed to delete the parsing instance.'));
 			return;
 		}
-		router.push('/parsing/instances');
+		router.push('/parsing/library');
 	};
 
 	const outputs = detail?.outputs ?? {};
@@ -76,10 +76,10 @@ export const ParsingInstanceDetailView = ({ document, run }: { document: string;
 		<div className="flex h-full min-h-0 flex-col bg-white dark:bg-zinc-950">
 			<header className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
 				<Link
-					href="/parsing/instances"
+					href="/parsing/library"
 					className="text-[11px] text-secondary underline hover:text-heading dark:text-zinc-400"
 				>
-					← {t('Batch Parsing Tasks')}
+					← {t('Result Library')}
 				</Link>
 				<div className="mt-1 flex flex-wrap items-center justify-between gap-3">
 					<div className="min-w-0">

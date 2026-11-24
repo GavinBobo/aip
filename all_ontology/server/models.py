@@ -1510,3 +1510,108 @@ class ParsingInstanceDetail(ApiModel):
     created: str | None = None
     outputs: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ParsingTaskDocument(ApiModel):
+    """One file inside a parsing task, including its page-level progress."""
+
+    id: str
+    file_name: str
+    source_name: str | None = None
+    instance_id: str | None = None
+    status: str
+    stage: str | None = None
+    progress_done: int = 0
+    progress_total: int = 0
+    page_count: int | None = None
+    processing_time_ms: float | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+
+
+class ParsingTask(ApiModel):
+    """A batch submission and the files it contains."""
+
+    id: str
+    name: str
+    created_by: str | None = None
+    status: str
+    profile: str
+    options: dict[str, Any] = Field(default_factory=dict)
+    total_documents: int = 0
+    completed_documents: int = 0
+    failed_documents: int = 0
+    created: datetime | None = None
+    started: datetime | None = None
+    finished: datetime | None = None
+    documents: list[ParsingTaskDocument] = Field(default_factory=list)
+    runs: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class ParsingRunSummary(ApiModel):
+    """A run as the result library lists it."""
+
+    id: str
+    task_id: str
+    document_id: str
+    task_name: str | None = None
+    file_name: str | None = None
+    source_name: str | None = None
+    attempt: int = 1
+    profile: str
+    status: str
+    stage: str | None = None
+    progress_done: int = 0
+    progress_total: int = 0
+    page_count: int | None = None
+    processing_time_ms: float | None = None
+    quality: dict[str, Any] = Field(default_factory=dict)
+    error_code: str | None = None
+    error_message: str | None = None
+    reviewed: bool = False
+    created: datetime | None = None
+    finished: datetime | None = None
+
+
+class ParsingRunDetail(ApiModel):
+    """One run with its output, edits, and reproducibility snapshot."""
+
+    id: str
+    task_id: str
+    document_id: str
+    file_name: str | None = None
+    source_name: str | None = None
+    instance_id: str | None = None
+    attempt: int = 1
+    profile: str
+    status: str
+    stage: str | None = None
+    progress_done: int = 0
+    progress_total: int = 0
+    page_count: int | None = None
+    options: dict[str, Any] = Field(default_factory=dict)
+    model_snapshot: dict[str, Any] = Field(default_factory=dict)
+    layout_snapshot: dict[str, Any] = Field(default_factory=dict)
+    pipeline_version: str | None = None
+    quality: dict[str, Any] = Field(default_factory=dict)
+    outputs: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    edits: dict[str, Any] = Field(default_factory=dict)
+    reviewed: bool = False
+    reviewed_by: str | None = None
+    reviewed_at: datetime | None = None
+    review_note: str | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+    created: datetime | None = None
+    finished: datetime | None = None
+
+
+class ParsingProfile(ApiModel):
+    """A named, reusable parsing preset."""
+
+    id: str
+    name: str
+    description: str | None = None
+    options: dict[str, Any] = Field(default_factory=dict)
+    is_default: bool = False

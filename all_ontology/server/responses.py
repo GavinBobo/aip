@@ -44,6 +44,10 @@ from all_ontology.server.models import (
     ParsingInstance,
     ParsingInstanceDetail,
     ParsingJob,
+    ParsingProfile,
+    ParsingRunDetail,
+    ParsingRunSummary,
+    ParsingTask,
     ErdNode,
     ErdNote,
     ErdRelationship,
@@ -403,6 +407,13 @@ ParsingJobResponse = DataResponse[ParsingJob]
 ParsingCapabilitiesResponse = DataResponse[ParsingCapabilities]
 ParsingInstanceResponse = DataResponse[ParsingInstanceDetail]
 ParsingInstanceListResponse = ListResponse[ParsingInstance]
+ParsingTaskResponse = DataResponse[ParsingTask]
+ParsingTaskListResponse = PagedListResponse[ParsingTask]
+ParsingRunResponse = DataResponse[ParsingRunDetail]
+ParsingRunOptionalResponse = DataResponse[ParsingRunDetail | None]
+ParsingRunListResponse = PagedListResponse[ParsingRunSummary]
+ParsingProfileListResponse = ListResponse[ParsingProfile]
+ParsingHealthResponse = DataResponse[dict[str, Any]]
 #: ``model_backend.describe()`` / ``test()`` answers are free-form on purpose:
 #: they mirror whatever the backend manager reports about the local gateway or
 #: the vLLM endpoint, which OXR changes without a schema.

@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/all-ontology-mcp.iml" filepath="$PROJECT_DIR$/.idea/all-ontology-mcp.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/all-ontology-server.iml" filepath="$PROJECT_DIR$/.idea/all-ontology-server.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../win-start/.idea/win-start.iml" filepath="$PROJECT_DIR$/../win-start/.idea/win-start.iml" />
     </modules>
   </component>
 </project>

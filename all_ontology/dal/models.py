@@ -817,6 +817,114 @@ class SemanticCompilationHistory(Base):
     status: Mapped[str | None]
 
 
+class ParsingProfile(Base):
+    """A named parsing preset (fast / standard / accurate)."""
+
+    __table__ = s.parsing_profile
+
+    id: Mapped[str]
+    name: Mapped[str]
+    description: Mapped[str | None]
+    options: Mapped[dict[str, Any]]
+    is_default: Mapped[bool]
+    created: Mapped[datetime | None]
+
+
+class ParsingTask(Base):
+    """A durable batch submission."""
+
+    __table__ = s.parsing_task
+
+    id: Mapped[str]
+    name: Mapped[str]
+    created_by: Mapped[str | None]
+    status: Mapped[str]
+    profile: Mapped[str]
+    options: Mapped[dict[str, Any]]
+    total_documents: Mapped[int]
+    completed_documents: Mapped[int]
+    failed_documents: Mapped[int]
+    created: Mapped[datetime | None]
+    started: Mapped[datetime | None]
+    finished: Mapped[datetime | None]
+
+
+class ParsingDocument(Base):
+    """One file inside a parsing task."""
+
+    __table__ = s.parsing_document
+
+    id: Mapped[str]
+    task_id: Mapped[str]
+    file_name: Mapped[str]
+    source_name: Mapped[str | None]
+    source_path: Mapped[str | None]
+    instance_id: Mapped[str | None]
+    sha256: Mapped[str | None]
+    size_bytes: Mapped[int | None]
+    page_count: Mapped[int | None]
+    page_start: Mapped[int | None]
+    page_end: Mapped[int | None]
+    processing_time_ms: Mapped[float | None]
+    status: Mapped[str]
+    stage: Mapped[str | None]
+    progress_done: Mapped[int]
+    progress_total: Mapped[int]
+    error_code: Mapped[str | None]
+    error_message: Mapped[str | None]
+    attempt: Mapped[int]
+    created: Mapped[datetime | None]
+    started: Mapped[datetime | None]
+    finished: Mapped[datetime | None]
+
+
+class ParsingRun(Base):
+    """One execution of the parser for a document."""
+
+    __table__ = s.parsing_run
+
+    id: Mapped[str]
+    task_id: Mapped[str]
+    document_id: Mapped[str]
+    attempt: Mapped[int]
+    profile: Mapped[str]
+    options: Mapped[dict[str, Any]]
+    model_snapshot: Mapped[dict[str, Any]]
+    layout_snapshot: Mapped[dict[str, Any]]
+    pipeline_version: Mapped[str | None]
+    instance_id: Mapped[str | None]
+    result_path: Mapped[str | None]
+    blocks_path: Mapped[str | None]
+    status: Mapped[str]
+    stage: Mapped[str | None]
+    progress_done: Mapped[int]
+    progress_total: Mapped[int]
+    quality: Mapped[dict[str, Any]]
+    error_code: Mapped[str | None]
+    error_message: Mapped[str | None]
+    reviewed: Mapped[bool]
+    reviewed_by: Mapped[str | None]
+    reviewed_at: Mapped[datetime | None]
+    review_note: Mapped[str | None]
+    created: Mapped[datetime | None]
+    started: Mapped[datetime | None]
+    finished: Mapped[datetime | None]
+
+
+class ParsingBlockEdit(Base):
+    """A reviewer's override of one recognized block."""
+
+    __table__ = s.parsing_block_edit
+
+    run_id: Mapped[str]
+    page: Mapped[int]
+    idx: Mapped[int]
+    content: Mapped[str]
+    format: Mapped[str | None]
+    edited_by: Mapped[str | None]
+    edited_at: Mapped[datetime]
+
+
 __all__ = [
     "Analysis",
     "Base",
@@ -840,6 +948,11 @@ __all__ = [
     "ErdNote",
     "ErdRelationship",
     "PqlAnalysis",
+    "ParsingBlockEdit",
+    "ParsingDocument",
+    "ParsingProfile",
+    "ParsingRun",
+    "ParsingTask",
     "Rule",
     "RuleTag",
     "SemanticCompilationHistory",

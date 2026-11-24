@@ -4,14 +4,14 @@
 
 import type { Metadata } from 'next';
 
-import { BatchParsingView } from '@/components/parsingPage';
+import { ParsingWorkspace } from '@/components/parsingPage';
 
 export const metadata: Metadata = {
-	title: 'Parsing Examples',
+	title: 'Parsing Workspace',
 };
 
-// The section lands on the parse page: this is where documents are actually
-// parsed. The stored runs it produces are listed under /parsing/instances.
+// The section lands on the workspace: upload, profile, and the current task.
+// Durable tasks live under /parsing/tasks and results under /parsing/library.
 export default function ParsingPage() {
-	return <BatchParsingView />;
+	return <ParsingWorkspace />;
 }

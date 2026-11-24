@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Awaitable, Callable
 from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
@@ -15,6 +16,7 @@ from all_ontology.parsing.pipeline.models import Block
 from all_ontology.parsing.pipeline.postprocess.layout_postprocess import (
     parse_layout_batch,
 )
+from all_ontology.parsing.pipeline.progress import notify, raise_if_cancelled
 
 
 async def process_layout_batch(
@@ -60,6 +62,8 @@ async def analyze_layouts(
     *,
     client: Optional[LayoutAnalyzeClient] = None,
     config: Optional[LayoutAnalyzeModelConfig] = None,
+    progress_cb: Callable[..., Awaitable[None]] | None = None,
+    cancel_event: asyncio.Event | None = None,
 ) -> List[List[Block]]:
     """Analyze page layouts in concurrent, order-preserving service batches."""
     del model_options  # LayoutAnalyzeClient has a fixed structured API.
@@ -83,16 +87,34 @@ async def analyze_layouts(
         for start in range(0, len(images), resolved_config.batch_size)
     ]
     sem = asyncio.Semaphore(resolved_config.max_concurrency)
+    completed_pages = 0
+
+    async def tracked_batch(
+        batch: Sequence[bytes],
+        sizes: Sequence[tuple[int, int]],
+        batch_index: int,
+    ) -> list[list[Block]]:
+        nonlocal completed_pages
+        raise_if_cancelled(cancel_event)
+        result = await process_layout_batch(
+            batch,
+            sizes,
+            sem,
+            batch_index,
+            client=resolved_client,
+            config=resolved_config,
+        )
+        completed_pages += len(batch)
+        await notify(progress_cb, "layout", completed_pages, len(images))
+        return result
+
     try:
         batch_results = await gather_cancel_on_error(
             *(
-                process_layout_batch(
+                tracked_batch(
                     batch,
                     sizes,
-                    sem,
                     batch_index,
-                    client=resolved_client,
-                    config=resolved_config,
                 )
                 for batch_index, (batch, sizes) in enumerate(batches)
             )

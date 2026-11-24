@@ -43,6 +43,11 @@ from all_ontology.parsing.pipeline.postprocess.full_overlap_dedupe import (
     dedupe_full_overlaps,
 )
 from all_ontology.parsing.pipeline.postprocess.table_images import TABLE_IMAGE_ROLE
+from all_ontology.parsing.pipeline.progress import (
+    ProgressCallback,
+    notify,
+    raise_if_cancelled,
+)
 
 
 INVALID_DOCUMENT_MESSAGE = "Unable to decode document into valid page images."
@@ -51,6 +56,32 @@ INVALID_DOCUMENT_MESSAGE = "Unable to decode document into valid page images."
 _SYSTEMATIC_CROSS_CATEGORY_DEDUPE = True
 _VISUAL_PARENT_DEDUPE = True
 _COMPLETE_TEXT_DEDUPE = True
+
+
+def _quality_summary(pages_blocks: list[list[Block]]) -> dict[str, Any]:
+    """Cheap, deterministic signals a reviewer can act on.
+
+    Recognition confidence is not part of the model's response, so this does
+    not invent one. It reports what the pipeline actually knows: how many
+    regions survived cleanup, which are empty, and the layout confidence range.
+    """
+    blocks = [
+        block
+        for page in pages_blocks
+        for block in page
+        if block.generated_role != FORMULA_NUMBERING_ROLE
+    ]
+    scores = [block.layout_score for block in blocks if block.layout_score is not None]
+    types: dict[str, int] = {}
+    for block in blocks:
+        types[block.type.value] = types.get(block.type.value, 0) + 1
+    return {
+        "total_blocks": len(blocks),
+        "empty_blocks": sum(1 for block in blocks if not block.content.strip()),
+        "block_types": dict(sorted(types.items())),
+        "layout_score_min": round(min(scores), 4) if scores else None,
+        "layout_score_avg": round(sum(scores) / len(scores), 4) if scores else None,
+    }
 
 
 def _dedupe_full_page(
@@ -73,11 +104,17 @@ def _dedupe_full_page(
     return dedupe_visual_parents(raw, recheck, image, allow_mixed_children=True)
 
 
-def _decode_document_images(file_bytes: bytes, file_name: str) -> list[np.ndarray]:
+def _decode_document_images(
+    file_bytes: bytes,
+    file_name: str,
+    *,
+    dpi: int = 150,
+    page_range: tuple[int, int] | None = None,
+) -> list[np.ndarray]:
     ext = os.path.splitext(file_name)[1].lower()
     try:
         if ext == ".pdf":
-            images = pdf_to_images(file_bytes)
+            images = pdf_to_images(file_bytes, dpi=dpi, page_range=page_range)
         else:
             np_arr = np.frombuffer(file_bytes, np.uint8)
             images = [cv2.imdecode(np_arr, cv2.IMREAD_COLOR)]
@@ -98,6 +135,27 @@ def _decode_document_images(file_bytes: bytes, file_name: str) -> list[np.ndarra
         raise PipelineError(
             INVALID_DOCUMENT_MESSAGE, public_message=INVALID_DOCUMENT_MESSAGE
         )
+    max_pages = int(os.environ.get("PARSING_MAX_PAGES", "500"))
+    if len(images) > max_pages:
+        raise PipelineError(
+            f"Document has {len(images)} pages; limit is {max_pages}.",
+            status_code=422,
+            public_message=(
+                f"文档有 {len(images)} 页，超过 {max_pages} 页上限。"
+                "请选择页范围或拆分后再上传。"
+            ),
+        )
+    max_pixels = int(os.environ.get("PARSING_MAX_PAGE_PIXELS", "50000000"))
+    for index, image in enumerate(images, start=1):
+        if image.shape[0] * image.shape[1] > max_pixels:
+            raise PipelineError(
+                f"Page {index} is too large.",
+                status_code=422,
+                public_message=(
+                    f"第 {index} 页图像过大，超过单页像素上限。"
+                    "请降低扫描分辨率或拆分页面。"
+                ),
+            )
     return images
 
 
@@ -108,9 +166,22 @@ async def process_document(
     keep_header_footer: bool = False,
     model_options: Optional[Dict[str, Any]] = None,
     element_formats: Optional[Dict[str, str]] = None,
+    *,
+    dpi: int = 150,
+    page_range: tuple[int, int] | None = None,
+    progress_cb: ProgressCallback | None = None,
+    cancel_event: asyncio.Event | None = None,
 ) -> Dict[str, Any]:
     start_time = time.perf_counter()
-    images = await asyncio.to_thread(_decode_document_images, file_bytes, file_name)
+    raise_if_cancelled(cancel_event)
+    images = await asyncio.to_thread(
+        _decode_document_images,
+        file_bytes,
+        file_name,
+        dpi=dpi,
+        page_range=page_range,
+    )
+    await notify(progress_cb, "decode", 1, 1)
     return await process_decoded_document(
         images,
         file_name,
@@ -119,6 +190,8 @@ async def process_document(
         model_options,
         element_formats,
         started_at=start_time,
+        progress_cb=progress_cb,
+        cancel_event=cancel_event,
     )
 
 
@@ -134,6 +207,8 @@ async def process_decoded_document(
     asset_dir: Optional[Path] = None,
     asset_url_prefix: str = "",
     started_at: Optional[float] = None,
+    progress_cb: ProgressCallback | None = None,
+    cancel_event: asyncio.Event | None = None,
 ) -> Dict[str, Any]:
     """Recognize already-decoded pages, optionally collecting demo source maps."""
     assets = (
@@ -152,6 +227,8 @@ async def process_decoded_document(
             element_formats,
             demo,
             started_at,
+            progress_cb,
+            cancel_event,
         )
     finally:
         image_assets.reset(token)
@@ -166,6 +243,8 @@ async def _process_decoded_document(
     element_formats,
     demo,
     started_at,
+    progress_cb,
+    cancel_event,
 ):
     start_time = started_at if started_at is not None else time.perf_counter()
     full_overlap_dedupe = settings.pipeline.full_overlap_dedupe
@@ -174,7 +253,13 @@ async def _process_decoded_document(
     decode_end_time = time.perf_counter()
 
     # 2. Phase 1: Layout Analysis
-    pages_blocks = await analyze_layouts(images, model_options)
+    raise_if_cancelled(cancel_event)
+    pages_blocks = await analyze_layouts(
+        images,
+        model_options,
+        progress_cb=progress_cb,
+        cancel_event=cancel_event,
+    )
     layout_end_time = time.perf_counter()
     raw_pages_blocks = deepcopy(pages_blocks) if _VISUAL_PARENT_DEDUPE else None
 
@@ -208,11 +293,21 @@ async def _process_decoded_document(
 
     async def recognize_body():
         if settings.layout_analyze_model.provides_reading_order:
-            return await recognize_pages(*recognition_args)
+            return await recognize_pages(
+                *recognition_args,
+                progress_cb=progress_cb,
+                cancel_event=cancel_event,
+            )
         reading_order_task = asyncio.create_task(
             resolve_reading_orders(pages_blocks, images, semaphore)
         )
-        recognition_task = asyncio.create_task(recognize_pages(*recognition_args))
+        recognition_task = asyncio.create_task(
+            recognize_pages(
+                *recognition_args,
+                progress_cb=progress_cb,
+                cancel_event=cancel_event,
+            )
+        )
         reading_orders, recognized_pages = await gather_cancel_on_error(
             reading_order_task,
             recognition_task,
@@ -232,6 +327,8 @@ async def _process_decoded_document(
                 semaphore,
                 model_options,
                 element_formats,
+                progress_cb=progress_cb,
+                cancel_event=cancel_event,
             ),
         )
     else:
@@ -301,6 +398,7 @@ async def _process_decoded_document(
             pages_blocks[page_index] = headers + blocks + footers
 
     # 4. Phase 3: Assembly & Output Formatting
+    raise_if_cancelled(cancel_event)
     outputs = {}
 
     if "json" in output_formats:
@@ -322,12 +420,15 @@ async def _process_decoded_document(
     if "markdown" in output_formats:
         outputs["markdown"] = assemble_markdown(pages_blocks)
 
+    await notify(progress_cb, "assemble", 1, 1)
+
     end_time = time.perf_counter()
 
     metadata = {
         "page_num": page_num,
         "file_type": ext,
         "processing_time_ms": int((end_time - start_time) * 1000),
+        "quality": _quality_summary(pages_blocks),
     }
 
     if settings.debug:

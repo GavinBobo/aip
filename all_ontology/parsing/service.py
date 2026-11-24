@@ -18,6 +18,7 @@ complaints about the same inputs.
 from __future__ import annotations
 
 import asyncio
+import mimetypes
 import json
 import logging
 import re
@@ -34,12 +35,14 @@ from all_ontology.parsing import settings as parsing_settings
 from all_ontology.parsing.config.settings import settings
 from all_ontology.parsing.model.backend import model_backend
 from all_ontology.parsing.pipeline.errors import (
+    ParsingCancelledError,
     get_error_status_code,
     get_public_error_message,
 )
 from all_ontology.parsing.pipeline.orchestrator import process_document
 from all_ontology.parsing.pipeline.postprocess.picture_postprocess import document_slug
 from all_ontology.parsing.tasks import task_store
+from all_ontology.parsing.utils.pdf import pdf_to_images
 
 logger = logging.getLogger(__name__)
 
@@ -456,9 +459,43 @@ def read_instance(document: str, run: str) -> dict[str, Any]:
         ) from error
 
 
+def instance_from_id(instance_id: str) -> Instance:
+    """Resolve the ``<document>/<run>`` id stored on a parsing document."""
+    document, _, run = instance_id.partition("/")
+    if not document or not run:
+        raise HTTPException(status_code=404, detail="Instance not found")
+    return _instance_or_404(document, run)
+
+
 def instance_source(document: str, run: str) -> Instance:
     """The stored source of one run, for the ``/source`` download route."""
     return _instance_or_404(document, run)
+
+
+def render_page(instance: Instance, page_index: int) -> tuple[bytes, str]:
+    """Render one source page to a browser-displayable image.
+
+    The block overlay needs pixels and the JSON's ``page_size`` in the same
+    coordinate space. PDF pages are therefore rendered at the same 150 DPI the
+    pipeline uses by default; an image source is returned as-is.
+    """
+    suffix = instance.source.suffix.lower()
+    if suffix != ".pdf":
+        media_type = mimetypes.guess_type(instance.source.name)[0] or "image/png"
+        return instance.source.read_bytes(), media_type
+    import cv2
+
+    images = pdf_to_images(
+        instance.source.read_bytes(),
+        dpi=150,
+        page_range=(page_index + 1, page_index + 1),
+    )
+    if not images:
+        raise HTTPException(status_code=404, detail="Page not found")
+    ok, encoded = cv2.imencode(".png", images[0])
+    if not ok:
+        raise HTTPException(status_code=500, detail="Could not render the page")
+    return encoded.tobytes(), "image/png"
 
 
 def delete_instance(document: str, run: str) -> None:
@@ -472,7 +509,7 @@ def delete_instance(document: str, run: str) -> None:
         ) from error
 
 
-async def _ensure_ready() -> None:
+async def ensure_ready() -> None:
     """Fail fast, with the same public wording OXR uses, when no backend works."""
     await parsing_settings.ensure_current()
     try:
@@ -490,6 +527,12 @@ async def parse_now(
     file_name: str,
     options: ParseOptions,
     instance: Instance | None = None,
+    *,
+    dpi: int = 150,
+    page_range: tuple[int, int] | None = None,
+    progress_cb: Any = None,
+    cancel_event: asyncio.Event | None = None,
+    extra_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Parse one document in the request; returns ``{file_name, outputs, metadata}``.
 
@@ -497,7 +540,7 @@ async def parse_now(
     given the answer is written beside that source as well, so the instances
     list can show the run after the request that produced it has ended.
     """
-    await _ensure_ready()
+    await ensure_ready()
     try:
         result = await process_document(
             file_bytes,
@@ -506,7 +549,13 @@ async def parse_now(
             keep_header_footer=options.keep_header_footer,
             model_options=options.model_options,
             element_formats=options.element_formats,
+            dpi=dpi,
+            page_range=page_range,
+            progress_cb=progress_cb,
+            cancel_event=cancel_event,
         )
+    except (ParsingCancelledError, asyncio.CancelledError):
+        raise
     except Exception as error:  # noqa: BLE001 - translated to an HTTP status
         logger.warning(
             "Document parsing failed (file=%s, error_type=%s)",
@@ -518,6 +567,8 @@ async def parse_now(
             detail=get_public_error_message(error),
         ) from error
     metadata = result["metadata"]
+    if extra_metadata:
+        metadata.update(extra_metadata)
     if instance is not None:
         metadata["instance_id"] = instance.id
         metadata["stored_path"] = str(instance.source)
@@ -538,7 +589,7 @@ async def parse_now(
 
 async def submit_job(file_bytes: bytes, file_name: str, options: ParseOptions) -> str:
     """Queue a parse; the work runs in the background on this process."""
-    await _ensure_ready()
+    await ensure_ready()
     task_id = str(uuid.uuid4())
     await task_store.create(task_id, file_name)
     return task_id
@@ -614,7 +665,7 @@ async def capabilities() -> dict[str, Any]:
         "ready": bool(described.get("ready")),
         "output_formats": sorted(SUPPORTED_OUTPUT_FORMATS),
         "element_formats": {
-            key: sorted(values) for key, values in SUPPORTED_ELEMENT_FORMATS.items()
+            key: sorted(values) for key, values in FUNCTIONAL_ELEMENT_FORMATS.items()
         },
         "element_format_defaults": DEFAULT_ELEMENT_FORMATS,
         "model_options": sorted(MODEL_OPTION_RANGES),
@@ -625,16 +676,71 @@ async def test_backend(config: dict[str, Any] | None = None) -> dict[str, Any]:
     """Probe the recognition backend, optionally with unsaved settings."""
     if config is None:
         await parsing_settings.ensure_current()
-        return await model_backend.test()
-    return await model_backend.test(_model_config_from(config))
+        result = await model_backend.test()
+    else:
+        result = await model_backend.test(_model_config_from(config))
+    return _with_ok(result)
 
 
 async def test_layout(config: dict[str, Any] | None = None) -> dict[str, Any]:
     """Probe the D-FINE layout service."""
     if config is None:
         await parsing_settings.ensure_current()
-        return await model_backend.test_layout()
-    return await model_backend.test_layout(_layout_config_from(config))
+        result = await model_backend.test_layout()
+    else:
+        result = await model_backend.test_layout(_layout_config_from(config))
+    return _with_ok(result)
+
+
+def _with_ok(result: dict[str, Any]) -> dict[str, Any]:
+    """Make the success flag explicit.
+
+    These probes answer 200 even when the service is down; the browser used to
+    read that as success. ``ok`` is the single field it can trust.
+    """
+    result = dict(result)
+    result["ok"] = bool(result.get("reachable"))
+    if not result["ok"]:
+        result.setdefault("detail", result.get("error") or "Connection failed")
+    return result
+
+
+async def health() -> dict[str, Any]:
+    """A combined, user-triggered readiness probe for the parsing page."""
+    backend = await test_backend()
+    layout = await test_layout()
+    return {
+        "ok": bool(backend.get("ok") and layout.get("ok")),
+        "backend": backend,
+        "layout": layout,
+    }
+
+
+def error_code_for(error: Exception) -> str:
+    """Stable code for the UI; details stay in the server log."""
+    from all_ontology.parsing.pipeline.errors import PipelineError
+
+    if isinstance(error, asyncio.CancelledError):
+        return "CANCELLED"
+    if isinstance(error, HTTPException):
+        if error.status_code == 422:
+            return "INVALID_OPTIONS"
+        if error.status_code == 413:
+            return "FILE_TOO_LARGE"
+        if error.status_code == 415:
+            return "UNSUPPORTED_FILE"
+        if error.status_code == 503:
+            return "BACKEND_UNAVAILABLE"
+    if isinstance(error, PipelineError):
+        if error.status_code == 503:
+            return "BACKEND_UNAVAILABLE"
+        if "decode" in str(error).lower() or "page images" in str(error).lower():
+            return "INVALID_DOCUMENT"
+        if "timeout" in str(error).lower():
+            return "TIMEOUT"
+    if isinstance(error, TimeoutError):
+        return "TIMEOUT"
+    return "PARSE_FAILED"
 
 
 def _model_config_from(config: dict[str, Any]):

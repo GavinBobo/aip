@@ -112,6 +112,15 @@ def test_the_job_store_records_the_lifecycle() -> None:
     asyncio.run(scenario())
 
 
+def test_an_unreachable_probe_is_never_reported_as_ok() -> None:
+    """The browser reads ``ok``; HTTP 200 alone must not mean success."""
+    result = service._with_ok(
+        {"mode": "vllm", "reachable": False, "error": "connection refused"}
+    )
+    assert result["ok"] is False
+    assert result["detail"] == "connection refused"
+
+
 def test_a_started_job_is_referenced_until_it_finishes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

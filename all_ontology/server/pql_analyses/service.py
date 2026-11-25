@@ -57,6 +57,7 @@ def create_pql_analysis(
     name: str,
     description: str,
     pql: str,
+    zone_id: str | None = None,
 ) -> dict[str, Any]:
     """Create a fresh ``PqlAnalysis`` and embed it.
 
@@ -79,10 +80,16 @@ def create_pql_analysis(
         )
 
     analysis_id = str(uuid.uuid4())
-    upsert_pql_analysis_node(analysis_id, name, description, pql)
+    upsert_pql_analysis_node(analysis_id, name, description, pql, zone_id=zone_id)
     _embed(analysis_id)
 
-    return {"id": analysis_id, "name": name, "description": description, "pql": pql}
+    return {
+        "id": analysis_id,
+        "name": name,
+        "description": description,
+        "pql": pql,
+        "zone_id": zone_id,
+    }
 
 
 def update_pql_analysis(
@@ -90,6 +97,7 @@ def update_pql_analysis(
     name: str,
     description: str,
     pql: str,
+    zone_id: str | None = None,
 ) -> dict[str, Any] | None:
     """Replace name/description/pql of an existing ``PqlAnalysis`` by id.
 
@@ -113,14 +121,20 @@ def update_pql_analysis(
             f"(id={pql_conflict['id']!r})",
         )
 
-    upsert_pql_analysis_node(analysis_id, name, description, pql)
+    upsert_pql_analysis_node(analysis_id, name, description, pql, zone_id=zone_id)
 
     from all_ontology.vdb import get_semantic_vdb
 
     get_semantic_vdb().delete_by_id(analysis_id)
     _embed(analysis_id)
 
-    return {"id": analysis_id, "name": name, "description": description, "pql": pql}
+    return {
+        "id": analysis_id,
+        "name": name,
+        "description": description,
+        "pql": pql,
+        "zone_id": zone_id,
+    }
 
 
 def delete_pql_analysis(analysis_id: str) -> dict[str, str] | None:

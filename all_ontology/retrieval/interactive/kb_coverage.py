@@ -101,6 +101,55 @@ def _slim_kb_for_coverage(formatted_kb: str) -> str:
 
 
 _MAX_CHILDREN_PER_PARENT = 5
+#: How many levels below a matched entry are injected: child, grandchild,
+#: great-grandchild. The hand-unrolled blocks this replaces stopped here.
+_MAX_KB_CHILD_DEPTH = 3
+
+
+def _entry_name(text: str) -> str:
+    """The normalized name on the first line of one child entry's text."""
+    return _norm_key(text.split("\n")[0].lstrip("- ").strip())
+
+
+def _inject_descendants(
+    root: str,
+    children_map: dict[str, list[str]],
+    seen_names: set[str],
+    lines: list[str],
+) -> None:
+    """Append *root*'s descendants to *lines*, depth-first, at most three levels.
+
+    A single stack replaces the hand-unrolled child / grandchild /
+    great-grandchild blocks, each of which repeated the same name extraction,
+    dedupe and append logic. Reversing each sibling list before pushing keeps
+    the original document order when the stack is popped.
+    """
+    stack: list[tuple[str, str, int]] = [
+        (name, text, 1)
+        for text in reversed(children_map.get(root, [])[:_MAX_CHILDREN_PER_PARENT])
+        if (name := _entry_name(text))
+    ]
+    while stack:
+        name, text, depth = stack.pop()
+        if name in seen_names:
+            continue
+        seen_names.add(name)
+        lines.append(text)
+        logger.debug(
+            "Clarify: injected KB entry %r (depth %d, under %r)",
+            name,
+            depth,
+            root,
+        )
+        if depth >= _MAX_KB_CHILD_DEPTH:
+            continue
+        stack.extend(
+            (child_name, child_text, depth + 1)
+            for child_text in reversed(
+                children_map.get(name, [])[:_MAX_CHILDREN_PER_PARENT]
+            )
+            if (child_name := _entry_name(child_text))
+        )
 
 
 def _filter_covered_by_external_knowledge(
@@ -239,78 +288,12 @@ def _filter_covered_by_external_knowledge(
                     seen_names.add(match)
                     relevant_lines.append(kb_entries[match])
                     covered.add(term)  # confirmed: real KB entry exists
-                # Inject children even if parent text was already added (dedup via seen_names
-                # prevents duplicate text, but grandchildren would be silently skipped if we
-                # only entered this block on first sight of the parent).
-                children = norm_children_map.get(match, [])[:_MAX_CHILDREN_PER_PARENT]
-                if children:
-                    logger.debug(
-                        "Clarify — KB entry %r has %d child(ren)", match, len(children)
-                    )
-                for child_text in children:
-                    child_name = _norm_key(
-                        child_text.split("\n")[0].lstrip("- ").strip()
-                    )
-                    if child_name and child_name not in seen_names:
-                        seen_names.add(child_name)
-                        relevant_lines.append(child_text)
-                        logger.debug(
-                            "Clarify — injected child KB entry: %r (parent: %r)",
-                            child_name,
-                            match,
-                        )
-                    # Inject grandchildren — covers 2-level KB hierarchies (e.g. PAR→CGPI→SPR).
-                    grandchildren = (
-                        norm_children_map.get(child_name, [])[:_MAX_CHILDREN_PER_PARENT]
-                        if child_name
-                        else []
-                    )
-                    if grandchildren:
-                        logger.debug(
-                            "Clarify — KB entry %r has %d grandchild(ren) via %r",
-                            child_name,
-                            len(grandchildren),
-                            match,
-                        )
-                    for gc_text in grandchildren:
-                        gc_name = _norm_key(gc_text.split("\n")[0].lstrip("- ").strip())
-                        if gc_name and gc_name not in seen_names:
-                            seen_names.add(gc_name)
-                            relevant_lines.append(gc_text)
-                            logger.debug(
-                                "Clarify — injected grandchild KB entry: %r (child: %r, parent: %r)",
-                                gc_name,
-                                child_name,
-                                match,
-                            )
-                        # Inject great-grandchildren — covers 3-level KB hierarchies.
-                        great_grandchildren = (
-                            norm_children_map.get(gc_name, [])[
-                                :_MAX_CHILDREN_PER_PARENT
-                            ]
-                            if gc_name
-                            else []
-                        )
-                        if great_grandchildren:
-                            logger.debug(
-                                "Clarify — KB entry %r has %d great-grandchild(ren) via %r",
-                                gc_name,
-                                len(great_grandchildren),
-                                match,
-                            )
-                        for ggc_text in great_grandchildren:
-                            ggc_name = _norm_key(
-                                ggc_text.split("\n")[0].lstrip("- ").strip()
-                            )
-                            if ggc_name and ggc_name not in seen_names:
-                                seen_names.add(ggc_name)
-                                relevant_lines.append(ggc_text)
-                                logger.debug(
-                                    "Clarify — injected great-grandchild KB entry: %r (grandchild: %r, parent: %r)",
-                                    ggc_name,
-                                    gc_name,
-                                    match,
-                                )
+                # Descendants are injected even when the parent text was already
+                # added: dedupe keeps the text single, and the walk still needs
+                # to reach this parent's children.
+                _inject_descendants(
+                    match, norm_children_map, seen_names, relevant_lines
+                )
 
     relevant_knowledge_text = "\n".join(relevant_lines)
     logger.info("Clarify — external_kb covers: %s", covered or "none")

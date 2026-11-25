@@ -40,7 +40,7 @@ from all_ontology.semantic.constants import (
     SQL_ATTR_SOURCE_SQL,
     SQL_ATTR_SOURCE_TABLE,
 )
-from all_ontology.server.model_interchange.embed import (
+from all_ontology.model_interchange.embed import (
     ColumnCatalogMeta,
     ImportEmbedBuffer,
     build_column_attribute_semantic_rows,
@@ -50,7 +50,7 @@ from all_ontology.server.model_interchange.embed import (
     build_table_data_row,
     build_term_semantic_rows,
 )
-from all_ontology.server.model_interchange.schemas import (
+from all_ontology.model_interchange.schemas import (
     AllOntologyModelDocument,
     ModelColumn,
     ModelColumnAttribute,
@@ -67,7 +67,7 @@ from all_ontology.server.model_interchange.schemas import (
     ModelTable,
     ModelTerm,
 )
-from all_ontology.server.sql_utils import get_dialects, get_schemas, validate_sql
+from all_ontology.sql.validation import get_dialects, get_schemas, validate_sql
 from all_ontology.utils.sample_values import dump_sample_values, parse_sample_values
 
 logger = logging.getLogger(__name__)
@@ -575,7 +575,7 @@ def _column_live_id_map(catalog_rows: list[dict[str, Any]]) -> dict[str, str]:
     An exported catalog id is not required to be the column's live ``id`` --
     a previously-imported model can keep the id it was imported under. The
     SQL parser behind ``sql_column_resolver``
-    (:func:`all_ontology.server.sql_utils.get_schemas`) only ever resolves columns by
+    (:func:`all_ontology.sql.validation.get_schemas`) only ever resolves columns by
     the live ``id``, so the two id spaces can diverge. See
     :func:`_scoped_column_ids`.
     """

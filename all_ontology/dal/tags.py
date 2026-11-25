@@ -886,7 +886,7 @@ def apply_labels_now_matched(
     """``INSERT ... SELECT`` the rule's tags onto everything it matches.
 
     The second half of a replay; :func:`remove_labels_no_longer_matched` is the
-    first, and ``all_ontology.server.rules.service.reapply_rules`` is what runs
+    first, and ``all_ontology.domain.rules.reapply_rules`` is what runs
     the two -- every rule's removal before any rule's application, for a reason
     that is on *that* function rather than here, because neither half can see
     it on its own.
@@ -1017,7 +1017,7 @@ def remove_labels_no_longer_matched(*, rule_id: str, targets: dict[str, Select])
 
     The first half of a replay, and it runs for *every* rule before
     :func:`apply_labels_now_matched` runs for any -- see
-    ``all_ontology.server.rules.service.reapply_rules``, which is what orders
+    ``all_ontology.domain.rules.reapply_rules``, which is what orders
     the two and where the reason lives.
 
     An empty *targets* removes every label the rule has. A rule whose search

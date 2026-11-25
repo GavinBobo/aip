@@ -51,6 +51,13 @@ In [`frontend/CLAUDE.md`](./frontend/CLAUDE.md), loaded when working under `fron
 
 ## Backend Rules
 
+- **Layer boundaries.** `all_ontology/server/` is HTTP only: routers, request/response
+  models, auth and wiring. Cross-cutting use cases live in `all_ontology/domain/`
+  (`sql_attributes`, `rules`, `search`); storage stays in `all_ontology/dal/`.
+  `sql/`, `zones/`, `model_interchange/` and `infra/` are neutral shared code.
+  No package outside `server/` may import `all_ontology.server.*`;
+  `all_ontology/tests/test_layering.py` enforces this with an AST scan.
+
 - **The store is Postgres.** `all_ontology/dal/` talks to it through SQLAlchemy (Core expressions and ORM entities — see the next bullet); `all_ontology/dal/schema.py` is the single source of truth for the schema and `all_ontology/dal/session.py` owns the pooled engine. Schema changes go through Alembic — `uv run alembic revision --autogenerate -m "..."` — never by hand-editing a migration that has been applied. Several column types and constraints are deliberate and non-obvious — read the comments in `schema.py` before changing a table.
 - **ORM or Core, by job.** `all_ontology/dal/models.py` maps every table in `schema.py` to an ORM entity (`__table__ = schema.zone`, so there is still exactly one DDL definition). Use the ORM for entity work — `session.get(Zone, id)`, `select(Zone)`, `zone.targets`, `db.add`/`db.delete` — and keep Core for set work: joins, `DISTINCT`, unions, `INSERT ... ON CONFLICT`. Open a session with `with orm_session() as db:`; inside `write_transaction()` it borrows that connection, so the two styles commit together. `dal/zones.py` is the worked example.
 - **Chinese table comments live in `schema.py: TABLE_COMMENTS`.** They become `COMMENT ON TABLE` in Postgres via a migration, and `alembic check` treats them as part of the schema — change one and you must generate a migration. Per-column explanations live in `dal/models.py` as Chinese annotations plus docstrings.

@@ -10,6 +10,7 @@ columns and references, and nothing about where they were drawn.
 
 from __future__ import annotations
 import json
+import math
 import re
 from typing import Any
 from fastapi import APIRouter, HTTPException, Query
@@ -22,6 +23,8 @@ from all_ontology.server.erd.ddl import export_sql, parse_sql
 from all_ontology.server.erd.router import canvas_or_404
 from all_ontology.server.erd.schemas import ImportRequest
 from all_ontology.server.responses import ErdExportResponse, ErdImportResponse
+from all_ontology.server.access import require_zone_permission
+from all_ontology.dal.schema import ZONE_PERMISSION_EDIT
 
 router = APIRouter()
 #: Spacing used when a DBML document carries no positions (it never does).
@@ -41,6 +44,32 @@ def _catalog_table_ids(table_ids: list[str]) -> set[str]:
         select(s.catalog_table.c.id).where(s.catalog_table.c.id.in_(table_ids))
     )
     return {row["id"] for row in rows}
+
+
+def _number(
+    value: Any, default: float, field: str, name: str, warnings: list[str]
+) -> float:
+    """A numeric field, or *default* with a warning when the document's value is unusable.
+
+    The document is user-supplied, so ``"x": "left"`` has to become a warning
+    rather than a ``ValueError`` out of ``float()``: that reached the client as
+    a 500 and made the import look like a server fault.
+    """
+    if value is None:
+        return default
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        warnings.append(
+            f"table {name!r}: {field} {value!r} is not a number; using {default:g}"
+        )
+        return default
+    if not math.isfinite(number):
+        warnings.append(
+            f"table {name!r}: {field} {value!r} is not finite; using {default:g}"
+        )
+        return default
+    return number
 
 
 def _normalise_import_nodes(
@@ -74,17 +103,31 @@ def _normalise_import_nodes(
             table_id = None
         if not table_id and key in existing and existing[key].get("table_id"):
             table_id = existing[key]["table_id"]
+        columns = raw.get("columns")
+        if columns is not None and not isinstance(columns, list):
+            warnings.append(
+                f"table {name!r}: columns must be a list, the value was ignored"
+            )
+            columns = None
+        indexes = raw.get("indexes")
+        if indexes is not None and not isinstance(indexes, list):
+            warnings.append(
+                f"table {name!r}: indexes must be a list, the value was ignored"
+            )
+            indexes = None
         nodes.append(
             {
                 "name": name,
                 "table_id": table_id,
-                "x": float(raw.get("x", 0)),
-                "y": float(raw.get("y", 0)),
-                "width": float(raw.get("width") or 248),
+                "x": _number(raw.get("x"), 0.0, "x", name, warnings),
+                "y": _number(raw.get("y"), 0.0, "y", name, warnings),
+                "width": _number(
+                    raw.get("width") or 248, 248.0, "width", name, warnings
+                ),
                 "collapsed": bool(raw.get("collapsed", False)),
-                "columns": raw.get("columns") or None,
+                "columns": columns or None,
                 "column_order": raw.get("column_order") or None,
-                "indexes": raw.get("indexes") or None,
+                "indexes": indexes or None,
                 "note": raw.get("note"),
             }
         )
@@ -286,6 +329,7 @@ def import_canvas(zone_id: str, body: ImportRequest) -> dict:
     Syntax the canvas does not model is reported in ``warnings`` instead of
     failing the whole document.
     """
+    require_zone_permission(zone_id, ZONE_PERMISSION_EDIT)
     canvas = canvas_or_404(zone_id)
     warnings: list[str] = []
     if body.format == "json":

@@ -29,7 +29,7 @@ from pydantic import BaseModel
 
 from all_ontology.dal.terms import fetch_table_schema_map, fetch_terms_with_sqls
 from all_ontology.semantic.constants import SEMANTIC_SOURCE, SQL_ATTR_SOURCE_SQL
-from all_ontology.server.sql_attributes.service import (
+from all_ontology.domain.sql_attributes import (
     SqlAttributeExpressionConflict,
     SqlAttributeNameConflict,
     SqlAttributeSqlError,

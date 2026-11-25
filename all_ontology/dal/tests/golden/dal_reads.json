@@ -6145,7 +6145,8 @@
         "description": "Predict which customers stop renting.",
         "id": "<pql:Customer churn>",
         "name": "Customer churn",
-        "pql": "PREDICT COUNT(rental.*, 30, days) = 0 FOR EACH customer.customer_id"
+        "pql": "PREDICT COUNT(rental.*, 30, days) = 0 FOR EACH customer.customer_id",
+        "zone_id": null
       }
     },
     "pql_analyses.find_pql_analysis_by_name": {

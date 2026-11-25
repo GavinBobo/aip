@@ -74,6 +74,13 @@ export type ParsingCapabilities = {
 	element_formats: Record<string, string[]>;
 	element_format_defaults: Record<string, string>;
 	model_options: string[];
+	image_understanding?: {
+		enabled: boolean;
+		min_area_px: number;
+		prompt: string;
+		max_tokens: number;
+		concurrency: number;
+	};
 };
 
 export type ParsedDocument = {
@@ -189,6 +196,9 @@ export type ParsingRunSummary = {
 	error_code: string | null;
 	error_message: string | null;
 	reviewed: boolean;
+	source_md5?: string | null;
+	parsed_md_path?: string | null;
+	learned_to_knowledge?: boolean;
 	created: string | null;
 	finished: string | null;
 };
@@ -213,6 +223,17 @@ export type ParsingRunDetail = ParsingRunSummary & {
 	reviewed_by: string | null;
 	reviewed_at: string | null;
 	review_note: string | null;
+	images?: Array<{
+		id: string;
+		page: number;
+		block_index: number;
+		image_md5: string;
+		image_path: string;
+		area_px: number | null;
+		vlm_status: string;
+		vlm_content: string | null;
+		learned_to_knowledge: boolean;
+	}>;
 };
 
 export type ParsingHealth = {

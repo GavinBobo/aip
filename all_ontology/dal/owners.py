@@ -19,7 +19,6 @@ rows, including the owner column a sql attribute still keeps.
 from __future__ import annotations
 
 from dataclasses import dataclass
-
 from sqlalchemy import select, update
 
 from all_ontology.dal import schema as s
@@ -29,19 +28,19 @@ from all_ontology.dal.session import store
 CATALOG_EDIT = "catalog:edit"
 
 _OWNED = (
-    (s.catalog_database, CATALOG_EDIT),
-    (s.catalog_schema, CATALOG_EDIT),
-    (s.catalog_table, CATALOG_EDIT),
-    (s.term, CATALOG_EDIT),
+    ("database", s.catalog_database, CATALOG_EDIT),
+    ("schema", s.catalog_schema, CATALOG_EDIT),
+    ("table", s.catalog_table, CATALOG_EDIT),
+    ("term", s.term, CATALOG_EDIT),
 )
 
 #: Editable. The page shows the parent's owner. This check does not read one,
 #: so a viewer in that owner's group is not admitted. A sql attribute keeps an
 #: owner column; it is not what this check reads.
 _EDITABLE = (
-    (s.catalog_column, CATALOG_EDIT),
-    (s.column_attribute, CATALOG_EDIT),
-    (s.sql_attribute, CATALOG_EDIT),
+    ("column", s.catalog_column, CATALOG_EDIT),
+    ("column_attribute", s.column_attribute, CATALOG_EDIT),
+    ("sql_attribute", s.sql_attribute, CATALOG_EDIT),
 )
 
 
@@ -58,6 +57,10 @@ class EditSubject:
 
     permission: str
     owner_id: str | None
+    #: Every catalog table the object touches. Zone edit permission is checked
+    #: over the whole set, so a term or SQL attribute spanning two zones needs
+    #: edit rights in both.
+    target_table_ids: tuple[str, ...] = ()
 
 
 def _stored_owner(table, entity_id: str) -> str | None | _Missing:
@@ -76,6 +79,63 @@ def _row_exists(table, entity_id: str) -> bool:
     return bool(rows)
 
 
+def _table_ids(kind: str, entity_id: str) -> tuple[str, ...]:
+    if kind == "database":
+        statement = (
+            select(s.catalog_table.c.id)
+            .select_from(
+                s.catalog_table.join(
+                    s.catalog_schema,
+                    s.catalog_schema.c.id == s.catalog_table.c.schema_id,
+                )
+            )
+            .where(s.catalog_schema.c.database_id == entity_id)
+        )
+    elif kind == "schema":
+        statement = select(s.catalog_table.c.id).where(
+            s.catalog_table.c.schema_id == entity_id
+        )
+    elif kind == "table":
+        statement = select(s.catalog_table.c.id).where(
+            s.catalog_table.c.id == entity_id
+        )
+    elif kind == "column":
+        statement = select(s.catalog_column.c.table_id).where(
+            s.catalog_column.c.id == entity_id
+        )
+    elif kind == "column_attribute":
+        statement = select(s.column_attribute.c.table_id).where(
+            s.column_attribute.c.id == entity_id
+        )
+    elif kind == "term":
+        statement = select(s.table__term.c.table_id).where(
+            s.table__term.c.term_id == entity_id
+        )
+    elif kind == "sql_attribute":
+        statement = (
+            select(s.sql_query__table.c.table_id)
+            .select_from(
+                s.sql_attribute__sql.join(
+                    s.sql_query__table,
+                    s.sql_query__table.c.sql_query_id
+                    == s.sql_attribute__sql.c.sql_query_id,
+                )
+            )
+            .where(s.sql_attribute__sql.c.attribute_id == entity_id)
+        )
+    else:  # pragma: no cover - callers use the fixed kind list above
+        return ()
+    return tuple(
+        sorted(
+            {
+                str(row["table_id"] if "table_id" in row else row["id"])
+                for row in store().query_read(statement)
+                if (row.get("table_id") or row.get("id"))
+            }
+        )
+    )
+
+
 def edit_subject(entity_id: str) -> EditSubject | None:
     """The row *entity_id* names, or ``None`` when it names none of these.
 
@@ -83,13 +143,21 @@ def edit_subject(entity_id: str) -> EditSubject | None:
     attribute, and a sql attribute are, with no owner consulted here: the page
     shows the table's or the term's.
     """
-    for table, permission in _OWNED:
+    for kind, table, permission in _OWNED:
         stored = _stored_owner(table, entity_id)
         if stored is not _MISSING:
-            return EditSubject(permission=permission, owner_id=stored)
-    for table, permission in _EDITABLE:
+            return EditSubject(
+                permission=permission,
+                owner_id=stored,
+                target_table_ids=_table_ids(kind, entity_id),
+            )
+    for kind, table, permission in _EDITABLE:
         if _row_exists(table, entity_id):
-            return EditSubject(permission=permission, owner_id=None)
+            return EditSubject(
+                permission=permission,
+                owner_id=None,
+                target_table_ids=_table_ids(kind, entity_id),
+            )
     return None
 
 

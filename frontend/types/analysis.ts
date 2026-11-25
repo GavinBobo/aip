@@ -14,4 +14,5 @@ export type PqlAnalysis = {
 	name: string;
 	description: string;
 	pql: string;
+	zone_id?: string | null;
 };

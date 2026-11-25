@@ -59,7 +59,7 @@ help:
 	@echo "  make publish-frontend    Build + push frontend image"
 	@echo "  make login NGC_TOKEN=... docker login nvcr.io via NGC API token"
 	@echo ""
-	@echo "Schema targets (backend owns the \`all_ontology\` schema; Prisma owns \`public\`):"
+	@echo "Schema targets (backend owns \`public\`; Prisma owns \`frontend\`):"
 	@echo "  make migrate             Apply Alembic migrations (alembic upgrade head)"
 	@echo "  make migrate-check       Fail if the schema has drifted from the metadata"
 	@echo "  make migrate-revision m=\"...\"  Autogenerate a revision from all_ontology/dal/schema.py"
@@ -111,7 +111,7 @@ require-registry:
 	fi
 
 # --- Schema migrations -------------------------------------------------
-# The backend owns the `all_ontology` Postgres schema. Prisma owns `public` and migrates
+# The backend owns the `public` Postgres schema. Prisma owns `frontend` and migrates
 # separately (frontend/prisma/migrate.sh); the two are independent.
 
 migrate:

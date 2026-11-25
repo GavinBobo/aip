@@ -18,11 +18,19 @@ inherits.
 
 That leaves ``ALL_ONTOLOGY_API_URL`` as the only setting most deployments touch. Pointing
 at a laptop's stack or at a production instance differs only in that value.
+
+Two opt-in modes let an embedding host supply the identity instead of the
+browser handshake: ``ALL_ONTOLOGY_MCP_PASSTHROUGH_AUTH`` forwards the caller's
+own credential, and ``ALL_ONTOLOGY_MCP_DELEGATION_KEY`` lets a trusted gateway
+name the user with a shared key. Neither is a process-wide identity — what
+changes per request is still resolved by All Ontology to that person's
+departments and zones.
 """
 
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -67,6 +75,16 @@ class Settings:
     # the server names for itself is the one they dialled — so a bind address
     # that is not how anyone addresses it needs this set explicitly.
     public_url: str = ""
+    # Delegated identity for a trusted host that names the person on each
+    # request instead of forwarding their credential. Off unless
+    # ``ALL_ONTOLOGY_MCP_DELEGATION_KEY`` is set; the same key must be
+    # configured on All Ontology as ``ALL_ONTOLOGY_DELEGATION_KEY``.
+    delegation_key: str | None = None
+    delegation_subject_header: str = "x-all-ontology-subject"
+    # Forward the caller's own ``Authorization`` / ``x-api-key`` upstream. For
+    # hosts that already hold the user's SSO token or API token; All Ontology
+    # verifies it and scopes the request to that user.
+    passthrough_auth: bool = False
 
 
 def _positive_float(name: str, default: float) -> float:
@@ -95,6 +113,17 @@ def _port(name: str, default: int) -> int:
     return value
 
 
+def _flag(name: str) -> bool:
+    raw = (os.environ.get(name) or "").strip().lower()
+    if not raw:
+        return False
+    if raw in {"1", "true", "yes", "on"}:
+        return True
+    if raw in {"0", "false", "no", "off"}:
+        return False
+    raise ConfigError(f"{name} must be a boolean flag, got {raw!r}")
+
+
 def _public_url(host: str, port: int) -> str:
     """Where callers reach this server, for sign-in redirects and metadata."""
     raw = (os.environ.get("ALL_ONTOLOGY_MCP_PUBLIC_URL") or "").strip()
@@ -115,8 +144,7 @@ def load_settings() -> Settings:
     """
 
     spec_path = Path(
-        (os.environ.get("ALL_ONTOLOGY_OPENAPI_SPEC") or "").strip()
-        or DEFAULT_SPEC_PATH
+        (os.environ.get("ALL_ONTOLOGY_OPENAPI_SPEC") or "").strip() or DEFAULT_SPEC_PATH
     )
     if not spec_path.is_file():
         # The packaged copy is always present in a sound install, so this is
@@ -130,6 +158,29 @@ def load_settings() -> Settings:
     host = (os.environ.get("ALL_ONTOLOGY_MCP_HOST") or DEFAULT_HOST).strip()
     port = _port("ALL_ONTOLOGY_MCP_PORT", DEFAULT_PORT)
 
+    delegation_key = (os.environ.get("ALL_ONTOLOGY_MCP_DELEGATION_KEY") or "").strip()
+    passthrough_auth = _flag("ALL_ONTOLOGY_MCP_PASSTHROUGH_AUTH")
+    if delegation_key and passthrough_auth:
+        raise ConfigError(
+            "ALL_ONTOLOGY_MCP_DELEGATION_KEY and ALL_ONTOLOGY_MCP_PASSTHROUGH_AUTH "
+            "are two different identity modes; enable only one."
+        )
+    if delegation_key and len(delegation_key) < 32:
+        raise ConfigError(
+            "ALL_ONTOLOGY_MCP_DELEGATION_KEY must be at least 32 characters; it is "
+            "equivalent to an impersonation credential for every user."
+        )
+    subject_header = (
+        (os.environ.get("ALL_ONTOLOGY_MCP_SUBJECT_HEADER") or "x-all-ontology-subject")
+        .strip()
+        .lower()
+    )
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", subject_header):
+        raise ConfigError(
+            "ALL_ONTOLOGY_MCP_SUBJECT_HEADER must be a lowercase HTTP header name, "
+            f"got {subject_header!r}"
+        )
+
     return Settings(
         # Trailing slashes make httpx base_url joins produce doubled separators.
         api_url=api_url.rstrip("/"),
@@ -141,6 +192,9 @@ def load_settings() -> Settings:
             "ALL_ONTOLOGY_MCP_CHAT_TIMEOUT_S", DEFAULT_CHAT_TIMEOUT_S
         ),
         public_url=_public_url(host, port),
+        delegation_key=delegation_key or None,
+        delegation_subject_header=subject_header,
+        passthrough_auth=passthrough_auth,
     )
 
 

@@ -10,7 +10,11 @@ export type NodeType =
 	| 'columnAttribute'
 	| 'sqlAttribute'
 	| 'sql'
-	| 'customAnalysis';
+	| 'customAnalysis'
+	| 'knowledgeConcept'
+	| 'knowledgeData'
+	| 'knowledgeAction'
+	| 'knowledgeRisk';
 
 // Eight hues spread perfectly evenly around the color wheel (45° apart —
 // 0/35/95/135/185/230/275/320, roughly) rather than clustered by "family"
@@ -27,6 +31,10 @@ const CUSTOM_ANALYSIS_OBJECT_ICON_COLOR = '#2eacb8'; // teal
 const SQL_ATTRIBUTE_OBJECT_ICON_COLOR = '#4d62cb'; // indigo
 const COLUMN_OBJECT_ICON_COLOR = '#9559c0'; // violet
 const SCHEMA_OBJECT_ICON_COLOR = '#d65cad'; // pink
+const KNOWLEDGE_CONCEPT_ICON_COLOR = '#8b5cf6'; // violet
+const KNOWLEDGE_DATA_ICON_COLOR = '#76b900'; // NVIDIA green
+const KNOWLEDGE_ACTION_ICON_COLOR = '#f59e0b'; // amber
+const KNOWLEDGE_RISK_ICON_COLOR = '#ef4444'; // red
 
 /**
  * Each type's own accent color — used on the canvas as a node's border (see
@@ -44,4 +52,8 @@ export const NODE_TYPE_ACCENT_COLOR: Record<NodeType, string> = {
 	sqlAttribute: SQL_ATTRIBUTE_OBJECT_ICON_COLOR,
 	sql: SQL_OBJECT_ICON_COLOR,
 	customAnalysis: CUSTOM_ANALYSIS_OBJECT_ICON_COLOR,
+	knowledgeConcept: KNOWLEDGE_CONCEPT_ICON_COLOR,
+	knowledgeData: KNOWLEDGE_DATA_ICON_COLOR,
+	knowledgeAction: KNOWLEDGE_ACTION_ICON_COLOR,
+	knowledgeRisk: KNOWLEDGE_RISK_ICON_COLOR,
 };

@@ -79,9 +79,9 @@ export const metadata: Metadata = {
  */
 const prefetchSharedData = (userId: string): DehydratedState => {
 	const queryClient = new QueryClient();
-	void queryClient.prefetchQuery(tagQueries.vocabulary());
+	void queryClient.prefetchQuery(tagQueries.vocabulary(userId));
 	void queryClient.prefetchQuery(zoneQueries.list(userId));
-	void queryClient.prefetchQuery(connectionQueries.list());
+	void queryClient.prefetchQuery(connectionQueries.list(userId));
 	return dehydrate(queryClient, {
 		shouldDehydrateQuery: (query) =>
 			defaultShouldDehydrateQuery(query) || query.state.status === 'pending',

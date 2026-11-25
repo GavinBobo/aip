@@ -49,7 +49,7 @@ def upgrade() -> None:
         sa.Column("modified_by", sa.Text(), nullable=True),
         sa.CheckConstraint(
             "status IN ('draft', 'published', 'archived')",
-            name="ck_knowledge_network_known_status",
+            name="known_status",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_knowledge_network"),
     )
@@ -79,7 +79,7 @@ def upgrade() -> None:
         sa.Column("extracted_at", sa.DateTime(timezone=True), nullable=True),
         sa.CheckConstraint(
             "status IN ('queued', 'extracting', 'extracted', 'failed')",
-            name="ck_knowledge_document_known_status",
+            name="known_status",
         ),
         sa.ForeignKeyConstraint(
             ["network_id"],
@@ -139,11 +139,11 @@ def upgrade() -> None:
         sa.Column("modified", sa.DateTime(timezone=True), nullable=True),
         sa.CheckConstraint(
             "kind IN ('entity', 'event', 'process', 'rule', 'metric', 'role', 'document')",
-            name="ck_knowledge_concept_known_kind",
+            name="known_kind",
         ),
         sa.CheckConstraint(
             "status IN ('draft', 'reviewed', 'certified')",
-            name="ck_knowledge_concept_known_status",
+            name="known_status",
         ),
         sa.ForeignKeyConstraint(
             ["network_id"],
@@ -191,11 +191,11 @@ def upgrade() -> None:
         sa.Column("modified", sa.DateTime(timezone=True), nullable=True),
         sa.CheckConstraint(
             "kind IN ('association', 'part_of', 'causal', 'depends_on', 'controls', 'flows_to', 'related')",
-            name="ck_knowledge_relation_known_kind",
+            name="known_kind",
         ),
         sa.CheckConstraint(
             "status IN ('draft', 'reviewed', 'certified')",
-            name="ck_knowledge_relation_known_status",
+            name="known_status",
         ),
         sa.ForeignKeyConstraint(
             ["network_id"],
@@ -253,7 +253,7 @@ def upgrade() -> None:
         sa.Column("modified", sa.DateTime(timezone=True), nullable=True),
         sa.CheckConstraint(
             "status IN ('draft', 'reviewed', 'certified')",
-            name="ck_knowledge_fact_known_status",
+            name="known_status",
         ),
         sa.ForeignKeyConstraint(
             ["network_id"],
@@ -307,7 +307,7 @@ def upgrade() -> None:
         ),
         sa.CheckConstraint(
             "num_nonnulls(concept_id, relation_id, fact_id) = 1",
-            name="ck_knowledge_evidence_exactly_one_target",
+            name="exactly_one_target",
         ),
         sa.ForeignKeyConstraint(
             ["network_id"],
@@ -360,7 +360,7 @@ def upgrade() -> None:
         ),
         sa.CheckConstraint(
             "num_nonnulls(term_id, table_id) = 1",
-            name="ck_knowledge_concept__data_exactly_one_target",
+            name="exactly_one_target",
         ),
         sa.ForeignKeyConstraint(
             ["concept_id"],
@@ -382,6 +382,17 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name="pk_knowledge_concept__data"),
     )
+
+    for table_name, comment in {
+        "knowledge_network": "知识网络：一组从文档中抽取、审核并可发布的概念与关系",
+        "knowledge_document": "知识文档：一条绑定解析结果的抽取记录，保存状态、摘要与错误",
+        "knowledge_concept": "知识概念：业务对象/事件/规则等，带别名、属性与认证状态",
+        "knowledge_relation": "知识关系：两个概念之间的有向关系及其类型与可信度",
+        "knowledge_fact": "知识事实：从原文抽取的一条陈述，可指向概念或字面值",
+        "knowledge_evidence": "知识证据：事实/关系/概念在解析文档中的页码、块号与原文引文",
+        "knowledge_concept__data": "概念与数据本体的映射：指向术语或目录表，二者取其一",
+    }.items():
+        op.execute(f"COMMENT ON TABLE {table_name} IS '{comment}'")
 
     op.create_index(
         "ix_knowledge_document_network",

@@ -28,7 +28,7 @@ from all_ontology.server.rules.router import (
     _validated_filters,
     _validated_search_term,
 )
-from all_ontology.server.search.constants import UNTAGGED_FILTER_VALUE
+from all_ontology.domain.search_constants import UNTAGGED_FILTER_VALUE
 from all_ontology.server.search.router import GlobalSearchFilters
 
 #: Terms made only of characters the tokeniser treats as separators. Long

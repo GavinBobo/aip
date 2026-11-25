@@ -9,11 +9,13 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import secrets
 from pathlib import Path
 from typing import Any
 
 import httpx
 from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_http_headers
 from fastmcp.exceptions import ToolError
 from mcp.types import Icon
 
@@ -136,15 +138,43 @@ BEARER_HEADER = "authorization"
 # rather than as whoever they signed in as. It is stripped on the way out.
 API_KEY_HEADER = "x-api-key"
 
+# Delegated identity: the gateway proves itself with this key and names the
+# user in the subject header. The same key is configured on All Ontology.
+DELEGATION_KEY_HEADER = "x-all-ontology-delegation-key"
+
+
+def _incoming_headers() -> dict[str, str]:
+    """The request's headers, or an empty map outside an HTTP request."""
+    try:
+        # `include_all` matters: FastMCP strips Authorization from the default
+        # view because forwarding it downstream is usually wrong. Here it is the
+        # credential the caller asked us to relay.
+        return {
+            str(key).lower(): str(value)
+            for key, value in get_http_headers(include_all=True).items()
+        }
+    except Exception:
+        # The stdio transport has no HTTP request in scope. The identity modes
+        # that need headers report that as an actionable error below.
+        return {}
+
 
 class CallerAuth(httpx.Auth):
     """Authenticate every outbound call as the caller who triggered it.
 
-    This server holds no credential, and there is no setting that would give it
-    one. Identity comes from the sign-in the caller completed against All Ontology, and
-    the access token All Ontology issued for it is forwarded upstream unchanged: All Ontology is
-    both the authorization server and the resource server here, so there is
-    nothing to exchange and no id token to unwrap.
+    Three modes, in order of preference:
+
+    * **Sign-in (default).** Identity comes from the caller's All Ontology
+      session; the access token All Ontology issued is forwarded unchanged.
+    * **Credential passthrough.** The caller presents their own SSO bearer
+      token or All Ontology API token on every request, and exactly one of them
+      is relayed.
+    * **Delegated subject.** A trusted gateway proves itself with a shared key
+      and names the user; All Ontology resolves that subject.
+
+    The server still holds no identity of its own: what changes per request is
+    always resolved by All Ontology to that person's departments, zones, and
+    grants.
 
     Attaching this as httpx auth rather than at each call site is deliberate: it
     covers the generated tools and the hand-written streaming one through the
@@ -152,7 +182,96 @@ class CallerAuth(httpx.Auth):
     authenticate.
     """
 
+    def __init__(self, settings: Settings | None = None) -> None:
+        super().__init__()
+        self._settings = settings
+
+    @property
+    def _delegated(self) -> bool:
+        return bool(self._settings and self._settings.delegation_key)
+
+    @property
+    def _passthrough(self) -> bool:
+        return bool(self._settings and self._settings.passthrough_auth)
+
     def auth_flow(self, request: httpx.Request):  # type: ignore[override]
+        if self._delegated:
+            yield self._forward_delegation(request)
+            return
+        if self._passthrough:
+            yield self._forward_caller_credential(request)
+            return
+        yield self._forward_signed_in_token(request)
+
+    def _forward_delegation(self, request: httpx.Request) -> httpx.Request:
+        """Relay a subject named by a trusted gateway.
+
+        The gateway proves it may speak for users with the shared delegation
+        key; All Ontology re-checks the same key before resolving the subject
+        to a user, so the MCP server cannot invent an identity it did not
+        receive. The key is never accepted from a browser: this server is the
+        only holder on this hop.
+        """
+        settings = self._settings
+        assert settings is not None and settings.delegation_key is not None
+        incoming = _incoming_headers()
+        presented = incoming.get(DELEGATION_KEY_HEADER, "")
+        subject = incoming.get(settings.delegation_subject_header, "").strip()
+        if not presented or not secrets.compare_digest(
+            presented, settings.delegation_key
+        ):
+            raise ToolError(
+                "This MCP server only accepts calls from its trusted gateway: "
+                "send the configured delegation key header."
+            )
+        if not subject:
+            raise ToolError(
+                "The trusted gateway must name the caller in the "
+                f"{settings.delegation_subject_header} header."
+            )
+
+        for name in (
+            API_KEY_HEADER,
+            BEARER_HEADER,
+            DELEGATION_KEY_HEADER,
+            settings.delegation_subject_header,
+        ):
+            if name in request.headers:
+                del request.headers[name]
+        request.headers[DELEGATION_KEY_HEADER] = settings.delegation_key
+        request.headers[settings.delegation_subject_header] = subject
+        return request
+
+    def _forward_caller_credential(self, request: httpx.Request) -> httpx.Request:
+        """Forward the credential the caller presented to this server.
+
+        All Ontology is the verifier either way: an API token resolves to its
+        owner, an SSO bearer token to the user sharing its email or subject.
+        Exactly one credential is forwarded so a caller cannot combine two
+        identities and have one of them win upstream by accident.
+        """
+        incoming = _incoming_headers()
+        api_key = (incoming.get(API_KEY_HEADER) or "").strip()
+        authorization = (incoming.get(BEARER_HEADER) or "").strip()
+        for name in (*self._identity_headers(), API_KEY_HEADER, BEARER_HEADER):
+            if name in request.headers:
+                del request.headers[name]
+
+        if api_key.startswith("all_ontology_"):
+            request.headers[API_KEY_HEADER] = api_key
+        elif authorization:
+            request.headers[BEARER_HEADER] = authorization
+        elif api_key:
+            request.headers[API_KEY_HEADER] = api_key
+        else:
+            raise ToolError(
+                "This MCP server forwards the caller's own credential. Send an "
+                "All Ontology API token (x-api-key) or a signed-in bearer token "
+                "with every request."
+            )
+        return request
+
+    def _forward_signed_in_token(self, request: httpx.Request) -> httpx.Request:
         token = all_ontology_access_token()
         if not token:
             raise ToolError(
@@ -162,11 +281,20 @@ class CallerAuth(httpx.Auth):
 
         # A request must never carry two identities, whichever slot the
         # caller's arrived in, so drop both before setting ours.
-        for name in (API_KEY_HEADER, BEARER_HEADER):
+        for name in (*self._identity_headers(), API_KEY_HEADER, BEARER_HEADER):
             if name in request.headers:
                 del request.headers[name]
         request.headers[BEARER_HEADER] = f"Bearer {token}"
-        yield request
+        return request
+
+    def _identity_headers(self) -> tuple[str, ...]:
+        """Delegation headers a caller might smuggle; never forwarded by other modes."""
+        subject = (
+            self._settings.delegation_subject_header
+            if self._settings is not None
+            else "x-all-ontology-subject"
+        )
+        return (DELEGATION_KEY_HEADER, subject)
 
 
 def build_client(settings: Settings) -> httpx.AsyncClient:
@@ -177,7 +305,7 @@ def build_client(settings: Settings) -> httpx.AsyncClient:
     """
     return httpx.AsyncClient(
         base_url=settings.api_url,
-        auth=CallerAuth(),
+        auth=CallerAuth(settings),
         timeout=settings.timeout_s,
         # An agent harness may fan out across several tools at once.
         limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
@@ -193,6 +321,13 @@ def build_server(settings: Settings) -> tuple[FastMCP, httpx.AsyncClient]:
     spec = load_spec(settings)
     client = build_client(settings)
 
+    # Delegation and passthrough both replace the browser sign-in handshake:
+    # the credential arrives on each request instead of at initialize.
+    request_auth = (
+        None
+        if settings.delegation_key or settings.passthrough_auth
+        else build_all_ontology_auth(settings)
+    )
     mcp: FastMCP = FastMCP.from_openapi(
         openapi_spec=spec,
         client=client,
@@ -206,17 +341,23 @@ def build_server(settings: Settings) -> tuple[FastMCP, httpx.AsyncClient]:
         instructions=INSTRUCTIONS,
         version=get_version(),
         icons=load_icons(),
-        auth=build_all_ontology_auth(settings),
+        auth=request_auth,
     )
 
     chat.register(mcp, settings, client)
     readiness.register(mcp, settings, client)
 
+    if settings.delegation_key:
+        mode = "delegated identity (trusted gateway names the user)"
+    elif settings.passthrough_auth:
+        mode = "caller credential passthrough"
+    else:
+        mode = "per-user OAuth sign-in"
     logger.info(
-        "All Ontology MCP server built against %s (spec: %s). Callers sign in against "
-        "that All Ontology deployment; this server holds no credentials.",
+        "All Ontology MCP server built against %s (spec: %s) in %s mode.",
         settings.api_url,
         settings.spec_path,
+        mode,
     )
     return mcp, client
 
@@ -224,6 +365,7 @@ def build_server(settings: Settings) -> tuple[FastMCP, httpx.AsyncClient]:
 __all__ = [
     "API_KEY_HEADER",
     "BEARER_HEADER",
+    "DELEGATION_KEY_HEADER",
     "ICON_PATH",
     "INSTRUCTIONS",
     "SERVER_NAME",

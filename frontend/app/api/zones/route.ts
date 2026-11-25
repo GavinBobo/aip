@@ -5,7 +5,7 @@
 import { withPermission } from '@/auth/with-auth';
 import { proxyToBackend } from '@/auth/proxy-backend';
 
-// zonesApi.getAll — list zones (viewable by all).
+// zonesApi.getAll — list the zones the caller can access.
 export const GET = withPermission({ zone: ['read'] })((req) => proxyToBackend(req));
 // zonesApi.create — add a zone (admin only).
 export const POST = withPermission({ zone: ['manage'] })((req, { user }) =>

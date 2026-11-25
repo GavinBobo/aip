@@ -4,16 +4,31 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 
 import type { KnowledgeGraph as KnowledgeGraphData } from '@/api/knowledge';
+import type { CanvasGraph } from '@/components/explorationPage/graph/GraphCanvas';
+import { ExplorationLayer } from '@/enums/exploration';
 import { t } from '@/i18n';
 
-const WIDTH = 960;
-const HEIGHT = 600;
-
-const shortLabel = (label: string): string =>
-	label.length > 14 ? `${label.slice(0, 13)}…` : label;
+// The same Sigma/d3-force canvas the Exploration page uses. Dynamic import
+// keeps WebGL out of the server bundle and avoids paying for it until this tab
+// is opened.
+const GraphCanvas = dynamic(
+	() =>
+		import('@/components/explorationPage/graph/GraphCanvas').then(
+			(module) => module.GraphCanvas,
+		),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="flex h-full items-center justify-center text-sm text-secondary">
+				{t('Loading graph…')}
+			</div>
+		),
+	},
+);
 
 export const KnowledgeGraph = ({
 	graph,
@@ -22,29 +37,56 @@ export const KnowledgeGraph = ({
 	graph: KnowledgeGraphData;
 	onSelectConcept?: (conceptId: string) => void;
 }) => {
-	const layout = useMemo(() => {
-		const concepts = graph.nodes.filter((node) => node.kind === 'concept');
-		const dataNodes = graph.nodes.filter((node) => node.kind === 'data');
-		const positions = new Map<string, { x: number; y: number; node: typeof graph.nodes[number] }>();
-		const conceptRadius = Math.min(210, 120 + concepts.length * 3);
-		concepts.forEach((node, index) => {
-			const angle = (Math.PI * 2 * index) / Math.max(1, concepts.length) - Math.PI / 2;
-			positions.set(node.id, {
-				x: WIDTH / 2 + Math.cos(angle) * conceptRadius,
-				y: HEIGHT / 2 + Math.sin(angle) * conceptRadius,
-				node,
-			});
-		});
-		dataNodes.forEach((node, index) => {
-			const angle = (Math.PI * 2 * index) / Math.max(1, dataNodes.length) - Math.PI / 2;
-			positions.set(node.id, {
-				x: WIDTH / 2 + Math.cos(angle) * 330,
-				y: HEIGHT / 2 + Math.sin(angle) * 230,
-				node,
-			});
-		});
-		return positions;
-	}, [graph.nodes]);
+	const canvasGraph = useMemo<CanvasGraph>(() => {
+		const degree = new Map<string, number>();
+		for (const edge of graph.edges) {
+			degree.set(edge.source, (degree.get(edge.source) ?? 0) + 1);
+			degree.set(edge.target, (degree.get(edge.target) ?? 0) + 1);
+		}
+		return {
+			nodes: graph.nodes.map((node) => ({
+				id: node.id,
+				name: node.label,
+				layer: node.kind === 'data' ? ExplorationLayer.Data : ExplorationLayer.Semantic,
+				nodeKind:
+					node.kind === 'data'
+						? 'knowledgeData'
+						: node.kind === 'action'
+							? 'knowledgeAction'
+							: node.kind === 'risk'
+								? 'knowledgeRisk'
+								: 'knowledgeConcept',
+				relationshipCount: degree.get(node.id) ?? 0,
+			})),
+			links: graph.edges.map((edge) => ({
+				source: edge.source,
+				target: edge.target,
+				relationshipTypes: [edge.kind],
+				kind: edge.kind === 'mapped_to' ? 'structural' : 'relationship',
+			})),
+		};
+	}, [graph]);
+
+	const conceptsById = useMemo(
+		() =>
+			new Map(
+				graph.nodes
+					.filter((node) => node.kind === 'concept')
+					.map((node) => [node.id, node]),
+			),
+		[graph.nodes],
+	);
+
+	const handleClickNode = useCallback(
+		(nodeId: string) => {
+			if (conceptsById.has(nodeId)) onSelectConcept?.(nodeId);
+		},
+		[conceptsById, onSelectConcept],
+	);
+
+	const noopNode = useCallback(() => undefined, []);
+	const noopEdge = useCallback(() => undefined, []);
+	const noopController = useCallback(() => undefined, []);
 
 	if (graph.nodes.length === 0) {
 		return (
@@ -55,116 +97,37 @@ export const KnowledgeGraph = ({
 	}
 
 	return (
-		<div className="rounded-xl border border-zinc-200 bg-zinc-50/40 p-2 dark:border-zinc-800 dark:bg-zinc-900/40">
-			<svg
-				viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-				className="h-auto w-full"
-				role="img"
-				aria-label={t('Knowledge graph')}
-			>
-				<defs>
-					<marker
-						id="knowledge-arrow"
-						viewBox="0 0 10 10"
-						refX="9"
-						refY="5"
-						markerWidth="6"
-						markerHeight="6"
-						orient="auto-start-reverse"
-					>
-						<path d="M 0 0 L 10 5 L 0 10 z" fill="#a1a1aa" />
-					</marker>
-				</defs>
-				{graph.edges.map((edge) => {
-					const source = layout.get(edge.source);
-					const target = layout.get(edge.target);
-					if (!source || !target) return null;
-					const mapped = edge.kind === 'mapped_to';
-					return (
-						<g key={edge.id}>
-							<line
-								x1={source.x}
-								y1={source.y}
-								x2={target.x}
-								y2={target.y}
-								stroke={mapped ? '#76b900' : '#a1a1aa'}
-								strokeWidth={mapped ? 1.8 : 1.2}
-								strokeDasharray={mapped ? '5 4' : undefined}
-								markerEnd={mapped ? undefined : 'url(#knowledge-arrow)'}
-								opacity={0.75}
-							/>
-							{edge.label && (
-								<text
-									x={(source.x + target.x) / 2}
-									y={(source.y + target.y) / 2 - 4}
-									textAnchor="middle"
-									className="fill-zinc-500 text-[10px]"
-								>
-									{edge.label}
-								</text>
-							)}
-						</g>
-					);
-				})}
-				{Array.from(layout.values()).map(({ x, y, node }) => {
-					const isData = node.kind === 'data';
-					const certified = node.status === 'certified';
-					const fill = isData ? '#f4f4f5' : certified ? '#ecfccb' : '#ffffff';
-					const stroke = isData
-						? '#76b900'
-						: certified
-							? '#65a30d'
-							: '#d4d4d8';
-					return (
-						<g
-							key={node.id}
-							transform={`translate(${x} ${y})`}
-							className={isData ? '' : 'cursor-pointer'}
-							onClick={() => {
-								if (!isData) onSelectConcept?.(node.id);
-							}}
-						>
-							<title>{node.detail || node.label}</title>
-							{isData ? (
-								<rect
-									x={-46}
-									y={-16}
-									width={92}
-									height={32}
-									rx={8}
-									fill={fill}
-									stroke={stroke}
-									strokeWidth={1.2}
-								/>
-							) : (
-								<circle r={34} fill={fill} stroke={stroke} strokeWidth={1.6} />
-							)}
-							<text
-								y={isData ? 4 : 4}
-								textAnchor="middle"
-								className="fill-zinc-800 text-[11px] font-medium"
-							>
-								{shortLabel(node.label)}
-							</text>
-						</g>
-					);
-				})}
-			</svg>
-			<div className="flex flex-wrap items-center gap-4 px-3 pb-2 text-[11px] text-secondary">
+		<div className="relative h-[620px] overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950">
+			<GraphCanvas
+				graph={canvasGraph}
+				activeNodeId={null}
+				highlightedPath={null}
+				onSelectNode={noopNode}
+				onSelectEdge={noopEdge}
+				onClickNode={handleClickNode}
+				onDoubleClickNode={handleClickNode}
+				onHoverNode={noopNode}
+				onControllerChange={noopController}
+			/>
+			<div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-4 bg-gradient-to-t from-white/95 to-transparent px-4 pt-8 pb-3 text-[11px] text-secondary dark:from-zinc-950/95">
 				<span className="flex items-center gap-1.5">
-					<span className="h-2.5 w-2.5 rounded-full border border-zinc-400 bg-white" />
-					{t('Concept')}
+					<span className="h-3 w-3 rounded-full border border-[#8b5cf6] bg-[#eadcff] dark:bg-[#33224f]" />
+					{t('Knowledge concept')}
 				</span>
 				<span className="flex items-center gap-1.5">
-					<span className="h-2.5 w-2.5 rounded-full border border-[#65a30d] bg-[#ecfccb]" />
-					{t('Certified concept')}
-				</span>
-				<span className="flex items-center gap-1.5">
-					<span className="h-2.5 w-2.5 rounded-sm border border-[#76b900] bg-zinc-100" />
+					<span className="h-3 w-3 rounded-full border border-[#76b900] bg-[#dcfce7] dark:bg-[#1d3420]" />
 					{t('Data object')}
 				</span>
 				<span className="flex items-center gap-1.5">
-					<span className="h-px w-5 border-t border-dashed border-[#76b900]" />
+					<span className="h-3 w-3 rounded-full border border-[#f59e0b] bg-[#fef3c7] dark:bg-[#3a2a10]" />
+					{t('Knowledge action')}
+				</span>
+				<span className="flex items-center gap-1.5">
+					<span className="h-3 w-3 rounded-full border border-[#ef4444] bg-[#fee2e2] dark:bg-[#3a1d1d]" />
+					{t('Knowledge risk')}
+				</span>
+				<span className="flex items-center gap-1.5">
+					<span className="h-px w-5 border-t border-[#76b900]" />
 					{t('Mapped to data')}
 				</span>
 			</div>

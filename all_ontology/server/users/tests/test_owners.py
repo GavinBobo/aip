@@ -4,9 +4,14 @@
 
 """Who may edit a row through an account role or its owner group."""
 
+from fastapi import HTTPException
+import pytest
+
 from all_ontology.dal.owners import CATALOG_EDIT, EditSubject
 from all_ontology.server import owners
 from all_ontology.server.owners import can_edit_entity, decide_edit, normalize_owner_id
+from all_ontology.server.owners import enforce_edit
+from all_ontology.dal.owners import EditSubject as OwnerEditSubject
 
 #: A permission a viewer does not hold, so the tests can tell a granted
 #: permission from a role that simply lacks it.
@@ -77,3 +82,38 @@ def test_blank_owner_id_means_unassigned() -> None:
     assert normalize_owner_id("  ") is None
     assert normalize_owner_id(" user-1 ") == "user-1"
     assert normalize_owner_id(None) is None
+
+
+def test_zone_edit_permission_admits_a_viewer(monkeypatch) -> None:
+    monkeypatch.setattr(owners, "resolve_internal_user", lambda *_a, **_k: "viewer-1")
+    monkeypatch.setattr(owners, "can_edit_entity", lambda **_k: False)
+    monkeypatch.setattr(
+        owners, "table_is_editable", lambda table_ids: table_ids == ["t1"]
+    )
+
+    enforce_edit(
+        object(),  # type: ignore[arg-type]
+        OwnerEditSubject(
+            permission="catalog:edit",
+            owner_id=None,
+            target_table_ids=("t1",),
+        ),
+    )
+
+
+def test_zone_edit_permission_requires_every_table(monkeypatch) -> None:
+    monkeypatch.setattr(owners, "resolve_internal_user", lambda *_a, **_k: "viewer-1")
+    monkeypatch.setattr(owners, "can_edit_entity", lambda **_k: False)
+    monkeypatch.setattr(
+        owners, "table_is_editable", lambda table_ids: table_ids == ["t1"]
+    )
+
+    with pytest.raises(HTTPException):
+        enforce_edit(
+            object(),  # type: ignore[arg-type]
+            OwnerEditSubject(
+                permission="catalog:edit",
+                owner_id=None,
+                target_table_ids=("t1", "t2"),
+            ),
+        )

@@ -9,6 +9,6 @@ import { proxyToBackend } from '@/auth/proxy-backend';
 export const GET = withPermission({ zone: ['read'] })((req) => proxyToBackend(req));
 
 // erdApi.updateViewport — remember where the canvas was scrolled (admin only).
-export const PATCH = withPermission({ zone: ['manage'] })((req, { user }) =>
+export const PATCH = withPermission({ zone: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );

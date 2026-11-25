@@ -13,6 +13,7 @@ from all_ontology.dal.attributes import fetch_attr_column_contexts
 from all_ontology.dal.custom_analyses import fetch_custom_analyses_with_sql
 from all_ontology.dal.sql_attributes import fetch_sql_attributes_with_sql
 from all_ontology.retrieval.entity_coverage.state import DEFAULT_MAX_DISTANCE
+from all_ontology.dal.access import visible_object_ids
 from all_ontology.retrieval.text_to_sql.base import BaseAgent
 from all_ontology.retrieval.text_to_sql.state import AgentState
 from all_ontology.semantic.constants import LABEL_COLUMN_ATTRIBUTE, LABEL_SQL_ATTRIBUTE
@@ -186,6 +187,19 @@ class CoverageGradeAgent(BaseAgent):
             list(path_state.get("retrieved_custom_analyses") or []),
             max_distance,
         )
+        allowed_table_ids = state.get("allowed_table_ids")
+        if allowed_table_ids is not None:
+            visible = visible_object_ids(
+                {
+                    "ColumnAttribute": [str(hit.get("id")) for hit in col_hits],
+                    "SqlAttribute": [str(hit.get("id")) for hit in sql_hits],
+                    "CustomAnalysis": [str(hit.get("id")) for hit in custom_hits],
+                },
+                list(allowed_table_ids),
+            )
+            col_hits = [hit for hit in col_hits if str(hit.get("id")) in visible]
+            sql_hits = [hit for hit in sql_hits if str(hit.get("id")) in visible]
+            custom_hits = [hit for hit in custom_hits if str(hit.get("id")) in visible]
 
         coverage = _compute_coverage(entities, col_hits)
 

@@ -6,6 +6,6 @@ import { withPermission } from '@/auth/with-auth';
 import { proxyToBackend } from '@/auth/proxy-backend';
 
 // erdApi.restoreState — replay an undo/redo snapshot (admin only).
-export const PUT = withPermission({ zone: ['manage'] })((req, { user }) =>
+export const PUT = withPermission({ zone: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );

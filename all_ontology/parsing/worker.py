@@ -149,9 +149,18 @@ class ParsingWorker:
 
         profile = await asyncio.to_thread(store.resolve_profile, task["profile"])
         options = task.get("options") or {}
+        feature_config = {"keep_header_footer": bool(options.get("keep_header_footer"))}
+        for key in (
+            "image_understanding",
+            "image_min_area_px",
+            "image_prompt",
+            "image_max_tokens",
+        ):
+            if key in options:
+                feature_config[key] = options[key]
         parsed_options, errors = service.build_options(
             options.get("output_formats"),
-            json.dumps({"keep_header_footer": bool(options.get("keep_header_footer"))}),
+            json.dumps(feature_config),
             json.dumps(options.get("model_options") or {}),
             json.dumps(options.get("element_formats") or {}),
         )
@@ -279,6 +288,12 @@ class ParsingWorker:
             )
             metadata = result.get("metadata") or {}
             await asyncio.to_thread(
+                store.replace_images,
+                run_id,
+                document_id,
+                result.get("images") or [],
+            )
+            await asyncio.to_thread(
                 store.finish_run_success,
                 run_id=run_id,
                 task_id=task_id,
@@ -286,6 +301,7 @@ class ParsingWorker:
                 page_count=int(metadata.get("page_num") or 0),
                 quality=metadata.get("quality") or {},
                 processing_time_ms=metadata.get("processing_time_ms"),
+                parsed_md_path=metadata.get("parsed_md_path"),
             )
         except (ParsingCancelledError, asyncio.CancelledError):
             await asyncio.to_thread(

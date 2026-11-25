@@ -48,9 +48,9 @@ from all_ontology.dal.terms import (
     fetch_related_terms_counts,
     fetch_term_table_pairs,
     fetch_terms_by_ids,
-    find_term_link_path,
     term_is_in_scope,
 )
+from all_ontology.dal.term_links import find_term_link_path
 from all_ontology.dal.users import resolve_accessible_catalog_ids
 from all_ontology.utils.sample_values import stringify_sample_values
 from all_ontology.semantic.constants import (
@@ -1504,7 +1504,7 @@ def fetch_semantic_link_path(
     every path reaching it from either term, into one ``relationship_types``
     label — accurate, but unable to show *which* table, column or attribute
     actually connects the two. This returns
-    :func:`all_ontology.dal.terms.find_term_link_path`'s ordered node chain instead, so
+    :func:`all_ontology.dal.term_links.find_term_link_path`'s ordered node chain instead, so
     the client can graft those nodes on and highlight the real path.
 
     Every Table and Column the path passes through has to fall inside

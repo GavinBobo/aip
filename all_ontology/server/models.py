@@ -1441,6 +1441,10 @@ class ParsingDocument(ApiModel):
     file_name: str
     outputs: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    source_md5: str | None = None
+    parsed_md_path: str | None = None
+    learned_to_knowledge: bool = False
+    images: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ParsingJob(ApiModel):
@@ -1479,6 +1483,7 @@ class ParsingCapabilities(ApiModel):
     element_formats: dict[str, list[str]] = Field(default_factory=dict)
     element_format_defaults: dict[str, str] = Field(default_factory=dict)
     model_options: list[str] = Field(default_factory=list)
+    image_understanding: dict[str, Any] = Field(default_factory=dict)
 
 
 class ParsingInstance(ApiModel):
@@ -1571,6 +1576,9 @@ class ParsingRunSummary(ApiModel):
     error_code: str | None = None
     error_message: str | None = None
     reviewed: bool = False
+    source_md5: str | None = None
+    parsed_md_path: str | None = None
+    learned_to_knowledge: bool = False
     created: datetime | None = None
     finished: datetime | None = None
 
@@ -1608,6 +1616,7 @@ class ParsingRunDetail(ApiModel):
     error_message: str | None = None
     created: datetime | None = None
     finished: datetime | None = None
+    images: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ParsingProfile(ApiModel):

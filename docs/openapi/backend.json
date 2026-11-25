@@ -562,6 +562,20 @@
         "title": "Body_create_parsing_task_api_parsing_tasks_post",
         "type": "object"
       },
+      "Body_import_knowledge_network_api_knowledge_networks__network_id__import_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_knowledge_network_api_knowledge_networks__network_id__import_post",
+        "type": "object"
+      },
       "Body_import_model_api_model_import_post": {
         "properties": {
           "file": {
@@ -2651,6 +2665,24 @@
         "title": "DataResponse[dict[str, list[ZoneChip]]]",
         "type": "object"
       },
+      "DataResponse_list_dict_str__Any___": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DataResponse[list[dict[str, Any]]]",
+        "type": "object"
+      },
       "DatabaseSummary": {
         "additionalProperties": true,
         "description": "One catalog database. ``schemas`` is always empty \u2014 the tree is lazy.",
@@ -2726,6 +2758,94 @@
           "id"
         ],
         "title": "DatabaseSummary",
+        "type": "object"
+      },
+      "DepartmentCreate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "user_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "User Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "DepartmentCreate",
+        "type": "object"
+      },
+      "DepartmentMembers": {
+        "properties": {
+          "user_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "User Ids",
+            "type": "array"
+          }
+        },
+        "title": "DepartmentMembers",
+        "type": "object"
+      },
+      "DepartmentUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "user_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Ids"
+          }
+        },
+        "title": "DepartmentUpdate",
         "type": "object"
       },
       "DescriptionSuggestionResponse": {
@@ -4825,6 +4945,3746 @@
         "title": "ImportRequest",
         "type": "object"
       },
+      "KnowledgeActionCapabilityLink": {
+        "properties": {
+          "capability_id": {
+            "minLength": 1,
+            "title": "Capability Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "capability_id"
+        ],
+        "title": "KnowledgeActionCapabilityLink",
+        "type": "object"
+      },
+      "KnowledgeActionExecute": {
+        "properties": {
+          "dry_run": {
+            "default": true,
+            "title": "Dry Run",
+            "type": "boolean"
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "title": "Parameters",
+            "type": "object"
+          }
+        },
+        "title": "KnowledgeActionExecute",
+        "type": "object"
+      },
+      "KnowledgeActionItem": {
+        "additionalProperties": true,
+        "properties": {
+          "action_intent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Intent"
+          },
+          "bound_concept_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bound Concept Id"
+          },
+          "bound_concept_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bound Concept Key"
+          },
+          "bound_concept_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bound Concept Name"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters"
+          },
+          "source_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Document Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "key",
+          "name"
+        ],
+        "title": "KnowledgeActionItem",
+        "type": "object"
+      },
+      "KnowledgeActionList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeActionItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeActionList",
+        "type": "object"
+      },
+      "KnowledgeActionPatch": {
+        "properties": {
+          "action_intent": {
+            "anyOf": [
+              {
+                "enum": [
+                  "add",
+                  "modify",
+                  "delete",
+                  "execute"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Intent"
+          },
+          "bound_concept_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bound Concept Id"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "reviewed",
+                  "certified"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "KnowledgeActionPatch",
+        "type": "object"
+      },
+      "KnowledgeActionResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeActionItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeActionResponse",
+        "type": "object"
+      },
+      "KnowledgeCapabilityCreate": {
+        "properties": {
+          "config": {
+            "additionalProperties": true,
+            "title": "Config",
+            "type": "object"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "kind": {
+            "enum": [
+              "skill",
+              "function",
+              "mcp_tool",
+              "knowledge_base"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind"
+        ],
+        "title": "KnowledgeCapabilityCreate",
+        "type": "object"
+      },
+      "KnowledgeCapabilityItem": {
+        "additionalProperties": true,
+        "properties": {
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          },
+          "created": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "modified": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "key",
+          "name",
+          "kind"
+        ],
+        "title": "KnowledgeCapabilityItem",
+        "type": "object"
+      },
+      "KnowledgeCapabilityList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeCapabilityItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeCapabilityList",
+        "type": "object"
+      },
+      "KnowledgeCapabilityPatch": {
+        "properties": {
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "KnowledgeCapabilityPatch",
+        "type": "object"
+      },
+      "KnowledgeCapabilityResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeCapabilityItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeCapabilityResponse",
+        "type": "object"
+      },
+      "KnowledgeConceptGroupCreate": {
+        "properties": {
+          "concept_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Concept Ids",
+            "type": "array"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "KnowledgeConceptGroupCreate",
+        "type": "object"
+      },
+      "KnowledgeConceptGroupItem": {
+        "additionalProperties": true,
+        "properties": {
+          "concepts": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concepts"
+          },
+          "created": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "modified": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "key",
+          "name"
+        ],
+        "title": "KnowledgeConceptGroupItem",
+        "type": "object"
+      },
+      "KnowledgeConceptGroupList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeConceptGroupItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeConceptGroupList",
+        "type": "object"
+      },
+      "KnowledgeConceptGroupPatch": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "KnowledgeConceptGroupPatch",
+        "type": "object"
+      },
+      "KnowledgeConceptGroupResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeConceptGroupItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeConceptGroupResponse",
+        "type": "object"
+      },
+      "KnowledgeConceptItem": {
+        "additionalProperties": true,
+        "properties": {
+          "aliases": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aliases"
+          },
+          "attributes": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attributes"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "created": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created"
+          },
+          "data_links": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Links"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          },
+          "evidence_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Count"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "modified": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          },
+          "source_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Document Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "key",
+          "name"
+        ],
+        "title": "KnowledgeConceptItem",
+        "type": "object"
+      },
+      "KnowledgeConceptList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeConceptItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeConceptList",
+        "type": "object"
+      },
+      "KnowledgeConceptPatch": {
+        "properties": {
+          "aliases": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aliases"
+          },
+          "attributes": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attributes"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "entity",
+                  "event",
+                  "process",
+                  "rule",
+                  "metric",
+                  "role",
+                  "document"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "reviewed",
+                  "certified"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "KnowledgeConceptPatch",
+        "type": "object"
+      },
+      "KnowledgeConceptResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeConceptItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeConceptResponse",
+        "type": "object"
+      },
+      "KnowledgeDataLinkCreate": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "target_id": {
+            "minLength": 1,
+            "title": "Target Id",
+            "type": "string"
+          },
+          "target_kind": {
+            "enum": [
+              "term",
+              "table"
+            ],
+            "title": "Target Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_kind",
+          "target_id"
+        ],
+        "title": "KnowledgeDataLinkCreate",
+        "type": "object"
+      },
+      "KnowledgeDataLinkResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeDataLinkResponse",
+        "type": "object"
+      },
+      "KnowledgeDataTarget": {
+        "additionalProperties": true,
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name"
+        ],
+        "title": "KnowledgeDataTarget",
+        "type": "object"
+      },
+      "KnowledgeDataTargetList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeDataTarget"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeDataTargetList",
+        "type": "object"
+      },
+      "KnowledgeDeleteResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeDeleteResponse",
+        "type": "object"
+      },
+      "KnowledgeDocumentCreate": {
+        "properties": {
+          "run_id": {
+            "minLength": 1,
+            "title": "Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id"
+        ],
+        "title": "KnowledgeDocumentCreate",
+        "type": "object"
+      },
+      "KnowledgeDocumentItem": {
+        "additionalProperties": true,
+        "properties": {
+          "chunk_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk Count"
+          },
+          "created": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "extracted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extracted At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "run_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Status"
+          },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "id",
+          "network_id"
+        ],
+        "title": "KnowledgeDocumentItem",
+        "type": "object"
+      },
+      "KnowledgeDocumentList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeDocumentItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeDocumentList",
+        "type": "object"
+      },
+      "KnowledgeDocumentResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeDocumentItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeDocumentResponse",
+        "type": "object"
+      },
+      "KnowledgeEvalCaseCreate": {
+        "properties": {
+          "expected_concepts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Expected Concepts",
+            "type": "array"
+          },
+          "expected_facts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Expected Facts",
+            "type": "array"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "question": {
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "KnowledgeEvalCaseCreate",
+        "type": "object"
+      },
+      "KnowledgeEvalCaseItem": {
+        "additionalProperties": true,
+        "properties": {
+          "created": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created"
+          },
+          "expected_concepts": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Concepts"
+          },
+          "expected_facts": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Facts"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "modified": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "question"
+        ],
+        "title": "KnowledgeEvalCaseItem",
+        "type": "object"
+      },
+      "KnowledgeEvalCaseList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeEvalCaseItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeEvalCaseList",
+        "type": "object"
+      },
+      "KnowledgeEvalCaseResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeEvalCaseItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeEvalCaseResponse",
+        "type": "object"
+      },
+      "KnowledgeEvalRunItem": {
+        "additionalProperties": true,
+        "properties": {
+          "created": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "total",
+          "passed"
+        ],
+        "title": "KnowledgeEvalRunItem",
+        "type": "object"
+      },
+      "KnowledgeEvalRunList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeEvalRunItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeEvalRunList",
+        "type": "object"
+      },
+      "KnowledgeEvalRunResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeEvalRunItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeEvalRunResponse",
+        "type": "object"
+      },
+      "KnowledgeExecutionItem": {
+        "additionalProperties": true,
+        "properties": {
+          "action_id": {
+            "title": "Action Id",
+            "type": "string"
+          },
+          "created": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "finished": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "action_id",
+          "status"
+        ],
+        "title": "KnowledgeExecutionItem",
+        "type": "object"
+      },
+      "KnowledgeExecutionList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeExecutionItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeExecutionList",
+        "type": "object"
+      },
+      "KnowledgeExecutionResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeExecutionItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeExecutionResponse",
+        "type": "object"
+      },
+      "KnowledgeFactItem": {
+        "additionalProperties": true,
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          },
+          "object_concept_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Concept Id"
+          },
+          "object_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Key"
+          },
+          "object_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Name"
+          },
+          "object_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Text"
+          },
+          "predicate": {
+            "title": "Predicate",
+            "type": "string"
+          },
+          "relation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relation Id"
+          },
+          "source_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Document Id"
+          },
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "subject_concept_id": {
+            "title": "Subject Concept Id",
+            "type": "string"
+          },
+          "subject_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Key"
+          },
+          "subject_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Name"
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "subject_concept_id",
+          "predicate",
+          "statement"
+        ],
+        "title": "KnowledgeFactItem",
+        "type": "object"
+      },
+      "KnowledgeFactList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeFactItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeFactList",
+        "type": "object"
+      },
+      "KnowledgeFactPatch": {
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "object_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Text"
+          },
+          "predicate": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Predicate"
+          },
+          "statement": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Statement"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "reviewed",
+                  "certified"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "KnowledgeFactPatch",
+        "type": "object"
+      },
+      "KnowledgeFactResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeFactItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeFactResponse",
+        "type": "object"
+      },
+      "KnowledgeGrantAuditList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeGrantAuditList",
+        "type": "object"
+      },
+      "KnowledgeGrantResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeGrantResponse",
+        "type": "object"
+      },
+      "KnowledgeGrantUpdate": {
+        "properties": {
+          "dept_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Dept Ids",
+            "type": "array"
+          },
+          "grants": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Grants",
+            "type": "array"
+          },
+          "user_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "User Ids",
+            "type": "array"
+          }
+        },
+        "title": "KnowledgeGrantUpdate",
+        "type": "object"
+      },
+      "KnowledgeGraph": {
+        "additionalProperties": true,
+        "properties": {
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeGraphEdge"
+            },
+            "title": "Edges",
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeGraphNode"
+            },
+            "title": "Nodes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "nodes",
+          "edges"
+        ],
+        "title": "KnowledgeGraph",
+        "type": "object"
+      },
+      "KnowledgeGraphEdge": {
+        "additionalProperties": true,
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "target",
+          "kind"
+        ],
+        "title": "KnowledgeGraphEdge",
+        "type": "object"
+      },
+      "KnowledgeGraphNode": {
+        "additionalProperties": true,
+        "properties": {
+          "concept_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept Kind"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label"
+        ],
+        "title": "KnowledgeGraphNode",
+        "type": "object"
+      },
+      "KnowledgeGraphQuery": {
+        "properties": {
+          "depth": {
+            "default": 2,
+            "maximum": 4.0,
+            "minimum": 0.0,
+            "title": "Depth",
+            "type": "integer"
+          },
+          "direction": {
+            "default": "both",
+            "enum": [
+              "out",
+              "in",
+              "both"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "include_data_links": {
+            "default": false,
+            "title": "Include Data Links",
+            "type": "boolean"
+          },
+          "relation_kinds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Relation Kinds",
+            "type": "array"
+          },
+          "start_concept_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Start Concept Ids",
+            "type": "array"
+          }
+        },
+        "title": "KnowledgeGraphQuery",
+        "type": "object"
+      },
+      "KnowledgeGraphQueryResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeGraphQueryResponse",
+        "type": "object"
+      },
+      "KnowledgeGraphResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeGraph"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeGraphResponse",
+        "type": "object"
+      },
+      "KnowledgeImportResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeImportResponse",
+        "type": "object"
+      },
+      "KnowledgeMetricCreate": {
+        "properties": {
+          "concept_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept Id"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "expression": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expression"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sql_attribute_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sql Attribute Id"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "KnowledgeMetricCreate",
+        "type": "object"
+      },
+      "KnowledgeMetricItem": {
+        "additionalProperties": true,
+        "properties": {
+          "concept_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept Id"
+          },
+          "concept_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept Key"
+          },
+          "concept_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept Name"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "expression": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expression"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          },
+          "source_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Document Id"
+          },
+          "sql_attribute_expression": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sql Attribute Expression"
+          },
+          "sql_attribute_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sql Attribute Id"
+          },
+          "sql_attribute_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sql Attribute Name"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "key",
+          "name"
+        ],
+        "title": "KnowledgeMetricItem",
+        "type": "object"
+      },
+      "KnowledgeMetricList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeMetricItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeMetricList",
+        "type": "object"
+      },
+      "KnowledgeMetricPatch": {
+        "properties": {
+          "concept_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concept Id"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "expression": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expression"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sql_attribute_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sql Attribute Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "reviewed",
+                  "certified"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "title": "KnowledgeMetricPatch",
+        "type": "object"
+      },
+      "KnowledgeMetricPreviewResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeMetricPreviewResponse",
+        "type": "object"
+      },
+      "KnowledgeMetricResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeMetricItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeMetricResponse",
+        "type": "object"
+      },
+      "KnowledgeMetricValidateResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeMetricValidateResponse",
+        "type": "object"
+      },
+      "KnowledgeNetworkCreate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "zone_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone Id"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "KnowledgeNetworkCreate",
+        "type": "object"
+      },
+      "KnowledgeNetworkItem": {
+        "additionalProperties": true,
+        "properties": {
+          "action_count": {
+            "default": 0,
+            "title": "Action Count",
+            "type": "integer"
+          },
+          "capability_count": {
+            "default": 0,
+            "title": "Capability Count",
+            "type": "integer"
+          },
+          "concept_count": {
+            "default": 0,
+            "title": "Concept Count",
+            "type": "integer"
+          },
+          "created": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "data_link_count": {
+            "default": 0,
+            "title": "Data Link Count",
+            "type": "integer"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "document_count": {
+            "default": 0,
+            "title": "Document Count",
+            "type": "integer"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "fact_count": {
+            "default": 0,
+            "title": "Fact Count",
+            "type": "integer"
+          },
+          "group_count": {
+            "default": 0,
+            "title": "Group Count",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "metric_count": {
+            "default": 0,
+            "title": "Metric Count",
+            "type": "integer"
+          },
+          "modified": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified"
+          },
+          "modified_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified By"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "relation_count": {
+            "default": 0,
+            "title": "Relation Count",
+            "type": "integer"
+          },
+          "risk_count": {
+            "default": 0,
+            "title": "Risk Count",
+            "type": "integer"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "zone_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone Id"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "KnowledgeNetworkItem",
+        "type": "object"
+      },
+      "KnowledgeNetworkList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeNetworkItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeNetworkList",
+        "type": "object"
+      },
+      "KnowledgeNetworkPatch": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "published",
+                  "archived"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "zone_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone Id"
+          }
+        },
+        "title": "KnowledgeNetworkPatch",
+        "type": "object"
+      },
+      "KnowledgeNetworkResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeNetworkItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeNetworkResponse",
+        "type": "object"
+      },
+      "KnowledgeRelationItem": {
+        "additionalProperties": true,
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          },
+          "evidence_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Count"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          },
+          "source_concept_id": {
+            "title": "Source Concept Id",
+            "type": "string"
+          },
+          "source_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Document Id"
+          },
+          "source_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Key"
+          },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "target_concept_id": {
+            "title": "Target Concept Id",
+            "type": "string"
+          },
+          "target_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Key"
+          },
+          "target_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Name"
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "key",
+          "source_concept_id",
+          "target_concept_id",
+          "name"
+        ],
+        "title": "KnowledgeRelationItem",
+        "type": "object"
+      },
+      "KnowledgeRelationList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeRelationItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeRelationList",
+        "type": "object"
+      },
+      "KnowledgeRelationPatch": {
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "association",
+                  "part_of",
+                  "causal",
+                  "depends_on",
+                  "controls",
+                  "flows_to",
+                  "related"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "reviewed",
+                  "certified"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "KnowledgeRelationPatch",
+        "type": "object"
+      },
+      "KnowledgeRelationResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeRelationItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeRelationResponse",
+        "type": "object"
+      },
+      "KnowledgeRiskItem": {
+        "additionalProperties": true,
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "mitigation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mitigation"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          },
+          "related_concept_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Concept Id"
+          },
+          "related_concept_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Concept Key"
+          },
+          "related_concept_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Concept Name"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          },
+          "source_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Document Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "key",
+          "name"
+        ],
+        "title": "KnowledgeRiskItem",
+        "type": "object"
+      },
+      "KnowledgeRiskList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeRiskItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeRiskList",
+        "type": "object"
+      },
+      "KnowledgeRiskPatch": {
+        "properties": {
+          "confidence": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "mitigation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mitigation"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "related_concept_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Concept Id"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "reviewed",
+                  "certified"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "KnowledgeRiskPatch",
+        "type": "object"
+      },
+      "KnowledgeRiskResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeRiskItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeRiskResponse",
+        "type": "object"
+      },
+      "KnowledgeVersionCreate": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          }
+        },
+        "title": "KnowledgeVersionCreate",
+        "type": "object"
+      },
+      "KnowledgeVersionDiffResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeVersionDiffResponse",
+        "type": "object"
+      },
+      "KnowledgeVersionItem": {
+        "additionalProperties": true,
+        "properties": {
+          "created": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "version"
+        ],
+        "title": "KnowledgeVersionItem",
+        "type": "object"
+      },
+      "KnowledgeVersionList": {
+        "additionalProperties": true,
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeVersionItem"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data",
+          "count"
+        ],
+        "title": "KnowledgeVersionList",
+        "type": "object"
+      },
+      "KnowledgeVersionResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeVersionItem"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeVersionResponse",
+        "type": "object"
+      },
+      "KnowledgeVersionRestoreResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeVersionRestoreResponse",
+        "type": "object"
+      },
       "ListResponse_DatabaseSummary_": {
         "additionalProperties": true,
         "properties": {
@@ -6009,6 +9869,11 @@
             ],
             "title": "Error"
           },
+          "image_understanding": {
+            "additionalProperties": true,
+            "title": "Image Understanding",
+            "type": "object"
+          },
           "layout_url": {
             "anyOf": [
               {
@@ -6074,6 +9939,19 @@
             "title": "File Name",
             "type": "string"
           },
+          "images": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Images",
+            "type": "array"
+          },
+          "learned_to_knowledge": {
+            "default": false,
+            "title": "Learned To Knowledge",
+            "type": "boolean"
+          },
           "metadata": {
             "additionalProperties": true,
             "title": "Metadata",
@@ -6083,6 +9961,28 @@
             "additionalProperties": true,
             "title": "Outputs",
             "type": "object"
+          },
+          "parsed_md_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parsed Md Path"
+          },
+          "source_md5": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Md5"
           }
         },
         "required": [
@@ -6478,6 +10378,14 @@
             "title": "Id",
             "type": "string"
           },
+          "images": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Images",
+            "type": "array"
+          },
           "instance_id": {
             "anyOf": [
               {
@@ -6714,6 +10622,11 @@
             "title": "Id",
             "type": "string"
           },
+          "learned_to_knowledge": {
+            "default": false,
+            "title": "Learned To Knowledge",
+            "type": "boolean"
+          },
           "page_count": {
             "anyOf": [
               {
@@ -6724,6 +10637,17 @@
               }
             ],
             "title": "Page Count"
+          },
+          "parsed_md_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parsed Md Path"
           },
           "processing_time_ms": {
             "anyOf": [
@@ -6764,6 +10688,17 @@
             "default": false,
             "title": "Reviewed",
             "type": "boolean"
+          },
+          "source_md5": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Md5"
           },
           "source_name": {
             "anyOf": [
@@ -7122,6 +11057,17 @@
             "minLength": 1,
             "title": "Pql",
             "type": "string"
+          },
+          "zone_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone Id"
           }
         },
         "required": [
@@ -9967,6 +13913,20 @@
         "title": "TermsPageResponse",
         "type": "object"
       },
+      "UserDepartments": {
+        "properties": {
+          "dept_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Dept Ids",
+            "type": "array"
+          }
+        },
+        "title": "UserDepartments",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -10132,6 +14092,36 @@
         "title": "Zone",
         "type": "object"
       },
+      "ZoneAccessUpdate": {
+        "properties": {
+          "dept_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Dept Ids",
+            "type": "array"
+          },
+          "grants": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ZoneGrantInput"
+            },
+            "title": "Grants",
+            "type": "array"
+          },
+          "user_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "User Ids",
+            "type": "array"
+          }
+        },
+        "title": "ZoneAccessUpdate",
+        "type": "object"
+      },
       "ZoneChip": {
         "additionalProperties": true,
         "description": "A zone as rendered next to something else it grants access to.\n\n``enabled`` is false for a zone whose ``Zone`` label was swapped for\n``disableZone``; those are returned to admins only.",
@@ -10186,10 +14176,6 @@
             "title": "Color",
             "type": "string"
           },
-          "created_by": {
-            "title": "Created By",
-            "type": "string"
-          },
           "description": {
             "anyOf": [
               {
@@ -10216,10 +14202,52 @@
         "required": [
           "name",
           "color",
-          "items",
-          "created_by"
+          "items"
         ],
         "title": "ZoneCreate",
+        "type": "object"
+      },
+      "ZoneGrantInput": {
+        "properties": {
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "permission": {
+            "default": "read",
+            "enum": [
+              "read",
+              "edit",
+              "manage"
+            ],
+            "title": "Permission",
+            "type": "string"
+          },
+          "subject_id": {
+            "title": "Subject Id",
+            "type": "string"
+          },
+          "subject_type": {
+            "enum": [
+              "user",
+              "department"
+            ],
+            "title": "Subject Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject_type",
+          "subject_id"
+        ],
+        "title": "ZoneGrantInput",
         "type": "object"
       },
       "ZoneItem": {
@@ -10517,6 +14545,328 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/access/departments": {
+      "get": {
+        "description": "Every department with members. Requires admin.",
+        "operationId": "list_departments_api_access_departments_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Departments Api Access Departments Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Departments",
+        "tags": [
+          "access"
+        ]
+      },
+      "post": {
+        "description": "Create a department. Requires admin.",
+        "operationId": "create_department_api_access_departments_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Department Api Access Departments Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Department",
+        "tags": [
+          "access"
+        ]
+      }
+    },
+    "/api/access/departments/{dept_id}": {
+      "delete": {
+        "description": "Delete a department and its zone grants. Requires admin.",
+        "operationId": "delete_department_api_access_departments__dept_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dept_id",
+            "required": true,
+            "schema": {
+              "title": "Dept Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Delete Department Api Access Departments  Dept Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Department",
+        "tags": [
+          "access"
+        ]
+      },
+      "patch": {
+        "description": "Patch a department and optionally replace its members. Requires admin.",
+        "operationId": "update_department_api_access_departments__dept_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dept_id",
+            "required": true,
+            "schema": {
+              "title": "Dept Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Update Department Api Access Departments  Dept Id  Patch",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Department",
+        "tags": [
+          "access"
+        ]
+      }
+    },
+    "/api/access/departments/{dept_id}/members": {
+      "put": {
+        "description": "Replace a department's membership. Requires admin.",
+        "operationId": "replace_department_members_api_access_departments__dept_id__members_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dept_id",
+            "required": true,
+            "schema": {
+              "title": "Dept Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentMembers"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Replace Department Members Api Access Departments  Dept Id  Members Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Department Members",
+        "tags": [
+          "access"
+        ]
+      }
+    },
+    "/api/access/me": {
+      "get": {
+        "description": "The caller's role, departments and effective enabled zones.",
+        "operationId": "get_my_access_api_access_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get My Access Api Access Me Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get My Access",
+        "tags": [
+          "access"
+        ]
+      }
+    },
+    "/api/access/users": {
+      "get": {
+        "description": "Every account with its department ids. Requires admin.",
+        "operationId": "list_access_users_api_access_users_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Access Users Api Access Users Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Access Users",
+        "tags": [
+          "access"
+        ]
+      }
+    },
+    "/api/access/users/{user_id}/departments": {
+      "put": {
+        "description": "Replace one account's department memberships. Requires admin.",
+        "operationId": "replace_user_departments_api_access_users__user_id__departments_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserDepartments"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Replace User Departments Api Access Users  User Id  Departments Put",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace User Departments",
+        "tags": [
+          "access"
+        ]
+      }
+    },
     "/api/chat/cancel": {
       "post": {
         "description": "Abort the in-flight run for ``conversation_id``, if any.\n\nBacks the chat UI's Stop button. Without this, stopping only detached\nthe browser while the agent kept running and holding the slot, so the\nvery next question in the same conversation was rejected with 409.\n\nKilling the worker makes ``PrewarmedWorker.events()`` return rather\nthan raise, so ``_pump`` appends no error event: the run's buffer ends\nwith whatever steps completed and the stream closes with ``[DONE]``.\nConsumers therefore see a run that stopped without an answer, and the\nconversation keeps its user turn with no assistant reply.",
@@ -13910,6 +18260,2734 @@
         ]
       }
     },
+    "/api/knowledge/actions/{action_id}": {
+      "delete": {
+        "operationId": "delete_knowledge_action_api_knowledge_actions__action_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "action_id",
+            "required": true,
+            "schema": {
+              "title": "Action Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Knowledge Action",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "patch": {
+        "operationId": "update_knowledge_action_api_knowledge_actions__action_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "action_id",
+            "required": true,
+            "schema": {
+              "title": "Action Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeActionPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeActionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Knowledge Action",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/actions/{action_id}/capabilities": {
+      "post": {
+        "operationId": "link_action_capability_api_knowledge_actions__action_id__capabilities_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "action_id",
+            "required": true,
+            "schema": {
+              "title": "Action Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeActionCapabilityLink"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Link Action Capability",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/actions/{action_id}/capabilities/{capability_id}": {
+      "delete": {
+        "operationId": "unlink_action_capability_api_knowledge_actions__action_id__capabilities__capability_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "action_id",
+            "required": true,
+            "schema": {
+              "title": "Action Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "capability_id",
+            "required": true,
+            "schema": {
+              "title": "Capability Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unlink Action Capability",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/actions/{action_id}/execute": {
+      "post": {
+        "operationId": "execute_knowledge_action_api_knowledge_actions__action_id__execute_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "action_id",
+            "required": true,
+            "schema": {
+              "title": "Action Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeActionExecute"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeExecutionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Execute Knowledge Action",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/capabilities/{capability_id}": {
+      "delete": {
+        "operationId": "delete_knowledge_capability_api_knowledge_capabilities__capability_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "capability_id",
+            "required": true,
+            "schema": {
+              "title": "Capability Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Knowledge Capability",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "patch": {
+        "operationId": "update_knowledge_capability_api_knowledge_capabilities__capability_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "capability_id",
+            "required": true,
+            "schema": {
+              "title": "Capability Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeCapabilityPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeCapabilityResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Knowledge Capability",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/concept-groups/{group_id}": {
+      "delete": {
+        "operationId": "delete_knowledge_concept_group_api_knowledge_concept_groups__group_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Knowledge Concept Group",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "patch": {
+        "operationId": "update_knowledge_concept_group_api_knowledge_concept_groups__group_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeConceptGroupPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeConceptGroupResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Knowledge Concept Group",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/concepts/{concept_id}": {
+      "delete": {
+        "operationId": "delete_knowledge_concept_api_knowledge_concepts__concept_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "concept_id",
+            "required": true,
+            "schema": {
+              "title": "Concept Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Knowledge Concept",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "patch": {
+        "operationId": "update_knowledge_concept_api_knowledge_concepts__concept_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "concept_id",
+            "required": true,
+            "schema": {
+              "title": "Concept Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeConceptPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeConceptResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Knowledge Concept",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/concepts/{concept_id}/links": {
+      "post": {
+        "operationId": "link_knowledge_concept_api_knowledge_concepts__concept_id__links_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "concept_id",
+            "required": true,
+            "schema": {
+              "title": "Concept Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeDataLinkCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDataLinkResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Link Knowledge Concept",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/data-targets": {
+      "get": {
+        "operationId": "list_knowledge_data_targets_api_knowledge_data_targets_get",
+        "parameters": [
+          {
+            "description": "Fuzzy search by name or description",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Fuzzy search by name or description",
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDataTargetList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Knowledge Data Targets",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/documents/{document_id}": {
+      "delete": {
+        "operationId": "delete_knowledge_document_api_knowledge_documents__document_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Knowledge Document",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/documents/{document_id}/extract": {
+      "post": {
+        "operationId": "reextract_knowledge_document_api_knowledge_documents__document_id__extract_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDocumentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reextract Knowledge Document",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/eval-cases/{case_id}": {
+      "delete": {
+        "operationId": "delete_eval_case_api_knowledge_eval_cases__case_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Eval Case",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/facts/{fact_id}": {
+      "delete": {
+        "operationId": "delete_knowledge_fact_api_knowledge_facts__fact_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fact_id",
+            "required": true,
+            "schema": {
+              "title": "Fact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Knowledge Fact",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "patch": {
+        "operationId": "update_knowledge_fact_api_knowledge_facts__fact_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fact_id",
+            "required": true,
+            "schema": {
+              "title": "Fact Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeFactPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeFactResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Knowledge Fact",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/links/{link_id}": {
+      "delete": {
+        "operationId": "unlink_knowledge_concept_api_knowledge_links__link_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "link_id",
+            "required": true,
+            "schema": {
+              "title": "Link Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unlink Knowledge Concept",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/metrics/{metric_id}": {
+      "delete": {
+        "operationId": "delete_knowledge_metric_api_knowledge_metrics__metric_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "metric_id",
+            "required": true,
+            "schema": {
+              "title": "Metric Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Knowledge Metric",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "patch": {
+        "operationId": "update_knowledge_metric_api_knowledge_metrics__metric_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "metric_id",
+            "required": true,
+            "schema": {
+              "title": "Metric Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeMetricPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeMetricResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Knowledge Metric",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/metrics/{metric_id}/preview": {
+      "post": {
+        "operationId": "preview_knowledge_metric_api_knowledge_metrics__metric_id__preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "metric_id",
+            "required": true,
+            "schema": {
+              "title": "Metric Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeMetricPreviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Knowledge Metric",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/metrics/{metric_id}/validate": {
+      "post": {
+        "operationId": "validate_knowledge_metric_api_knowledge_metrics__metric_id__validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "metric_id",
+            "required": true,
+            "schema": {
+              "title": "Metric Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeMetricValidateResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validate Knowledge Metric",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks": {
+      "get": {
+        "operationId": "list_knowledge_networks_api_knowledge_networks_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeNetworkList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Knowledge Networks",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "create_knowledge_network_api_knowledge_networks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeNetworkCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeNetworkResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Knowledge Network",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}": {
+      "delete": {
+        "operationId": "delete_knowledge_network_api_knowledge_networks__network_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Knowledge Network",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "get": {
+        "operationId": "get_knowledge_network_api_knowledge_networks__network_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeNetworkResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Knowledge Network",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "patch": {
+        "operationId": "update_knowledge_network_api_knowledge_networks__network_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeNetworkPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeNetworkResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Knowledge Network",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/actions": {
+      "get": {
+        "operationId": "list_knowledge_actions_api_knowledge_networks__network_id__actions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeActionList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Knowledge Actions",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/capabilities": {
+      "get": {
+        "operationId": "list_knowledge_capabilities_api_knowledge_networks__network_id__capabilities_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeCapabilityList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Knowledge Capabilities",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "create_knowledge_capability_api_knowledge_networks__network_id__capabilities_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeCapabilityCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeCapabilityResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Knowledge Capability",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/concept-groups": {
+      "get": {
+        "operationId": "list_knowledge_concept_groups_api_knowledge_networks__network_id__concept_groups_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeConceptGroupList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Knowledge Concept Groups",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "create_knowledge_concept_group_api_knowledge_networks__network_id__concept_groups_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeConceptGroupCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeConceptGroupResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Knowledge Concept Group",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/concepts": {
+      "get": {
+        "operationId": "list_knowledge_concepts_api_knowledge_networks__network_id__concepts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeConceptList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Knowledge Concepts",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/documents": {
+      "get": {
+        "operationId": "list_knowledge_documents_api_knowledge_networks__network_id__documents_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDocumentList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Knowledge Documents",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "add_knowledge_document_api_knowledge_networks__network_id__documents_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeDocumentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDocumentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Knowledge Document",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/eval-cases": {
+      "get": {
+        "operationId": "list_eval_cases_api_knowledge_networks__network_id__eval_cases_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeEvalCaseList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Eval Cases",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "create_eval_case_api_knowledge_networks__network_id__eval_cases_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeEvalCaseCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeEvalCaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Eval Case",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/eval-runs": {
+      "get": {
+        "operationId": "list_eval_runs_api_knowledge_networks__network_id__eval_runs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeEvalRunList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Eval Runs",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "create_eval_run_api_knowledge_networks__network_id__eval_runs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeEvalRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Eval Run",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/executions": {
+      "get": {
+        "operationId": "list_action_executions_api_knowledge_networks__network_id__executions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeExecutionList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Action Executions",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/export": {
+      "get": {
+        "operationId": "export_knowledge_network_api_knowledge_networks__network_id__export_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Knowledge Network",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/facts": {
+      "get": {
+        "operationId": "list_knowledge_facts_api_knowledge_networks__network_id__facts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeFactList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Knowledge Facts",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/grant-audit": {
+      "get": {
+        "operationId": "list_knowledge_network_grant_audit_api_knowledge_networks__network_id__grant_audit_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeGrantAuditList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Knowledge Network Grant Audit",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/grants": {
+      "get": {
+        "operationId": "get_knowledge_network_grants_api_knowledge_networks__network_id__grants_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeGrantResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Knowledge Network Grants",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "put": {
+        "operationId": "replace_knowledge_network_grants_api_knowledge_networks__network_id__grants_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeGrantUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeGrantResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Knowledge Network Grants",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/graph": {
+      "get": {
+        "operationId": "get_knowledge_graph_api_knowledge_networks__network_id__graph_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeGraphResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Knowledge Graph",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/import": {
+      "post": {
+        "operationId": "import_knowledge_network_api_knowledge_networks__network_id__import_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_knowledge_network_api_knowledge_networks__network_id__import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeImportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Knowledge Network",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/metrics": {
+      "get": {
+        "operationId": "list_knowledge_metrics_api_knowledge_networks__network_id__metrics_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeMetricList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Knowledge Metrics",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "create_knowledge_metric_api_knowledge_networks__network_id__metrics_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeMetricCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeMetricResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Knowledge Metric",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/query": {
+      "post": {
+        "operationId": "query_knowledge_graph_api_knowledge_networks__network_id__query_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeGraphQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeGraphQueryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Query Knowledge Graph",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/relations": {
+      "get": {
+        "operationId": "list_knowledge_relations_api_knowledge_networks__network_id__relations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeRelationList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Knowledge Relations",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/risks": {
+      "get": {
+        "operationId": "list_knowledge_risks_api_knowledge_networks__network_id__risks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeRiskList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Knowledge Risks",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/versions": {
+      "get": {
+        "operationId": "list_knowledge_versions_api_knowledge_networks__network_id__versions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeVersionList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Knowledge Versions",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "create_knowledge_version_api_knowledge_networks__network_id__versions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeVersionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeVersionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Knowledge Version",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/relations/{relation_id}": {
+      "delete": {
+        "operationId": "delete_knowledge_relation_api_knowledge_relations__relation_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "relation_id",
+            "required": true,
+            "schema": {
+              "title": "Relation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Knowledge Relation",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "patch": {
+        "operationId": "update_knowledge_relation_api_knowledge_relations__relation_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "relation_id",
+            "required": true,
+            "schema": {
+              "title": "Relation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeRelationPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeRelationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Knowledge Relation",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/risks/{risk_id}": {
+      "delete": {
+        "operationId": "delete_knowledge_risk_api_knowledge_risks__risk_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "risk_id",
+            "required": true,
+            "schema": {
+              "title": "Risk Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDeleteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Knowledge Risk",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "patch": {
+        "operationId": "update_knowledge_risk_api_knowledge_risks__risk_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "risk_id",
+            "required": true,
+            "schema": {
+              "title": "Risk Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeRiskPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeRiskResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Knowledge Risk",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/versions/{version_id}/diff": {
+      "get": {
+        "operationId": "diff_knowledge_version_api_knowledge_versions__version_id__diff_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeVersionDiffResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Diff Knowledge Version",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/api/knowledge/versions/{version_id}/restore": {
+      "post": {
+        "operationId": "restore_knowledge_version_api_knowledge_versions__version_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "version_id",
+            "required": true,
+            "schema": {
+              "title": "Version Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeVersionRestoreResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore Knowledge Version",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
     "/api/model/export": {
       "post": {
         "description": "Export the scoped catalog + semantic model as a YAML attachment.\n\nWith ``include_ontology``, the Apache Ossie export is a zip that also holds\nthe terms as an Ossie ontology and the mapping onto the semantic model.",
@@ -14983,6 +22061,49 @@
         ]
       }
     },
+    "/api/parsing/runs/{run_id}/images": {
+      "get": {
+        "description": "Picture records for one run, including VLM status/content and learning state.",
+        "operationId": "parsing_run_images_api_parsing_runs__run_id__images_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_list_dict_str__Any___"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Parsing Run Images",
+        "tags": [
+          "parsing"
+        ]
+      }
+    },
     "/api/parsing/runs/{run_id}/page/{page_index}": {
       "get": {
         "description": "One rendered source page, used by the bbox viewer.",
@@ -15937,7 +23058,7 @@
         ]
       },
       "post": {
-        "description": "Save a rule, and answer with its id.\n\nThe id alone: the dialog that posted the rule closes on success and the\nsettings list re-reads, so a whole rule in the answer would be a copy\nnothing renders. Everything else about a stored rule -- the timestamps, the\nauthor, the tag names -- comes from :func:`list_rules`, read from the row\nrather than from what was posted.\n\nThe filters are stored as the caller sent them, ``exclude_none`` and not a\nfull dump: a filter that was not sent is absent from the stored JSON rather\nthan present as ``null``. It reads back the same either way -- the response\nmodel fills the default -- but the row then says which filters a rule\nactually carries, instead of recording every filter the search has ever\noffered against every rule ever saved.\n\nSaving the rule also *applies* it: the search is replayed and the tags are\nattached to everything it matches, recorded as this rule's doing so a tag's\npage can name the rule that labelled each object. The insert and those\nlabels are one transaction, so a rule that could not label the catalog is\nnot left saved and inert -- the create either produces a rule with its\nlabels or nothing at all. The search that finds them runs before that\ntransaction, holding no write connection and no locks while it does; see\n``rules.service.find_targets``.\n\n400 for a body that could never be a rule: a blank name, a search term\nshorter than global search accepts, a match option it does not implement,\nor no tags at all. 404 for a tag id that is not a tag. 409 for a name\nanother rule already holds, as renaming answers. 401 when the request\ncarries no identity to attribute the rule to.",
+        "description": "Save a rule, and answer with its id.\n\nThe id alone: the dialog that posted the rule closes on success and the\nsettings list re-reads, so a whole rule in the answer would be a copy\nnothing renders. Everything else about a stored rule -- the timestamps, the\nauthor, the tag names -- comes from :func:`list_rules`, read from the row\nrather than from what was posted.\n\nThe filters are stored as the caller sent them, ``exclude_none`` and not a\nfull dump: a filter that was not sent is absent from the stored JSON rather\nthan present as ``null``. It reads back the same either way -- the response\nmodel fills the default -- but the row then says which filters a rule\nactually carries, instead of recording every filter the search has ever\noffered against every rule ever saved.\n\nSaving the rule also *applies* it: the search is replayed and the tags are\nattached to everything it matches, recorded as this rule's doing so a tag's\npage can name the rule that labelled each object. The insert and those\nlabels are one transaction, so a rule that could not label the catalog is\nnot left saved and inert -- the create either produces a rule with its\nlabels or nothing at all. The search that finds them runs before that\ntransaction, holding no write connection and no locks while it does; see\n``domain.rules.find_targets``.\n\n400 for a body that could never be a rule: a blank name, a search term\nshorter than global search accepts, a match option it does not implement,\nor no tags at all. 404 for a tag id that is not a tag. 409 for a name\nanother rule already holds, as renaming answers. 401 when the request\ncarries no identity to attribute the rule to.",
         "operationId": "create_rule_api_rules_post",
         "requestBody": {
           "content": {
@@ -17524,21 +24645,8 @@
     },
     "/api/zones": {
       "get": {
-        "description": "Return every zone to the requesting user.",
+        "description": "Return the zones the authenticated caller may access.",
         "operationId": "list_zones_api_zones_get",
-        "parameters": [
-          {
-            "description": "Requesting user id",
-            "in": "query",
-            "name": "uid",
-            "required": true,
-            "schema": {
-              "description": "Requesting user id",
-              "title": "Uid",
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -17549,16 +24657,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
         "summary": "List Zones",
@@ -17661,17 +24759,6 @@
               "title": "Zone Id",
               "type": "string"
             }
-          },
-          {
-            "description": "Requesting user id",
-            "in": "query",
-            "name": "uid",
-            "required": true,
-            "schema": {
-              "description": "Requesting user id",
-              "title": "Uid",
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -17753,6 +24840,104 @@
         ]
       }
     },
+    "/api/zones/{zone_id}/access": {
+      "put": {
+        "description": "Replace the users and departments this zone is granted to.\n\nRequires admin. A user sees the union of their direct zone grants and the\ngrants held by every department they belong to.",
+        "operationId": "replace_zone_access_api_zones__zone_id__access_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "zone_id",
+            "required": true,
+            "schema": {
+              "title": "Zone Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZoneAccessUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_Zone_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Zone Access",
+        "tags": [
+          "zones"
+        ]
+      }
+    },
+    "/api/zones/{zone_id}/grant-audit": {
+      "get": {
+        "description": "Return recent grant changes; requires manage permission on the Zone.",
+        "operationId": "list_zone_grant_audit_api_zones__zone_id__grant_audit_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "zone_id",
+            "required": true,
+            "schema": {
+              "title": "Zone Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Zone Grant Audit Api Zones  Zone Id  Grant Audit Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Zone Grant Audit",
+        "tags": [
+          "zones"
+        ]
+      }
+    },
     "/api/zones/{zone_id}/status": {
       "patch": {
         "description": "Enable or disable a zone.  Requires admin role.\n\nDisabling clears the zone's ``enabled`` flag\n(re-enabling reverses it), which immediately revokes the catalog access\nthe zone granted without deleting it.",
@@ -17764,17 +24949,6 @@
             "required": true,
             "schema": {
               "title": "Zone Id",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Admin user id performing the request",
-            "in": "query",
-            "name": "admin_uid",
-            "required": true,
-            "schema": {
-              "description": "Admin user id performing the request",
-              "title": "Admin Uid",
               "type": "string"
             }
           }

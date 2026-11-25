@@ -56,6 +56,9 @@ class TextToSQLPayload(TypedDict):
     # Omitted by callers that never enrich the question.
     enriched_question: NotRequired[str]
     processing_question: NotRequired[str]
+    # Reviewed/certified knowledge ontology context, already formatted as
+    # Markdown with citations; composed by the chat worker before the graph runs.
+    knowledge_context: NotRequired[str]
     data_retriever: Retriever
     semantic_retriever: NotRequired[Retriever]
     path_state: NotRequired[dict]
@@ -66,6 +69,9 @@ class TextToSQLPayload(TypedDict):
     # Prediction override: True forces prediction, False excludes prediction while
     # still classifying as information/calculation, and None/absent classifies freely.
     prediction: NotRequired[bool | None]
+    # Explicit table allow-list for caller-level data permissions. None/absent
+    # means the caller is unscoped (administrator or an internal job).
+    allowed_table_ids: NotRequired[list[str] | None]
 
 
 class RetryRestoreState(TypedDict):
@@ -111,6 +117,7 @@ class AgentState(TypedDict):
     glossary: NotRequired[list[dict[str, str]]]
     restore_from: RetryRestoreState
     full_pipeline_attempt: int
+    allowed_table_ids: NotRequired[list[str] | None]
 
 
 def get_original_question(state: AgentState) -> str:

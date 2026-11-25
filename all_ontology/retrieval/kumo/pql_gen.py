@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import logging
 import re
-import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from dataclasses import field
@@ -38,262 +37,78 @@ from langchain_core.language_models import BaseChatModel
 from all_ontology.connectors.base import SQLDatabase
 
 from all_ontology.retrieval.kumo.budget import RefusedForCapacity
+from all_ontology.retrieval.kumo.pql_errors import (  # noqa: F401
+    _friendly_backend_unavailable_message,
+    _friendly_empty_context_message,
+    _friendly_unsupported_message,
+    _is_context_capacity_error,
+    _is_context_size_limit_error,
+    _is_empty_context_error,
+    _is_retryable_exec_error,
+    _is_spurious_predict_parse_error,
+    _is_transient_exec_error,
+    _is_unsupported_shape_error,
+    _retry_at_full_neighbourhood,
+)
+from all_ontology.retrieval.kumo.pql_execution import (  # noqa: F401
+    _GROUP_BY_MAX_ENTITIES,
+    _NeighbourhoodMemo,
+    _PREDICT_BATCH_SIZE,
+    _emit_retry_note,
+    _explain_resilient,
+    _predict_in_batches,
+    _predict_resilient,
+    _predict_with_retry,
+)
+from all_ontology.retrieval.kumo.pql_results import (  # noqa: F401
+    PqlGroupByError,
+    _entity_id_column,
+    _is_existence_count_pql,
+    _is_forecast,
+    _order_forecast,
+    _rank_prediction,
+    aggregate_prediction_by,
+)
+from all_ontology.retrieval.kumo.pql_syntax import (  # noqa: F401
+    _AGG_OPEN,
+    _CHANGE_COL_MARKER,
+    _CHANGE_INTENT,
+    _FOR_EACH_KW,
+    _FOR_ENTITY,
+    _FROM_JOIN_RE,
+    _GENERIC_FENCE,
+    _GRAPH_TABLE_LINE,
+    _IDENT,
+    _LIST_DISTINCT,
+    _METRIC_SUFFIX,
+    _NON_ORDINAL_STYPES,
+    _PQL_BANNED_TIME_FUNCS,
+    _PQL_FENCE,
+    _PREDICT_LINE_START,
+    _QUALIFIED_IDENTIFIER,
+    _RANK_TOP,
+    _REL_COMPARISON,
+    _SELECT_TOKEN,
+    _TABLE_COL,
+    _WINDOWED_AGG_TARGET,
+    _WINDOW_TAIL,
+    PqlStaticError,
+    _aggregation_clauses,
+    _balanced_paren_body,
+    _qualify_from_clauses,
+    _sql_table,
+    parse_entity,
+    quote_ident,
+    quote_name,
+    unquote_name,
+    validate_pql_static,
+)
 from all_ontology.retrieval.kumo.prompts import build_pql_prompt
 from all_ontology.utils.llm_invoke import invoke_text
 
 logger = logging.getLogger(__name__)
 
 
-def quote_ident(identifier: str, char: str = '"') -> str:
-    """Quote a SQL identifier with *char*, escaping embedded occurrences by doubling."""
-    return char + identifier.replace(char, char * 2) + char
-
-
-def _sql_table(table: str, table_names: dict[str, str] | None) -> str:
-    """Schema-qualified SQL name for a graph table, else a quoted bare name.
-
-    The Kumo graph refers to tables by their bare name (``GPUS``); the live
-    database needs ``"SCHEMA"."GPUS"``. ``table_names`` maps the graph name to
-    that qualified form. Graph and PQL table names carry the catalog's real
-    casing, so the lookup is an exact match.
-    """
-    if table_names:
-        qualified = table_names.get(table)
-        if qualified is not None:
-            return qualified
-    return quote_ident(table)
-
-
-_FROM_JOIN_RE = re.compile(r'\b(FROM|JOIN)\s+"?([A-Za-z_]\w*)"?', re.IGNORECASE)
-
-
-def _qualify_from_clauses(sql: str, table_names: dict[str, str] | None) -> str:
-    """Schema-qualify bare table names after FROM / JOIN in model-authored SQL.
-
-    Only the table token following FROM / JOIN is rewritten (quoted or not), so
-    column references are untouched. Used for the LLM's entity-selection SQL,
-    whose table names are the bare graph names (matched on the catalog's real
-    casing).
-    """
-    if not table_names:
-        return sql
-
-    def repl(match: "re.Match[str]") -> str:
-        qualified = table_names.get(match.group(2))
-        return f"{match.group(1)} {qualified}" if qualified else match.group(0)
-
-    return _FROM_JOIN_RE.sub(repl, sql)
-
-
-_PQL_FENCE = re.compile(r"```pql\s*(.*?)```", re.DOTALL | re.IGNORECASE)
-_GENERIC_FENCE = re.compile(r"```(?:sql)?\s*(.*?)```", re.DOTALL | re.IGNORECASE)
-
-_IDENT = r"(?:`[^`\r\n]+`|[A-Za-z_]\w*)"
-
-
-def unquote_name(name: str) -> str:
-    """Strips the backticks a quoted PQL name carries."""
-    if len(name) >= 2 and name.startswith("`") and name.endswith("`"):
-        return name[1:-1]
-    return name
-
-
-def quote_name(name: str) -> str:
-    """Quotes a name only when PQL's bare identifier cannot spell it."""
-    if name == "*" or re.fullmatch(r"[A-Za-z_]\w*", name):
-        return name
-    return f"`{name}`"
-
-
-_PREDICT_LINE_START = re.compile(r"(?im)^[ \t]*PREDICT\b")
-_QUALIFIED_IDENTIFIER = re.compile(rf"(?P<table>{_IDENT})\.(?P<column>{_IDENT})")
-_GRAPH_TABLE_LINE = re.compile(
-    rf"(?m)^(?P<table>{_IDENT}|[^(\r\n]+?)\((?P<columns>[^()]*)\)(?:\s+--.*)?$"
-)
-_FOR_ENTITY = re.compile(
-    rf"\bFOR\s+(?P<each>EACH\s+)?(?P<table>{_IDENT})\.(?P<pk>{_IDENT})",
-    re.IGNORECASE,
-)
-_LIST_DISTINCT = re.compile(r"\bLIST_DISTINCT\b", re.IGNORECASE)
-_CHANGE_INTENT = re.compile(
-    r"\b(gain|gains|loss|losses|increase|increases|decrease|decreases|change|changes|delta|growth|"
-    r"decline|declines|drop|drops|rise|rises|up|down)\b",
-    re.IGNORECASE,
-)
-_CHANGE_COL_MARKER = re.compile(
-    r"(?:^|_)(?:change|delta|qoq|mom|yoy)(?:_|$)", re.IGNORECASE
-)
-_WINDOWED_AGG_TARGET = re.compile(
-    rf"\b(SUM|AVG|MIN|MAX)\s*\(\s*({_IDENT})\s*\.\s*({_IDENT})"
-    r"\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*([A-Za-z]+)\s*\)",
-    re.IGNORECASE,
-)
-_METRIC_SUFFIX = re.compile(
-    r"(_usd|_amount|_count|_qty|_rate|_pct|_percent|_value|_total)$", re.IGNORECASE
-)
-
-# --- Static PQL lint (catches known-bad shapes BEFORE the backend, with an actionable repair message) ----
-# These shapes pass KumoRFM's cheap parse (validate_pql) yet fail at predict time with opaque backend errors
-# (Invalid Syntax, Internal Server Error, Missing foreign key). Catching them here turns a slow, uninformative
-# multi-attempt failure into a targeted repair signal the next generation can actually act on.
-_SELECT_TOKEN = re.compile(r"\bSELECT\b", re.IGNORECASE)
-_PQL_BANNED_TIME_FUNCS = re.compile(
-    r"\b(CURRENT_TIMESTAMP|CURRENT_DATE|CURRENT_TIME|GETDATE|SYSDATE|SYSTIMESTAMP|TODAY)\b|\bNOW\s*\(",
-    re.IGNORECASE,
-)
-_RANK_TOP = re.compile(r"\bRANK\s+TOP\b", re.IGNORECASE)
-_FOR_EACH_KW = re.compile(r"\bFOR\s+EACH\b", re.IGNORECASE)
-_AGG_OPEN = re.compile(r"\b(COUNT|SUM|AVG|MIN|MAX|LIST_DISTINCT)\s*\(", re.IGNORECASE)
-_TABLE_COL = re.compile(rf"({_IDENT})\s*\.\s*({_IDENT}|\*)")
-# The trailing ``, <start>, <end>, <unit>`` window args inside an aggregation (e.g. ``, 0, 90, days``).
-_WINDOW_TAIL = re.compile(r",\s*-?\d+\s*,\s*-?\d+\s*,\s*[A-Za-z]+\s*$")
-_REL_COMPARISON = re.compile(rf"({_IDENT})\s*\.\s*({_IDENT})\s*(>=|<=|>|<(?!>))")
-_NON_ORDINAL_STYPES = frozenset({"categorical", "multicategorical", "ID", "text"})
-
-
-class PqlStaticError(ValueError):
-    """A PQL shape rejected by the cheap static lint before it reaches the backend."""
-
-
-def _balanced_paren_body(text: str, open_idx: int) -> str:
-    """Return the substring inside the parenthesis that opens at ``open_idx`` (handles nesting)."""
-    depth = 0
-    for i in range(open_idx, len(text)):
-        if text[i] == "(":
-            depth += 1
-        elif text[i] == ")":
-            depth -= 1
-            if depth == 0:
-                return text[open_idx + 1 : i]
-    return text[open_idx + 1 :]
-
-
-def _aggregation_clauses(pql: str) -> list[tuple[str, str | None]]:
-    """Yield ``(aggregated_table, inner_where_or_None)`` for each ``AGG(<table>.* [WHERE ...], ...)``.
-
-    The inner WHERE is the part of the aggregation body after ``WHERE`` and before the trailing window args;
-    the FOR-EACH entity filter lives outside the parens and is intentionally not returned here.
-
-    The table name comes back unquoted, matching what ``parse_entity`` and the graph edges carry: a name
-    PQL has to backtick (one containing a space) would otherwise never compare equal to either.
-    """
-    clauses: list[tuple[str, str | None]] = []
-    for match in _AGG_OPEN.finditer(pql):
-        body = _balanced_paren_body(pql, match.end() - 1)
-        body = _WINDOW_TAIL.sub("", body).strip()
-        parts = re.split(r"\bWHERE\b", body, maxsplit=1, flags=re.IGNORECASE)
-        table_match = _TABLE_COL.search(parts[0])
-        if not table_match:
-            continue
-        where_clause = parts[1] if len(parts) > 1 else None
-        clauses.append((unquote_name(table_match.group(1)), where_clause))
-    return clauses
-
-
-def validate_pql_static(
-    pql: str,
-    *,
-    edges: list[tuple[str, str, str]] | None = None,
-    col_stypes: dict[str, dict[str, str]] | None = None,
-) -> None:
-    """Reject known-bad PQL shapes with an actionable message, before the backend is ever called.
-
-    Catches the failure families seen in the ERP stress sweep: a SQL subquery inside PQL/``ASSUMING``, SQL
-    time functions like ``CURRENT_TIMESTAMP``, a cross-table predicate inside an aggregation ``WHERE``, a
-    misplaced ``RANK TOP``, and — when ``edges`` (the graph's ``(src, fk, dst)`` foreign keys) are supplied —
-    an aggregation whose event table has no DIRECT foreign key to the prediction entity (KumoRFM does not
-    traverse multi-hop paths inside an aggregation). When ``col_stypes`` (``table -> {column -> declared
-    stype}``) is supplied, it also rejects a ``>``/``<`` comparison against a declared non-ordinal column.
-    Raises :class:`PqlStaticError` (a ``ValueError``) so it flows into the existing repair loop as
-    ``prev_error``.
-    """
-    text = pql.strip()
-    if not text:
-        raise PqlStaticError("Empty PQL.")
-
-    # 1. PQL has no subqueries — a stray SELECT means the model wrote SQL inside the PREDICT (e.g. ASSUMING).
-    if _SELECT_TOKEN.search(text):
-        raise PqlStaticError(
-            "PQL has no SQL subqueries — remove the SELECT. To reach a related table, rely on the graph's "
-            "foreign keys (the entity→event link is implicit); to restrict entities, use a plain WHERE on the "
-            "entity table after FOR EACH; and put any entity-selection SQL in the SEPARATE ```sql block — "
-            "never inside PREDICT and never inside ASSUMING."
-        )
-
-    # 2. SQL time functions are not valid in PQL — the forward window is the (start, end, unit) args.
-    banned = _PQL_BANNED_TIME_FUNCS.search(text)
-    if banned:
-        raise PqlStaticError(
-            f"PQL does not support the SQL time expression '{banned.group(0).strip()}'. The prediction window "
-            "is already relative to the data's anchor time via the (start, end, unit) arguments. To restrict "
-            "to entities in a future window (e.g. open / at-risk orders), do that date filter in the SEPARATE "
-            "entity-selection ```sql block, not inside the PQL."
-        )
-
-    # 3. RANK TOP belongs immediately after the target, BEFORE FOR EACH — never after it.
-    for_each = _FOR_EACH_KW.search(text)
-    if for_each:
-        rank = _RANK_TOP.search(text)
-        if rank and rank.start() > for_each.start():
-            raise PqlStaticError(
-                "RANK TOP is misplaced: it goes immediately after the target and BEFORE FOR EACH "
-                "(PREDICT <target> RANK TOP k FOR EACH <entity>.<pk>), not after it. Move it, or drop it — a "
-                "binary/regression target needs no RANK because its scores already rank the entities."
-            )
-
-    # 4. An aggregation's WHERE can only filter the aggregated event table (no cross-table predicate).
-    for agg_table, where_clause in _aggregation_clauses(text):
-        if not where_clause:
-            continue
-        for tbl, _col in _TABLE_COL.findall(where_clause):
-            if unquote_name(tbl).lower() != agg_table.lower():
-                raise PqlStaticError(
-                    f"The WHERE inside the {agg_table} aggregation can only filter columns of '{agg_table}' "
-                    f"(the aggregated event table); it references '{tbl}', which PQL cannot express as a "
-                    f"cross-table predicate inside an aggregation. Drop the '{tbl}.' condition (or use a column "
-                    f"that lives on '{agg_table}'); to scope by a related table's attribute, filter the "
-                    f"entities in the entity-selection ```sql block instead."
-                )
-
-    # 5. Each aggregation's event table must have a DIRECT foreign key to the FOR EACH entity. KumoRFM does not
-    #    auto-traverse multi-hop paths inside an aggregation (e.g. po_receipts -> purchase_orders -> suppliers),
-    #    so it rejects such queries with an opaque "Missing foreign key". Catch it here and name the tables that
-    #    DO link directly to the entity (typically a rollup), so the repair lands on a valid shape.
-    if edges:
-        entity = parse_entity(text)
-        if entity is not None:
-            entity_table = entity[0].lower()
-            direct = sorted(
-                {src for src, _fk, dst in edges if dst.lower() == entity_table}
-            )
-            direct_lower = {t.lower() for t in direct}
-            for agg_table, _where in _aggregation_clauses(text):
-                at = agg_table.lower()
-                if at != entity_table and at not in direct_lower:
-                    alts = (
-                        ", ".join(direct)
-                        if direct
-                        else "(none — pick a different entity)"
-                    )
-                    raise PqlStaticError(
-                        f"'{agg_table}' has no direct foreign key to the prediction entity '{entity[0]}', and "
-                        f"KumoRFM cannot traverse a multi-hop path inside an aggregation. Aggregate a table that "
-                        f"links DIRECTLY to '{entity[0]}' instead (one of: {alts}) — a monthly/daily rollup is "
-                        f"usually the right choice — or change the entity. To bring in an attribute that lives "
-                        f"two hops away, pre-filter the entities in the entity-selection ```sql block."
-                    )
-
-    if col_stypes:
-        for tbl, col, op in _REL_COMPARISON.findall(text):
-            stype = col_stypes.get(unquote_name(tbl).lower(), {}).get(
-                unquote_name(col).lower()
-            )
-            if stype in _NON_ORDINAL_STYPES:
-                raise PqlStaticError(
-                    f"'{tbl}.{col}' is a {stype} column and cannot be compared with '{op}'. Compare a "
-                    f"categorical column with '=' / '!=' against one of its sampled values (see the column "
-                    f"list) instead — e.g. a status/flag value — or use a numeric column for a threshold."
-                )
 
 
 class PqlValidatorModel(Protocol):
@@ -358,615 +173,6 @@ def _population_refusal(pql: str, population: int, cap: int) -> str:
         f"reads like the whole. Ask about a narrower group, such as one segment, "
         f"region or time period, and the answer will cover all of it."
     )
-
-
-class PqlGroupByError(ValueError):
-    """A grouped-prediction request that cannot be served (bad group-by column, or wrong target type)."""
-
-
-def _is_forecast(pql: str) -> bool:
-    """A ``FORECAST n TIMEFRAMES`` query: predicts a time series for a SINGLE entity (SDK constraint)."""
-    return re.search(r"\bFORECAST\b", pql, re.IGNORECASE) is not None
-
-
-_EXISTENCE_COUNT = re.compile(
-    rf"PREDICT\s+COUNT\s*\(\s*{_IDENT}\s*\.\s*\*", re.IGNORECASE
-)
-
-
-def _is_existence_count_pql(pql: str) -> bool:
-    """True for the degenerate ``COUNT(<child>.*)`` parent→immediate-child existence shape with no
-    discriminating filter — KumoRFM device-side-asserts on it DETERMINISTICALLY, so an assert there is the
-    shape and must fail fast. Any other shape that asserts (e.g. a large SUM aggregation) is hitting an
-    INTERMITTENT CUDA fault and should be retried instead. A filter on the aggregation makes the count a
-    real outcome (e.g. late/slip), so a WHERE before FOR EACH means it is not the degenerate shape."""
-    match = _EXISTENCE_COUNT.search(pql)
-    if not match:
-        return False
-    for_each = _FOR_EACH_KW.search(pql)
-    head = pql[: for_each.start()] if for_each else pql
-    return "where" not in head.lower()
-
-
-def _order_forecast(df: Any) -> Any:
-    """Order a forecast result chronologically by its ``TIME`` column (timeframes in sequence)."""
-    for col in df.columns:
-        if col.upper() == "TIME":
-            try:
-                return df.sort_values(col)
-            except Exception:  # noqa: BLE001 - odd column; keep original order
-                return df
-    return df
-
-
-def _rank_prediction(df: Any) -> Any:
-    """Sort a prediction descending by its score column (``True_PROB``/``*_PROB``/``*_PRED``) so the agent
-    sees the top entities first; leaves order untouched if there is no such column (e.g. pre-ranked
-    RANK/link-prediction output)."""
-    cols = list(df.columns)
-    lowered = {c.lower(): c for c in cols}
-    sort_col = None
-    for key in ("true_prob", "probability"):
-        if key in lowered:
-            sort_col = lowered[key]
-            break
-    if sort_col is None:
-        for c in cols:
-            cl = c.lower()
-            if cl.endswith("_prob") and cl != "false_prob":
-                sort_col = c
-                break
-    if sort_col is None:
-        for c in cols:
-            if c.lower().endswith("_pred") or c.upper() == "TARGET_PRED":
-                sort_col = c
-                break
-    if sort_col is not None:
-        try:
-            return df.sort_values(sort_col, ascending=False)
-        except Exception:  # noqa: BLE001 - non-numeric/odd column; fall back to original order
-            return df
-    return df
-
-
-# Prediction-frame columns that are never the predicted value (KumoRFM metadata columns).
-_NON_VALUE_COLS = frozenset({"entity", "anchor_timestamp", "time"})
-
-
-def _entity_id_column(df: Any, pk: str) -> str:
-    """The column in a prediction frame that holds the entity primary-key values (KumoRFM uses ``ENTITY``)."""
-    lowered = {c.lower(): c for c in df.columns}
-    if "entity" in lowered:
-        return lowered["entity"]
-    if pk.lower() in lowered:
-        return lowered[pk.lower()]
-    return list(df.columns)[0]
-
-
-def _prediction_value_column(df: Any, *, id_col: str) -> str:
-    """The single numeric column holding the predicted value/probability to aggregate.
-
-    Handles regression (one predicted-value column) and binary classification (the positive-class
-    probability, ``*_True`` / ``True_PROB`` / ``*_PROB``). Raises for shapes that can't be aggregated by a
-    scalar (multi-class, link prediction)."""
-    import pandas.api.types as pat
-
-    candidates = [
-        c for c in df.columns if c != id_col and c.lower() not in _NON_VALUE_COLS
-    ]
-    lowered = {c.lower(): c for c in candidates}
-    for key in ("true_prob", "probability"):
-        if key in lowered:
-            return lowered[key]
-    positive = [
-        c
-        for c in candidates
-        if (c.lower().endswith("_true") or c.lower().endswith("_prob"))
-        and "false" not in c.lower()
-    ]
-    if len(positive) == 1:
-        return positive[0]
-    numeric = [c for c in candidates if pat.is_numeric_dtype(df[c])]
-    if len(numeric) == 1:
-        return numeric[0]
-    for c in candidates:
-        if c.lower().endswith("_pred") or c.upper() == "TARGET_PRED":
-            return c
-    raise PqlGroupByError(
-        "This prediction's output cannot be aggregated by a group (it is multi-class or link prediction, which "
-        "has no single value to sum/average). Group-by is supported for regression and binary predictions."
-    )
-
-
-def aggregate_prediction_by(
-    prediction: Any,
-    *,
-    table: str,
-    pk: str,
-    group_by: str,
-    connector: SQLDatabase,
-    table_names: dict[str, str] | None = None,
-) -> Any:
-    """Roll a per-entity prediction up to per-group totals — the post-hoc aggregation PQL cannot do itself.
-
-    Joins each scored entity to its ``group_by`` attribute (a read-only lookup on the entity table), then
-    groups and aggregates the predicted value: ``total`` (sum, for additive targets like revenue/counts),
-    ``average`` (mean, for rates/probabilities) and ``n_entities`` (group size). Returns a small DataFrame
-    sorted by total descending. Raises :class:`PqlGroupByError` if ``group_by`` is not a column of the
-    entity table or the prediction has no scalar value to aggregate.
-    """
-    id_col = _entity_id_column(prediction, pk)
-    value_col = _prediction_value_column(prediction, id_col=id_col)
-    try:
-        dim = connector.execute(
-            f"SELECT {quote_ident(pk)}, {quote_ident(group_by)} "
-            f"FROM {_sql_table(table, table_names)} "
-            f"WHERE {quote_ident(pk)} IS NOT NULL"
-        )
-    except Exception as exc:  # noqa: BLE001 - turn an opaque warehouse error into an actionable group-by error
-        try:
-            valid = list(
-                connector.execute(
-                    f"SELECT * FROM {_sql_table(table, table_names)} LIMIT 1"
-                ).columns
-            )
-        except Exception:  # noqa: BLE001 - best-effort column listing for the message
-            valid = []
-        raise PqlGroupByError(
-            f"Cannot group by '{group_by}': it is not a column of '{table}'."
-            + (f" Valid columns: {valid}." if valid else "")
-        ) from exc
-
-    left = prediction[[id_col, value_col]].copy()
-    left["__key"] = left[id_col].astype(str)
-    right = dim.copy()
-    right["__key"] = right[pk].astype(str)
-    merged = left.merge(right[["__key", group_by]], on="__key", how="left")
-    grouped = (
-        merged.dropna(subset=[group_by])
-        .groupby(group_by)[value_col]
-        .agg(total="sum", average="mean", n_entities="count")
-        .reset_index()
-    )
-    return grouped.sort_values("total", ascending=False)
-
-
-# Markers for a transient infra/server hiccup (not a problem with the query). The PQL has already passed
-# validate_pql, so retrying the SAME query is right (e.g. the DuckDB mirror "closed pending query result"
-# race clears on retry, and KumoRFM 5xx/timeouts are transient).
-_TRANSIENT_EXEC_MARKERS = (
-    "closed pending query result",
-    "internal server error",
-    "an unexpected exception occurred",
-    "model inference fail",
-    "service unavailable",
-    "temporarily unavailable",
-    "timed out",
-    "timeout",
-    "connection reset",
-    "connection aborted",
-    "502",
-    "503",
-    "504",
-    "429",
-)
-
-# Markers for a KumoRFM context/GPU-capacity failure (a wide graph like gpu_fleet lands ~27MB of context,
-# right at the SDK's 30MB ceiling). The GPU errors (CUDA "illegal memory access" / OOM) are INTERMITTENT —
-# the same full-neighbourhood request that fails one moment can succeed on retry — so they are retried at
-# FULL accuracy first (see _predict_resilient). The "context size exceeds" rejection is the exception: it is
-# DETERMINISTIC (same query -> same oversize context), so it steps straight down to a smaller neighbourhood
-# rather than re-hitting the same wall 3 times (see _retry_at_full_neighbourhood). Shrinking the
-# neighbourhood is the last resort to salvage *a* prediction when full settings cannot complete.
-#
-# The SDK's per-table row cap ("... contains 32,000 rows, exceeding the 10,000-row limit",
-# kumo_relational_engine.rfm.payload.MAX_TABLE_ROWS) is the same kind of DETERMINISTIC rejection: it is raised
-# client-side while serializing the request, before anything is sent, and the row count is a direct
-# product of the neighbourhood (FAST samples 1,000 context anchors x 32 first-hop neighbours = 32,000
-# rows in one related table), so only a smaller neighbourhood clears it. Without this marker the
-# rejection escapes _predict_resilient into the regenerate loop, which burns the whole PQL repair
-# budget rewriting a query that was never the problem.
-_CONTEXT_CAPACITY_MARKERS = (
-    "cuda",
-    "illegal memory access",
-    "out of memory",
-    "context size exceeds",
-    "-row limit",
-)
-
-# A parse error at PREDICT time is spurious: the query already passed validate_pql (the cheap parse) moments
-# earlier, so a parse failure during predict is the KumoRFM server in a degraded state (observed right after a
-# transient 5xx, alongside gRPC GOAWAY). Retry the SAME call rather than discard a known-valid query — link
-# prediction in particular recovers within a couple of retries once the server settles.
-_SPURIOUS_PREDICT_PARSE_MARKERS = (
-    "failed to parse query",
-    "could not process the text",
-)
-
-_EMPTY_CONTEXT_MARKERS = (
-    "failed to collect any context examples",
-    "too restrictive",
-)
-
-
-def _is_transient_exec_error(message: str) -> bool:
-    """True if a predict error is a transient infra/server hiccup."""
-    return any(marker in message.lower() for marker in _TRANSIENT_EXEC_MARKERS)
-
-
-def _is_context_capacity_error(message: str) -> bool:
-    """True if a predict error is a KumoRFM context/GPU-capacity failure."""
-    return any(marker in message.lower() for marker in _CONTEXT_CAPACITY_MARKERS)
-
-
-def _is_context_size_limit_error(message: str) -> bool:
-    """True for the DETERMINISTIC context-too-big rejections: the total 'context size exceeds the limit'
-    and the SDK's per-table '...-row limit'. In both the SDK builds the context, measures it, and rejects it
-    for being over a ceiling, so the identical query yields the identical oversize context every time —
-    retrying the same neighbourhood cannot help, only a smaller one can."""
-    lowered = message.lower()
-    return "context size exceeds" in lowered or "-row limit" in lowered
-
-
-# Markers for a TERMINAL backend failure: the generated *shape* is not serveable for this dataset, so neither
-# retrying the same call nor regenerating a similar query will help. Unlike the (intermittent) capacity errors
-# above, these are deterministic, so we fail fast with a clear message instead of burning the repair budget
-# and the neighbourhood backoff re-hitting the same wall.
-#   * "device-side assert" — a deterministic KumoRFM CUDA assertion hit by degenerate parent→immediate-child
-#     existence targets (e.g. COUNT(order_lines.*) FOR EACH sales_orders); stepping the neighbourhood down
-#     does not help (it is the data/shape, not the context size).
-# NOTE: link-prediction's "Unsupported cast from list<item: string> to utf8" is NOT here — it is fixed at the
-# source by the LIST_DISTINCT string-dtype compatibility shim in kumo_client, so recommendations now run.
-_UNSUPPORTED_SHAPE_MARKERS = ("device-side assert",)
-
-
-def _is_unsupported_shape_error(message: str) -> bool:
-    """True if a predict error is a deterministic, unrecoverable 'this shape is not serveable' failure."""
-    return any(marker in message.lower() for marker in _UNSUPPORTED_SHAPE_MARKERS)
-
-
-def _is_empty_context_error(message: str) -> bool:
-    """True if a predict/explain error is an empty entity set (WHERE matched no learnable entity)."""
-    return any(marker in message.lower() for marker in _EMPTY_CONTEXT_MARKERS)
-
-
-def _friendly_empty_context_message() -> str:
-    """A user-facing explanation for an empty-entity-set failure, with the concrete next step."""
-    return (
-        "KumoRFM found no entity matching the prediction's filter, so it could not gather any context "
-        "examples. The WHERE clause likely references an id that does not exist (or a placeholder). Pass a "
-        "real entity id taken from a prediction ranking or an rfm__sql_query result, not a placeholder."
-    )
-
-
-def _friendly_backend_unavailable_message() -> str:
-    """User-facing explanation for a KumoRFM backend failure on a query that is itself valid."""
-    return (
-        "The KumoRFM prediction service returned an internal error, so the prediction could "
-        "not be computed. The query itself was accepted and validated — this is a backend "
-        "fault, not a problem with the question. Please retry; if it persists, the KumoRFM "
-        "deployment (KUMO_RFM_API_URL) needs attention."
-    )
-
-
-def _is_spurious_predict_parse_error(message: str) -> bool:
-    """True if a PREDICT-time parse error is the spurious kind (the query already passed validate_pql)."""
-    return any(marker in message.lower() for marker in _SPURIOUS_PREDICT_PARSE_MARKERS)
-
-
-def _friendly_unsupported_message(pql: str, raw_error: str) -> str:
-    """A user-facing explanation (no raw backend stack text) for a terminal unsupported-shape failure, with a
-    concrete next step the agent can take."""
-    return (
-        "KumoRFM could not compute this prediction shape for this dataset — the parent→child relationship "
-        "is not learnable as a generic existence/count prediction. Predict a specific outcome instead "
-        "(e.g. a late/slip status with a WHERE filter on the event table), or use rfm__sql_query for a "
-        "historical count."
-    )
-
-
-def _is_retryable_exec_error(message: str) -> bool:
-    """True if a predict error is worth retrying the SAME call: transient infra hiccups, the (intermittent)
-    capacity errors, AND a spurious post-validate parse error (server degradation). Retrying capacity errors at
-    the FULL neighbourhood is what preserves accuracy — we never reduce the model's context unless full settings
-    persistently fail. A terminal unsupported-shape error is never retried (it is deterministic), even if it
-    mentions CUDA."""
-    if _is_unsupported_shape_error(message):
-        return False
-    return (
-        _is_transient_exec_error(message)
-        or _is_context_capacity_error(message)
-        or _is_spurious_predict_parse_error(message)
-    )
-
-
-def _retry_at_full_neighbourhood(message: str) -> bool:
-    """Which errors to retry at the FULL neighbourhood before stepping down. Same as the general retry rule
-    but EXCLUDES the deterministic context-size-limit rejection: retrying the identical query at the same
-    neighbourhood just re-hits the same oversize context, so step straight down to a smaller one. Transient
-    infra/GPU (CUDA/OOM) and spurious post-validate parse errors are still retried at full to keep accuracy."""
-    return _is_retryable_exec_error(message) and not _is_context_size_limit_error(
-        message
-    )
-
-
-_REFLECTION_FUNCTION_NAME = "__reflection__"
-
-
-def _emit_retry_note(text: str) -> None:
-    """Surface a tool-internal retry as a collapsible trace note on the running predict node, via NAT's
-    intermediate-step pipeline, so the UI shows that an attempt failed and is being retried rather than an
-    endless spinner. No-op without an active NAT context (CLI / tests); never raises into the predict path."""
-    try:
-        import uuid
-
-        from nat.builder.context import Context
-        from nat.data_models.intermediate_step import IntermediateStepPayload
-        from nat.data_models.intermediate_step import IntermediateStepType
-        from nat.data_models.intermediate_step import StreamEventData
-
-        manager = getattr(Context.get(), "intermediate_step_manager", None)
-        if manager is None:
-            return
-        step_id = str(uuid.uuid4())
-        # Unique step name so each note stays its own trace step (folded under the running predict),
-        # matching the side-channel note convention instead of merging into one.
-        name = f"{_REFLECTION_FUNCTION_NAME}:{step_id[:8]}"
-        manager.push_intermediate_step(
-            IntermediateStepPayload(
-                UUID=step_id,
-                event_type=IntermediateStepType.FUNCTION_START,
-                name=name,
-                data=StreamEventData(input=name),
-            )
-        )
-        manager.push_intermediate_step(
-            IntermediateStepPayload(
-                UUID=step_id,
-                event_type=IntermediateStepType.FUNCTION_END,
-                name=name,
-                data=StreamEventData(input=name, output=text),
-            )
-        )
-    except Exception:  # noqa: BLE001
-        logger.debug("retry trace note failed", exc_info=True)
-
-
-def _predict_with_retry(
-    call: Callable[[], Any],
-    *,
-    retries: int,
-    backoff: float = 1.5,
-    retryable: Callable[[str], bool] = _is_retryable_exec_error,
-) -> Any:
-    """Run *call* (a no-arg predict), retrying the SAME query while *retryable* matches the error.
-
-    Used only after ``validate_pql`` has passed, so a failure here is an execution error — a transient or
-    intermittent-capacity one is retried as-is rather than discarding a valid query. ``retryable`` selects
-    which errors to retry (default: transient + capacity); callers that want to react to capacity errors
-    differently (e.g. explain, which steps down hops) pass a narrower predicate.
-    """
-    last_exc: Exception | None = None
-    for i in range(retries + 1):
-        try:
-            return call()
-        except Exception as exc:  # noqa: BLE001 - classified by message; re-raised below
-            last_exc = exc
-            if i == retries or not retryable(str(exc)):
-                raise
-            logger.info(
-                "Predict error (retry %d/%d, same query): %s",
-                i + 1,
-                retries,
-                str(exc)[:160],
-            )
-            if i == 0:
-                _emit_retry_note(
-                    "A prediction attempt failed (transient model or capacity error). Retrying."
-                )
-            time.sleep(backoff * (i + 1))
-    raise last_exc  # pragma: no cover - loop always returns or raises
-
-
-# How hard to retry at the FULL (accuracy-preserving) neighbourhood before stepping down. One retry rides
-# through a single transient KumoRFM hiccup (a 5xx is often followed by a spurious parse error before it
-# settles); beyond that, dropping to a smaller context escapes a persistent GPU/capacity fault faster than
-# repeating the same heavy request. Tier 1 is therefore 2 attempts.
-_FULL_NEIGHBORHOOD_RETRIES = 1
-
-# Entity ceiling for a grouped prediction: high enough to score whole dimension populations (customers,
-# products, suppliers) so per-group totals are complete, but bounded so a grouping over a huge event entity
-# (e.g. every sales_order) can't explode — past this the totals are flagged partial.
-_GROUP_BY_MAX_ENTITIES = 10_000
-
-_PREDICT_BATCH_SIZE = 1000
-
-# Last-resort fallbacks if the full neighbourhood persistently hits a capacity error. None = the SDK default
-# for the run mode (full accuracy). The fallbacks step DOWN gradually (the SDK FAST default is [32, 32]) so
-# we keep as much of the model's receptive field as possible while still fitting under the GPU ceiling; the
-# final [8, 8] (~1-2MB context) is the smallest field worth salvaging a result with when larger ones fault.
-_CONTEXT_BACKOFF_NEIGHBORS: tuple[list[int] | None, ...] = (
-    None,
-    [24, 24],
-    [16, 16],
-    [8, 8],
-)
-
-
-class _NeighbourhoodMemo:
-    """Remembers ladder rungs already proven too big for the graph in THIS run.
-
-    The SDK's size rejections (total context size and the per-table row cap) are
-    DETERMINISTIC given the graph and the neighbourhood, and the row count is driven by
-    anchors x neighbours rather than by the query text — so a rung that overflowed on one
-    PQL attempt overflows on the next one too. Without this memo every regenerate attempt
-    re-walks the ladder from full and re-pays the identical rejected serializations
-    (observed: 3 wasted rejections per attempt across 5 attempts on a 3.7M-row table).
-
-    Only the deterministic size errors raise the floor. Intermittent CUDA/OOM faults must
-    NOT — the same full-neighbourhood request often succeeds on retry, and the design is
-    accuracy-first, so those keep starting from the top.
-    """
-
-    __slots__ = ("floor",)
-
-    def __init__(self) -> None:
-        self.floor = 0
-
-    def note_too_big(self, index: int) -> None:
-        self.floor = max(self.floor, index + 1)
-
-
-def _predict_resilient(
-    predict_fn: Callable[[list[int] | None], Any],
-    *,
-    device_assert_terminal: bool = True,
-    memo: "_NeighbourhoodMemo | None" = None,
-) -> Any:
-    """Run ``predict_fn(num_neighbors)`` accuracy-first.
-
-    Predict at the FULL neighbourhood and retry it hard on intermittent infra/GPU errors — the same
-    full-accuracy request usually succeeds on retry, so we never silently trade accuracy for a smaller
-    context. ONLY if the full neighbourhood keeps hitting a context/GPU-capacity error after those retries
-    do we step down to a smaller neighbourhood, purely to salvage *a* correct prediction rather than fail.
-    Non-capacity errors propagate (to the regenerate loop).
-
-    A CUDA ``device-side assert`` is deterministic ONLY for the degenerate existence-count shape
-    (``device_assert_terminal=True`` → propagate immediately); for any other shape it is an INTERMITTENT
-    fault (large-batch predicts hit it ~1-in-5), so it is retried and stepped down like a capacity error.
-    """
-
-    def _retryable(message: str) -> bool:
-        if _is_unsupported_shape_error(message):
-            return not device_assert_terminal
-        return _retry_at_full_neighbourhood(message)
-
-    last_exc: Exception | None = None
-    # Skip rungs a previous attempt in this run already proved too big (see _NeighbourhoodMemo).
-    # Never skip the whole ladder: the last rung is always tried, so a wrong memo costs accuracy
-    # rather than the result.
-    start = min(memo.floor, len(_CONTEXT_BACKOFF_NEIGHBORS) - 1) if memo else 0
-    if start:
-        logger.info(
-            "Starting at neighbourhood %s — larger ones already overflowed this run.",
-            _CONTEXT_BACKOFF_NEIGHBORS[start],
-        )
-    for index in range(start, len(_CONTEXT_BACKOFF_NEIGHBORS)):
-        num_neighbors = _CONTEXT_BACKOFF_NEIGHBORS[index]
-        # Retry hard at the FIRST rung actually used, not merely at the full one: when the memo
-        # starts the ladder lower, that rung is now the accuracy-preserving choice and deserves
-        # the same protection against a single transient hiccup.
-        retries = _FULL_NEIGHBORHOOD_RETRIES if index == start else 0
-        try:
-            return _predict_with_retry(
-                lambda nn=num_neighbors: predict_fn(nn),
-                retries=retries,
-                retryable=_retryable,
-            )
-        except Exception as exc:  # noqa: BLE001 - classified by message; re-raised below
-            last_exc = exc
-            assert_err = _is_unsupported_shape_error(str(exc))
-            if assert_err and device_assert_terminal:
-                raise
-            if not (assert_err or _is_context_capacity_error(str(exc))):
-                raise
-            if memo is not None and _is_context_size_limit_error(str(exc)):
-                memo.note_too_big(index)
-            if num_neighbors is None:
-                logger.warning(
-                    "Full neighbourhood hit a KumoRFM capacity/assert error; falling back to a smaller "
-                    "neighbourhood to salvage a prediction (reduced context). Error: %s",
-                    str(exc)[:160],
-                )
-                _emit_retry_note(
-                    "The prediction kept failing at full context. Retrying with a smaller context window to "
-                    "recover a result."
-                )
-            else:
-                logger.info(
-                    "Capacity/assert error at neighbourhood %s; shrinking further.",
-                    num_neighbors,
-                )
-                _emit_retry_note(
-                    f"Still over capacity at neighbourhood {num_neighbors}. Shrinking the context further and retrying."
-                )
-    raise last_exc  # pragma: no cover - loop always returns or raises
-
-
-def _predict_in_batches(
-    indices: list[Any] | None,
-    predict_call: Callable[[list[Any] | None, list[int] | None], Any],
-    *,
-    device_assert_terminal: bool = True,
-    memo: "_NeighbourhoodMemo | None" = None,
-) -> Any:
-    """Run the resilient predict over ``indices`` in ordered chunks of at most ``_PREDICT_BATCH_SIZE``.
-
-    The KumoRFM server raises a CUDA device-side assert on a single very large per-entity batch, so a
-    whole-population prediction (thousands of entities) is split into chunks that each stay under the
-    server's ceiling and the per-chunk frames are concatenated. A small scope (or ``None`` for a single
-    entity / the SDK default) runs in one call. Each chunk goes through :func:`_predict_resilient`
-    independently; since each entity's prediction depends only on its own subgraph, the concatenated result
-    is equivalent to scoring the whole scope at once.
-    """
-    if not indices or len(indices) <= _PREDICT_BATCH_SIZE:
-        return _predict_resilient(
-            lambda nn: predict_call(indices, nn),
-            device_assert_terminal=device_assert_terminal,
-            memo=memo,
-        )
-    import pandas as pd
-
-    frames = []
-    for start in range(0, len(indices), _PREDICT_BATCH_SIZE):
-        chunk = indices[start : start + _PREDICT_BATCH_SIZE]
-        frames.append(
-            _predict_resilient(
-                lambda nn, c=chunk: predict_call(c, nn),
-                device_assert_terminal=device_assert_terminal,
-                memo=memo,
-            )
-        )
-    return pd.concat(frames, ignore_index=True)
-
-
-_EXPLAIN_BACKOFF_NEIGHBORS: tuple[list[int] | None, ...] = (None, [16], [8])
-
-
-def _explain_resilient(explain_fn: Callable[[list[int] | None], Any]) -> Any:
-    """Run ``explain_fn(num_neighbors)`` for one entity, accuracy-first: retry hard at the FULL neighbourhood
-    before stepping the depth DOWN to salvage the call.
-
-    Stepping down is not free for an explanation the way it is for a plain prediction: a shallow neighbourhood
-    starves the gradient attribution and the per-cell scores collapse to zero, so the "top drivers" — the
-    whole point of explain — silently vanish. KumoRFM's intermittent CUDA ``device-side assert`` fires in
-    bursts (the same query that fails one moment succeeds the next), so we ride those out at full depth
-    (``_FULL_NEIGHBORHOOD_RETRIES``) and only shrink as a last resort. First success wins; an empty entity set
-    (bad/placeholder id) is terminal — a shallower neighbourhood cannot populate an empty filter.
-    """
-    last_exc: Exception | None = None
-    for num_neighbors in _EXPLAIN_BACKOFF_NEIGHBORS:
-        retries = _FULL_NEIGHBORHOOD_RETRIES if num_neighbors is None else 1
-        try:
-            return _predict_with_retry(
-                lambda nn=num_neighbors: explain_fn(nn),
-                retries=retries,
-                retryable=_is_transient_exec_error,
-            )
-        except Exception as exc:  # noqa: BLE001
-            last_exc = exc
-            if _is_empty_context_error(str(exc)):
-                logger.info(
-                    "Explain hit an empty entity set (bad/placeholder id); not stepping the "
-                    "neighbourhood down (it cannot help an empty filter)."
-                )
-                raise
-            logger.info(
-                "Explain failed at neighbourhood %s (%s); trying a shallower one.",
-                num_neighbors or "default",
-                str(exc)[:140],
-            )
-    raise last_exc  # pragma: no cover
 
 
 def extract_pql(text: str) -> str:
@@ -1041,12 +247,6 @@ def extract_entity_sql(text: str) -> str | None:
     return None
 
 
-def parse_entity(pql: str) -> tuple[str, str] | None:
-    """Parse the entity from population and single-entity PQL ``FOR`` clauses."""
-    match = _FOR_ENTITY.search(pql)
-    if match is None:
-        return None
-    return (unquote_name(match.group("table")), unquote_name(match.group("pk")))
 
 
 def _metric_stem(column: str) -> str:

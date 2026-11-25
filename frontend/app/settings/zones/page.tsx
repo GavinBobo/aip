@@ -244,8 +244,8 @@ export default function ZonesSettingsPage() {
 
 	// Prefetched by the root layout for this same account, so the cards are
 	// usually drawn on the first pass rather than after a round trip. Held off
-	// until the session names a user: the list is read on their behalf, and
-	// `uid` is what the route scopes it by.
+	// until the session names a user: the route scopes the list by that
+	// authenticated identity.
 	const {
 		data: zones = [],
 		isPending,
@@ -450,7 +450,7 @@ export default function ZonesSettingsPage() {
 		let effectiveSelectedItems = selectedItems;
 
 		if (modalMode === 'edit' && editingZoneId != null && !editItemsHydrated) {
-			const detailResponse = await zonesApi.getById(editingZoneId, currentUserId);
+			const detailResponse = await zonesApi.getById(editingZoneId);
 			if (detailResponse.error) {
 				setSubmitError(detailResponse.message ?? t('Failed to load zone items.'));
 			} else {
@@ -492,7 +492,6 @@ export default function ZonesSettingsPage() {
 				description: normalizedDescription ?? undefined,
 				color,
 				items: Array.from(normalizedSelectedItems),
-				created_by: currentUserId,
 			});
 
 			if (response.error) {
@@ -611,7 +610,7 @@ export default function ZonesSettingsPage() {
 			prev.map((z) => (z.id === zone.id ? { ...z, enabled: nextEnabled } : z)),
 		);
 
-		const response = await zonesApi.setEnabled(zone.id, nextEnabled, currentUserId);
+		const response = await zonesApi.setEnabled(zone.id, nextEnabled);
 		setTogglingZoneId(null);
 
 		if (response.error) {

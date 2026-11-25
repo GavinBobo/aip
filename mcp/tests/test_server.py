@@ -34,8 +34,8 @@ from all_ontology_mcp.tools import CURATED
 from all_ontology_mcp import get_version
 
 
-def _settings(spec_path: Path = DEFAULT_SPEC_PATH) -> Settings:
-    return Settings(
+def _settings(spec_path: Path = DEFAULT_SPEC_PATH, **overrides: Any) -> Settings:
+    values: dict[str, Any] = dict(
         api_url="http://all_ontology.test",
         spec_path=spec_path,
         host="127.0.0.1",
@@ -44,6 +44,8 @@ def _settings(spec_path: Path = DEFAULT_SPEC_PATH) -> Settings:
         chat_timeout_s=900.0,
         public_url="http://127.0.0.1:3003",
     )
+    values.update(overrides)
+    return Settings(**values)
 
 
 def _tools() -> list[Any]:
@@ -243,6 +245,29 @@ def test_a_smuggled_bearer_token_cannot_override_it_either(
     assert headers["authorization"] == "Bearer all-ontology-issued"
 
 
+def test_delegation_headers_are_not_relayed_by_other_modes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A stray subject must not make All Ontology reject an otherwise valid call."""
+    monkeypatch.setattr(
+        server, "all_ontology_access_token", lambda: "all-ontology-issued"
+    )
+    injected = {
+        "x-all-ontology-delegation-key": "d" * 32,
+        "x-all-ontology-subject": "alice@example.com",
+    }
+
+    signed_in = _sent_headers(CallerAuth(), injected)
+    passthrough = _sent_headers(
+        CallerAuth(_settings(passthrough_auth=True)),
+        {**injected, "authorization": "Bearer sso-token"},
+    )
+
+    for headers in (signed_in, passthrough):
+        assert "x-all-ontology-delegation-key" not in headers
+        assert "x-all-ontology-subject" not in headers
+
+
 def test_a_request_with_no_signed_in_session_is_an_actionable_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -250,6 +275,103 @@ def test_a_request_with_no_signed_in_session_is_an_actionable_error(
 
     with pytest.raises(ToolError, match="Sign in again"):
         _sent_headers(CallerAuth())
+
+
+def test_delegation_forwards_the_subject_and_never_a_credential() -> None:
+    """A trusted gateway names the user; All Ontology resolves them."""
+    key = "d" * 32
+    auth = CallerAuth(_settings(delegation_key=key))
+
+    headers = _sent_headers(
+        auth,
+        {
+            "x-all-ontology-delegation-key": key,
+            "x-all-ontology-subject": "alice@example.com",
+            "x-api-key": "all_ontology_someone_else",
+        },
+    )
+
+    assert headers["x-all-ontology-subject"] == "alice@example.com"
+    assert headers["x-all-ontology-delegation-key"] == key
+    assert "authorization" not in headers
+    assert "x-api-key" not in headers
+
+
+def test_delegation_rejects_a_wrong_key() -> None:
+    auth = CallerAuth(_settings(delegation_key="d" * 32))
+
+    with pytest.raises(ToolError, match="trusted gateway"):
+        _sent_headers(
+            auth,
+            {
+                "x-all-ontology-delegation-key": "wrong",
+                "x-all-ontology-subject": "alice@example.com",
+            },
+        )
+
+
+def test_delegation_requires_a_subject() -> None:
+    auth = CallerAuth(_settings(delegation_key="d" * 32))
+
+    with pytest.raises(ToolError, match="name the caller"):
+        _sent_headers(
+            auth,
+            {"x-all-ontology-delegation-key": "d" * 32},
+        )
+
+
+def test_passthrough_forwards_the_callers_api_token() -> None:
+    auth = CallerAuth(_settings(passthrough_auth=True))
+
+    headers = _sent_headers(
+        auth,
+        {"x-api-key": "all_ontology_alice", "authorization": "Bearer someone-else"},
+    )
+
+    assert headers["x-api-key"] == "all_ontology_alice"
+    assert "authorization" not in headers
+
+
+def test_passthrough_forwards_the_callers_sso_token() -> None:
+    auth = CallerAuth(_settings(passthrough_auth=True))
+
+    headers = _sent_headers(auth, {"authorization": "Bearer sso-id-token"})
+
+    assert headers["authorization"] == "Bearer sso-id-token"
+
+
+def test_passthrough_without_a_credential_is_an_actionable_error() -> None:
+    auth = CallerAuth(_settings(passthrough_auth=True))
+
+    with pytest.raises(ToolError, match="forwards the caller's own credential"):
+        _sent_headers(auth)
+
+
+def test_passthrough_mode_builds_without_the_oauth_handshake() -> None:
+    """The host supplies identity per request, so initialize needs no sign-in."""
+    mcp, client = build_server(_settings(passthrough_auth=True))
+
+    async def run() -> list[Any]:
+        try:
+            async with Client(mcp) as session:
+                return await session.list_tools()
+        finally:
+            await client.aclose()
+
+    assert asyncio.run(run())
+
+
+def test_delegation_mode_builds_without_the_oauth_handshake() -> None:
+    mcp, client = build_server(_settings(delegation_key="d" * 32))
+
+    async def run() -> list[Any]:
+        try:
+            async with Client(mcp) as session:
+                return await session.list_tools()
+        finally:
+            await client.aclose()
+
+    assert asyncio.run(run())
 
 
 def test_rejects_a_spec_that_is_not_json(tmp_path: Path) -> None:

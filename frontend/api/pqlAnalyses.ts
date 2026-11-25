@@ -19,6 +19,7 @@ export type PqlAnalysisCreatePayload = {
 	name: string;
 	description: string;
 	pql: string;
+	zone_id?: string | null;
 };
 
 type CreateResponse = ResponseWithError<{ data: PqlAnalysis }>;

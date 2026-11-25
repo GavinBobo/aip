@@ -28,6 +28,9 @@ _VARS = (
     "ALL_ONTOLOGY_MCP_TIMEOUT_S",
     "ALL_ONTOLOGY_MCP_CHAT_TIMEOUT_S",
     "ALL_ONTOLOGY_MCP_PUBLIC_URL",
+    "ALL_ONTOLOGY_MCP_DELEGATION_KEY",
+    "ALL_ONTOLOGY_MCP_SUBJECT_HEADER",
+    "ALL_ONTOLOGY_MCP_PASSTHROUGH_AUTH",
 )
 
 
@@ -128,3 +131,42 @@ def test_public_url_can_be_set_explicitly(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.setenv("ALL_ONTOLOGY_MCP_PUBLIC_URL", "https://mcp.example/")
 
     assert load_settings().public_url == "https://mcp.example"
+
+
+def test_delegation_key_is_read_and_requires_real_entropy(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_DELEGATION_KEY", "d" * 32)
+
+    assert load_settings().delegation_key == "d" * 32
+
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_DELEGATION_KEY", "too-short")
+    with pytest.raises(ConfigError, match="at least 32 characters"):
+        load_settings()
+
+
+def test_delegation_and_passthrough_cannot_both_be_enabled(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_DELEGATION_KEY", "d" * 32)
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_PASSTHROUGH_AUTH", "true")
+
+    with pytest.raises(ConfigError, match="enable only one"):
+        load_settings()
+
+
+def test_passthrough_flag_and_subject_header(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_PASSTHROUGH_AUTH", "yes")
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_SUBJECT_HEADER", "X-Employee-Id")
+
+    settings = load_settings()
+
+    assert settings.passthrough_auth is True
+    assert settings.delegation_subject_header == "x-employee-id"
+
+
+def test_an_invalid_subject_header_is_refused(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv("ALL_ONTOLOGY_MCP_SUBJECT_HEADER", "not a header")
+
+    with pytest.raises(ConfigError, match="lowercase HTTP header"):
+        load_settings()

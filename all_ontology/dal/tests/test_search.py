@@ -200,7 +200,7 @@ def _find(world: World, term: str, types: set[str] | None = None, **kwargs) -> l
 
     Both token lists come from the same input, because the two are different
     readings of one query rather than separate arguments a caller chooses
-    between — see ``all_ontology.server.search.service._prepare_search``.
+    between — see ``all_ontology.domain.search._prepare_search``.
     """
     return search.fetch_global_search(
         search.search_tokens(term),
@@ -318,7 +318,7 @@ def test_tables_and_views_together_return_both(world: World) -> None:
 # Two halves that combine rather than compete: the tag ids, satisfied by any
 # one of them, and ``include_untagged`` for the objects carrying none. The
 # service takes them apart from the one list the API carries — see
-# ``all_ontology.server.search.service.resolve_tag_filter``.
+# ``all_ontology.domain.search.resolve_tag_filter``.
 
 
 def test_a_tag_filter_keeps_only_what_carries_the_tag(world: World) -> None:

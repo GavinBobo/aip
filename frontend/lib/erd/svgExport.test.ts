@@ -47,10 +47,10 @@ describe('buildSvgDiagram', () => {
 		expect(diagram!.width).toBe(420 + 80);
 	});
 
-	it('draws the table note under the name in grey', () => {
+	it('exports the table note as a grey marker and a tooltip', () => {
 		const diagram = buildSvgDiagram([node({ note: 'core metrics' })], []);
 
-		expect(diagram!.svg).toContain('core metrics');
+		expect(diagram!.svg).toContain('<title>core metrics</title>');
 		expect(diagram!.svg).toContain('fill="#a1a1aa"');
 	});
 });

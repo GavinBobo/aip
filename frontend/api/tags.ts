@@ -36,12 +36,17 @@ export const tagsApi = {
 	 * vocabulary, which is what it needs to narrow in the browser — so `total`
 	 * equals `count` for it, and paging costs it nothing.
 	 */
-	getAll: (params?: TagsListParams): Promise<ApiPagedResponse<Tag[]>> =>
-		requests.get('tags', {
-			...(params?.query ? { query: params.query } : {}),
-			...(params?.authors ? { [AUTHORS_PARAM]: AUTHORS_PARAM_ON } : {}),
-			...pageQuery(params),
-		}),
+	getAll: (params?: TagsListParams, serverUserId?: string): Promise<ApiPagedResponse<Tag[]>> =>
+		requests.get(
+			'tags',
+			{
+				...(params?.query ? { query: params.query } : {}),
+				...(params?.authors ? { [AUTHORS_PARAM]: AUTHORS_PARAM_ON } : {}),
+				...pageQuery(params),
+			},
+			undefined,
+			serverUserId,
+		),
 
 	/**
 	 * One tag. What it labels is `getTargets`, a page at a time.

@@ -19,8 +19,7 @@ from typing import Any
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from all_ontology.server.health.checks import check_schema, check_store
-from all_ontology.server.responses import HealthResponse
+from all_ontology.infra.health import HealthResponse, check_schema, check_store
 
 router = APIRouter()
 

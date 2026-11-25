@@ -278,6 +278,7 @@ class PqlAnalysis(Base):
     __table__ = s.pql_analysis
 
     id: Mapped[str]
+    zone_id: Mapped[str | None]
     name: Mapped[str]
     description: Mapped[str | None]
     pql: Mapped[str | None]
@@ -595,6 +596,54 @@ class ZoneTarget(Base):
     zone: Mapped[Zone] = relationship(back_populates="targets")
 
 
+class Department(Base):
+    """部门：用户继承 Zone 授权的组织主体。"""
+
+    __table__ = s.department
+
+    id: Mapped[str]
+    name: Mapped[str]
+    description: Mapped[str | None]
+    created: Mapped[datetime | None]
+
+
+class DepartmentMember(Base):
+    """部门成员关系（department → frontend user id）。"""
+
+    __table__ = s.department__member
+
+    dept_id: Mapped[str]
+    user_id: Mapped[str]
+
+
+class ZoneGrant(Base):
+    """Zone 的一条授权：``user_id`` 或 ``dept_id`` 二选一。"""
+
+    __table__ = s.zone_grant
+
+    id: Mapped[str]
+    zone_id: Mapped[str]
+    user_id: Mapped[str | None]
+    dept_id: Mapped[str | None]
+    permission: Mapped[str]
+    expires_at: Mapped[datetime | None]
+    created: Mapped[datetime | None]
+
+
+class ZoneGrantAudit(Base):
+    """A before/after record of one Zone grant replacement."""
+
+    __table__ = s.zone_grant_audit
+
+    id: Mapped[str]
+    zone_id: Mapped[str]
+    actor_user_id: Mapped[str | None]
+    action: Mapped[str]
+    before: Mapped[list[Any]]
+    after: Mapped[list[Any]]
+    created: Mapped[datetime | None]
+
+
 # ---------------------------------------------------------------------------
 # ER 画布：每个 zone 一块画布
 # ---------------------------------------------------------------------------
@@ -861,6 +910,11 @@ class ParsingDocument(Base):
     source_path: Mapped[str | None]
     instance_id: Mapped[str | None]
     sha256: Mapped[str | None]
+    source_md5: Mapped[str | None]
+    parsed_md_path: Mapped[str | None]
+    learned_to_knowledge: Mapped[bool]
+    learned_at: Mapped[datetime | None]
+    knowledge_document_id: Mapped[str | None]
     size_bytes: Mapped[int | None]
     page_count: Mapped[int | None]
     page_start: Mapped[int | None]
@@ -927,6 +981,32 @@ class ParsingBlockEdit(Base):
     edited_at: Mapped[datetime]
 
 
+class ParsingImage(Base):
+    """One picture extracted from a parse run, with its optional VLM reading."""
+
+    __table__ = s.parsing_image
+
+    id: Mapped[str]
+    run_id: Mapped[str]
+    document_id: Mapped[str]
+    page: Mapped[int]
+    block_index: Mapped[int]
+    image_md5: Mapped[str]
+    image_path: Mapped[str]
+    image_file_path: Mapped[str | None]
+    width: Mapped[int | None]
+    height: Mapped[int | None]
+    area_px: Mapped[int | None]
+    vlm_prompt: Mapped[str | None]
+    vlm_content: Mapped[str | None]
+    vlm_status: Mapped[str]
+    vlm_error: Mapped[str | None]
+    learned_to_knowledge: Mapped[bool]
+    learned_at: Mapped[datetime | None]
+    knowledge_document_id: Mapped[str | None]
+    created: Mapped[datetime | None]
+
+
 class KnowledgeNetwork(Base):
     """A governed knowledge network built from parsed documents."""
 
@@ -936,12 +1016,40 @@ class KnowledgeNetwork(Base):
     name: Mapped[str]
     description: Mapped[str | None]
     domain: Mapped[str | None]
+    zone_id: Mapped[str | None]
     status: Mapped[str]
     version: Mapped[str]
     created: Mapped[datetime | None]
     modified: Mapped[datetime | None]
     created_by: Mapped[str | None]
     modified_by: Mapped[str | None]
+
+
+class KnowledgeNetworkGrant(Base):
+    """One explicit user or department grant on a knowledge network."""
+
+    __table__ = s.knowledge_network_grant
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    user_id: Mapped[str | None]
+    dept_id: Mapped[str | None]
+    permission: Mapped[str]
+    created: Mapped[datetime | None]
+
+
+class KnowledgeNetworkGrantAudit(Base):
+    """One audited replacement of a knowledge network's grants."""
+
+    __table__ = s.knowledge_network_grant_audit
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    actor_user_id: Mapped[str | None]
+    action: Mapped[str]
+    before: Mapped[list[Any]]
+    after: Mapped[list[Any]]
+    created: Mapped[datetime | None]
 
 
 class KnowledgeDocument(Base):
@@ -1034,6 +1142,9 @@ class KnowledgeEvidence(Base):
     concept_id: Mapped[str | None]
     relation_id: Mapped[str | None]
     fact_id: Mapped[str | None]
+    action_id: Mapped[str | None]
+    risk_id: Mapped[str | None]
+    metric_id: Mapped[str | None]
     page: Mapped[int | None]
     block_index: Mapped[int | None]
     quote: Mapped[str]
@@ -1052,6 +1163,180 @@ class KnowledgeConceptData(Base):
     confidence: Mapped[float]
     note: Mapped[str | None]
     created: Mapped[datetime | None]
+
+
+class KnowledgeAction(Base):
+    """A document-grounded action definition, exportable as a BKN action type."""
+
+    __table__ = s.knowledge_action
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    key: Mapped[str]
+    name: Mapped[str]
+    description: Mapped[str | None]
+    action_intent: Mapped[str]
+    bound_concept_id: Mapped[str | None]
+    parameters: Mapped[list[Any]]
+    status: Mapped[str]
+    confidence: Mapped[float]
+    source_document_id: Mapped[str | None]
+    created: Mapped[datetime | None]
+    modified: Mapped[datetime | None]
+
+
+class KnowledgeRisk(Base):
+    """A document-grounded risk definition, exportable as a BKN risk type."""
+
+    __table__ = s.knowledge_risk
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    key: Mapped[str]
+    name: Mapped[str]
+    description: Mapped[str | None]
+    severity: Mapped[str]
+    mitigation: Mapped[str | None]
+    related_concept_id: Mapped[str | None]
+    status: Mapped[str]
+    confidence: Mapped[float]
+    source_document_id: Mapped[str | None]
+    created: Mapped[datetime | None]
+    modified: Mapped[datetime | None]
+
+
+class KnowledgeMetric(Base):
+    """A metric defined on a knowledge concept, optionally backed by a SQL attribute."""
+
+    __table__ = s.knowledge_metric
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    key: Mapped[str]
+    name: Mapped[str]
+    description: Mapped[str | None]
+    expression: Mapped[str | None]
+    unit: Mapped[str | None]
+    concept_id: Mapped[str | None]
+    sql_attribute_id: Mapped[str | None]
+    status: Mapped[str]
+    confidence: Mapped[float]
+    source_document_id: Mapped[str | None]
+    created: Mapped[datetime | None]
+    modified: Mapped[datetime | None]
+
+
+class KnowledgeConceptGroup(Base):
+    """A named group of knowledge concepts."""
+
+    __table__ = s.knowledge_concept_group
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    key: Mapped[str]
+    name: Mapped[str]
+    description: Mapped[str | None]
+    created: Mapped[datetime | None]
+    modified: Mapped[datetime | None]
+
+
+class KnowledgeConceptGroupConcept(Base):
+    """Membership of a concept in a concept group."""
+
+    __table__ = s.knowledge_concept_group__concept
+
+    id: Mapped[str]
+    group_id: Mapped[str]
+    concept_id: Mapped[str]
+
+
+class KnowledgeCapability(Base):
+    """A Skill/Function/MCP tool/knowledge-base dependency declared by a network."""
+
+    __table__ = s.knowledge_capability
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    key: Mapped[str]
+    name: Mapped[str]
+    kind: Mapped[str]
+    description: Mapped[str | None]
+    config: Mapped[dict[str, Any]]
+    enabled: Mapped[bool]
+    created: Mapped[datetime | None]
+    modified: Mapped[datetime | None]
+
+
+class KnowledgeActionCapability(Base):
+    """Mounting of a capability on an action type."""
+
+    __table__ = s.knowledge_action__capability
+
+    id: Mapped[str]
+    action_id: Mapped[str]
+    capability_id: Mapped[str]
+    created: Mapped[datetime | None]
+
+
+class KnowledgeActionExecution(Base):
+    """A planned or completed action execution."""
+
+    __table__ = s.knowledge_action_execution
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    action_id: Mapped[str]
+    status: Mapped[str]
+    parameters: Mapped[dict[str, Any]]
+    plan: Mapped[dict[str, Any]]
+    result: Mapped[dict[str, Any] | None]
+    error_message: Mapped[str | None]
+    created: Mapped[datetime | None]
+    created_by: Mapped[str | None]
+    finished: Mapped[datetime | None]
+
+
+class KnowledgeNetworkVersion(Base):
+    """A full JSON snapshot of a knowledge network's definitions."""
+
+    __table__ = s.knowledge_network_version
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    version: Mapped[int]
+    label: Mapped[str | None]
+    snapshot: Mapped[dict[str, Any]]
+    created: Mapped[datetime | None]
+    created_by: Mapped[str | None]
+
+
+class KnowledgeEvalCase(Base):
+    """One evaluation question and its expected concept/fact hits."""
+
+    __table__ = s.knowledge_eval_case
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    question: Mapped[str]
+    expected_concepts: Mapped[list[Any]]
+    expected_facts: Mapped[list[Any]]
+    notes: Mapped[str | None]
+    created: Mapped[datetime | None]
+    modified: Mapped[datetime | None]
+
+
+class KnowledgeEvalRun(Base):
+    """One run over all eval cases in a network."""
+
+    __table__ = s.knowledge_eval_run
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    total: Mapped[int]
+    passed: Mapped[int]
+    details: Mapped[list[Any]]
+    created: Mapped[datetime | None]
+    created_by: Mapped[str | None]
 
 
 __all__ = [
@@ -1078,10 +1363,23 @@ __all__ = [
     "ErdRelationship",
     "KnowledgeConcept",
     "KnowledgeConceptData",
+    "KnowledgeConceptGroup",
+    "KnowledgeConceptGroupConcept",
+    "KnowledgeAction",
+    "KnowledgeRisk",
+    "KnowledgeMetric",
+    "KnowledgeCapability",
+    "KnowledgeActionCapability",
+    "KnowledgeActionExecution",
+    "KnowledgeNetworkVersion",
+    "KnowledgeEvalCase",
+    "KnowledgeEvalRun",
     "KnowledgeDocument",
     "KnowledgeEvidence",
     "KnowledgeFact",
     "KnowledgeNetwork",
+    "KnowledgeNetworkGrant",
+    "KnowledgeNetworkGrantAudit",
     "KnowledgeRelation",
     "PqlAnalysis",
     "ParsingBlockEdit",

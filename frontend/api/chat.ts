@@ -11,6 +11,7 @@ import type {
 	ChartsEvent,
 	ErrorEvent,
 } from '@/types/chat';
+import { t } from '@/i18n/translate';
 
 const getResponseErrorMessage = async (res: Response): Promise<string> => {
 	const fallback = `Server responded with ${res.status}`;
@@ -19,7 +20,7 @@ const getResponseErrorMessage = async (res: Response): Promise<string> => {
 
 	try {
 		const { detail } = JSON.parse(text) as { detail?: unknown };
-		if (typeof detail === 'string' && detail.trim()) return detail;
+		if (typeof detail === 'string' && detail.trim()) return t(detail);
 	} catch {}
 	return text;
 };

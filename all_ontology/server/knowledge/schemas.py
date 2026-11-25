@@ -28,6 +28,7 @@ class KnowledgeNetworkItem(ApiModel):
     name: str
     description: str | None = None
     domain: str | None = None
+    zone_id: str | None = None
     status: str | None = None
     version: str | None = None
     created: datetime | None = None
@@ -37,6 +38,11 @@ class KnowledgeNetworkItem(ApiModel):
     concept_count: int = 0
     relation_count: int = 0
     fact_count: int = 0
+    action_count: int = 0
+    risk_count: int = 0
+    metric_count: int = 0
+    group_count: int = 0
+    capability_count: int = 0
     document_count: int = 0
     data_link_count: int = 0
 
@@ -146,18 +152,112 @@ class KnowledgeDataTarget(ApiModel):
     detail: str | None = None
 
 
+class KnowledgeActionItem(ApiModel):
+    id: str
+    network_id: str
+    key: str
+    name: str
+    description: str | None = None
+    action_intent: str | None = None
+    bound_concept_id: str | None = None
+    bound_concept_name: str | None = None
+    bound_concept_key: str | None = None
+    parameters: list[dict] | None = None
+    status: str | None = None
+    confidence: float | None = None
+    source_document_id: str | None = None
+    evidence: list[dict] | None = None
+
+
+class KnowledgeRiskItem(ApiModel):
+    id: str
+    network_id: str
+    key: str
+    name: str
+    description: str | None = None
+    severity: str | None = None
+    mitigation: str | None = None
+    related_concept_id: str | None = None
+    related_concept_name: str | None = None
+    related_concept_key: str | None = None
+    status: str | None = None
+    confidence: float | None = None
+    source_document_id: str | None = None
+    evidence: list[dict] | None = None
+
+
+class KnowledgeMetricItem(ApiModel):
+    id: str
+    network_id: str
+    key: str
+    name: str
+    description: str | None = None
+    expression: str | None = None
+    unit: str | None = None
+    concept_id: str | None = None
+    concept_name: str | None = None
+    concept_key: str | None = None
+    sql_attribute_id: str | None = None
+    sql_attribute_name: str | None = None
+    sql_attribute_expression: str | None = None
+    status: str | None = None
+    confidence: float | None = None
+    source_document_id: str | None = None
+
+
+class KnowledgeConceptGroupItem(ApiModel):
+    id: str
+    network_id: str
+    key: str
+    name: str
+    description: str | None = None
+    concepts: list[dict] | None = None
+    created: datetime | None = None
+    modified: datetime | None = None
+
+
+class KnowledgeCapabilityItem(ApiModel):
+    id: str
+    network_id: str
+    key: str
+    name: str
+    kind: str
+    description: str | None = None
+    config: dict | None = None
+    enabled: bool | None = None
+    created: datetime | None = None
+    modified: datetime | None = None
+
+
 class KnowledgeNetworkCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     description: str | None = None
     domain: str | None = None
+    zone_id: str | None = None
 
 
 class KnowledgeNetworkPatch(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = None
     domain: str | None = None
+    zone_id: str | None = None
     status: Literal["draft", "published", "archived"] | None = None
     version: str | None = None
+
+
+class KnowledgeGrantUpdate(BaseModel):
+    grants: list[dict] = Field(default_factory=list)
+    user_ids: list[str] = Field(default_factory=list)
+    dept_ids: list[str] = Field(default_factory=list)
+
+
+class KnowledgeGrantResponse(ApiModel):
+    data: dict
+
+
+class KnowledgeGrantAuditList(ApiModel):
+    data: list[dict]
+    count: int
 
 
 class KnowledgeDocumentCreate(BaseModel):
@@ -194,6 +294,80 @@ class KnowledgeDataLinkCreate(BaseModel):
     target_kind: Literal["term", "table"]
     target_id: str = Field(min_length=1)
     note: str | None = None
+
+
+class KnowledgeActionPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+    action_intent: Literal["add", "modify", "delete", "execute"] | None = None
+    bound_concept_id: str | None = None
+    parameters: list[dict] | None = None
+    status: Status | None = None
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+
+
+class KnowledgeActionCapabilityLink(BaseModel):
+    capability_id: str = Field(min_length=1)
+
+
+class KnowledgeActionExecute(BaseModel):
+    parameters: dict = Field(default_factory=dict)
+    dry_run: bool = True
+
+
+class KnowledgeRiskPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+    severity: Literal["low", "medium", "high", "critical"] | None = None
+    mitigation: str | None = None
+    related_concept_id: str | None = None
+    status: Status | None = None
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+
+
+class KnowledgeMetricCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    description: str | None = None
+    expression: str | None = None
+    unit: str | None = None
+    concept_id: str | None = None
+    sql_attribute_id: str | None = None
+
+
+class KnowledgeMetricPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+    expression: str | None = None
+    unit: str | None = None
+    concept_id: str | None = None
+    sql_attribute_id: str | None = None
+    status: Status | None = None
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+
+
+class KnowledgeConceptGroupCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    description: str | None = None
+    concept_ids: list[str] = Field(default_factory=list)
+
+
+class KnowledgeConceptGroupPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+
+
+class KnowledgeCapabilityCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    kind: Literal["skill", "function", "mcp_tool", "knowledge_base"]
+    description: str | None = None
+    config: dict = Field(default_factory=dict)
+
+
+class KnowledgeCapabilityPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+    config: dict | None = None
+    enabled: bool | None = None
 
 
 class KnowledgeNetworkList(ApiModel):
@@ -245,9 +419,173 @@ class KnowledgeGraphResponse(ApiModel):
     data: KnowledgeGraph
 
 
+class KnowledgeGraphQuery(BaseModel):
+    start_concept_ids: list[str] = Field(default_factory=list)
+    depth: int = Field(default=2, ge=0, le=4)
+    direction: Literal["out", "in", "both"] = "both"
+    relation_kinds: list[str] = Field(default_factory=list)
+    include_data_links: bool = False
+
+
+class KnowledgeGraphQueryResponse(ApiModel):
+    data: dict
+
+
 class KnowledgeDataTargetList(ApiModel):
     data: list[KnowledgeDataTarget]
     count: int
+
+
+class KnowledgeActionList(ApiModel):
+    data: list[KnowledgeActionItem]
+    count: int
+
+
+class KnowledgeActionResponse(ApiModel):
+    data: KnowledgeActionItem
+
+
+class KnowledgeRiskList(ApiModel):
+    data: list[KnowledgeRiskItem]
+    count: int
+
+
+class KnowledgeRiskResponse(ApiModel):
+    data: KnowledgeRiskItem
+
+
+class KnowledgeMetricList(ApiModel):
+    data: list[KnowledgeMetricItem]
+    count: int
+
+
+class KnowledgeMetricResponse(ApiModel):
+    data: KnowledgeMetricItem
+
+
+class KnowledgeMetricValidateResponse(ApiModel):
+    data: dict
+
+
+class KnowledgeMetricPreviewResponse(ApiModel):
+    data: dict
+
+
+class KnowledgeConceptGroupList(ApiModel):
+    data: list[KnowledgeConceptGroupItem]
+    count: int
+
+
+class KnowledgeConceptGroupResponse(ApiModel):
+    data: KnowledgeConceptGroupItem
+
+
+class KnowledgeCapabilityList(ApiModel):
+    data: list[KnowledgeCapabilityItem]
+    count: int
+
+
+class KnowledgeCapabilityResponse(ApiModel):
+    data: KnowledgeCapabilityItem
+
+
+class KnowledgeVersionItem(ApiModel):
+    id: str
+    network_id: str
+    version: int
+    label: str | None = None
+    created: datetime | None = None
+    created_by: str | None = None
+
+
+class KnowledgeVersionCreate(BaseModel):
+    label: str | None = None
+
+
+class KnowledgeVersionList(ApiModel):
+    data: list[KnowledgeVersionItem]
+    count: int
+
+
+class KnowledgeVersionResponse(ApiModel):
+    data: KnowledgeVersionItem
+
+
+class KnowledgeVersionRestoreResponse(ApiModel):
+    data: dict
+
+
+class KnowledgeVersionDiffResponse(ApiModel):
+    data: dict
+
+
+class KnowledgeEvalCaseItem(ApiModel):
+    id: str
+    network_id: str
+    question: str
+    expected_concepts: list[str] | None = None
+    expected_facts: list[str] | None = None
+    notes: str | None = None
+    created: datetime | None = None
+    modified: datetime | None = None
+
+
+class KnowledgeEvalCaseCreate(BaseModel):
+    question: str = Field(min_length=1)
+    expected_concepts: list[str] = Field(default_factory=list)
+    expected_facts: list[str] = Field(default_factory=list)
+    notes: str | None = None
+
+
+class KnowledgeEvalCaseList(ApiModel):
+    data: list[KnowledgeEvalCaseItem]
+    count: int
+
+
+class KnowledgeEvalCaseResponse(ApiModel):
+    data: KnowledgeEvalCaseItem
+
+
+class KnowledgeEvalRunItem(ApiModel):
+    id: str
+    network_id: str
+    total: int
+    passed: int
+    details: list[dict] | None = None
+    created: datetime | None = None
+    created_by: str | None = None
+
+
+class KnowledgeEvalRunList(ApiModel):
+    data: list[KnowledgeEvalRunItem]
+    count: int
+
+
+class KnowledgeEvalRunResponse(ApiModel):
+    data: KnowledgeEvalRunItem
+
+
+class KnowledgeExecutionItem(ApiModel):
+    id: str
+    network_id: str
+    action_id: str
+    status: str
+    parameters: dict | None = None
+    plan: dict | None = None
+    result: dict | None = None
+    error_message: str | None = None
+    created: datetime | None = None
+    created_by: str | None = None
+    finished: datetime | None = None
+
+
+class KnowledgeExecutionList(ApiModel):
+    data: list[KnowledgeExecutionItem]
+    count: int
+
+
+class KnowledgeExecutionResponse(ApiModel):
+    data: KnowledgeExecutionItem
 
 
 class KnowledgeDataLinkResponse(ApiModel):
@@ -255,4 +593,8 @@ class KnowledgeDataLinkResponse(ApiModel):
 
 
 class KnowledgeDeleteResponse(ApiModel):
+    data: dict
+
+
+class KnowledgeImportResponse(ApiModel):
     data: dict

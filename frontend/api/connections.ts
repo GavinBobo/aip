@@ -43,8 +43,8 @@ export type FileServerPathInput = Omit<FileConnectionInput, 'database'> & {
 };
 
 export const connectionsApi = {
-	getAll: (): Promise<ApiResponse<Connection[]>> =>
-		requests.get<ResponseWithCount<Connection[]>>('connections'),
+	getAll: (serverUserId?: string): Promise<ApiResponse<Connection[]>> =>
+		requests.get<ResponseWithCount<Connection[]>>('connections', {}, undefined, serverUserId),
 
 	isEnvSource: () => requests.get<boolean>('connections/source'),
 

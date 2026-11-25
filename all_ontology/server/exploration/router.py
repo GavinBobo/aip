@@ -11,6 +11,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Path, Query
 
 from all_ontology.connectors.base import StatementTimeout
+from all_ontology.server.access import current_zone_ids, require_zone
 from all_ontology.server.exploration import service
 from all_ontology.server.pagination import LIMIT_QUERY, SKIP_QUERY
 from all_ontology.server.responses import (
@@ -76,7 +77,7 @@ _ZONE_ID_QUERY = Query(
 @router.get("/exploration/edges", response_model=ExplorationEdgeListResponse)
 def list_data_exploration_edges() -> dict:
     """Table connections backed by a shared SQL query or a foreign key."""
-    rows = service.fetch_data_exploration_edges(zone_ids=None)
+    rows = service.fetch_data_exploration_edges(zone_ids=current_zone_ids())
     return {"data": rows, "count": len(rows)}
 
 
@@ -96,9 +97,11 @@ def get_data_exploration_graph(
     regardless of *limit*. With *database_id*, every table in that database
     is returned and *limit* is ignored.
     """
+    if zone_id:
+        require_zone(zone_id)
     return {
         "data": service.fetch_data_exploration_graph(
-            zone_ids=[zone_id] if zone_id else None,
+            zone_ids=[zone_id] if zone_id else current_zone_ids(),
             limit=limit,
             database_id=None if zone_id else database_id,
         )
@@ -116,6 +119,7 @@ def get_pair_mode_analysis(
     isolated tables for the human/agent pairing workspace.
     """
     try:
+        require_zone(zone_id)
         return {"data": service.fetch_pair_mode_analysis(zone_id)}
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -135,7 +139,7 @@ def get_table_exploration_details(
     """Columns-adjacent SQL and one ordered page of Term details for an Exploration modal."""
     return {
         "data": service.fetch_table_exploration_details(
-            table_id, zone_ids=None, skip=skip, limit=limit
+            table_id, zone_ids=current_zone_ids(), skip=skip, limit=limit
         )
     }
 
@@ -160,7 +164,11 @@ def get_table_preview(
     thing an operator can see before writing a question.
     """
     try:
-        return {"data": service.fetch_table_preview(table_id, limit=limit)}
+        return {
+            "data": service.fetch_table_preview(
+                table_id, limit=limit, zone_ids=current_zone_ids()
+            )
+        }
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except StatementTimeout as exc:
@@ -183,7 +191,7 @@ def get_term_exploration_details(
     """One ordered page of Tables linked to a Term, for expanding it on the Exploration graph."""
     return {
         "data": service.fetch_term_exploration_details(
-            term_id, zone_ids=None, skip=skip, limit=limit
+            term_id, zone_ids=current_zone_ids(), skip=skip, limit=limit
         )
     }
 
@@ -194,7 +202,11 @@ def get_term_exploration_details(
 )
 def get_column_exploration_details(column_id: str) -> dict:
     """The Column's own ColumnAttribute, FK target, referencing FK Columns and Sql queries, for expanding it on the Exploration graph."""
-    return {"data": service.fetch_column_exploration_details(column_id, zone_ids=None)}
+    return {
+        "data": service.fetch_column_exploration_details(
+            column_id, zone_ids=current_zone_ids()
+        )
+    }
 
 
 @router.get(
@@ -211,7 +223,7 @@ def get_column_attribute_exploration_details(
     """
     return {
         "data": service.fetch_column_attribute_exploration_details(
-            attr_id, zone_ids=None, skip=skip, limit=limit
+            attr_id, zone_ids=current_zone_ids(), skip=skip, limit=limit
         )
     }
 
@@ -223,7 +235,9 @@ def get_column_attribute_exploration_details(
 def get_sql_attribute_exploration_details(attr_id: str) -> dict:
     """A SqlAttribute's own Sql query and owning Term, for expanding it on the Exploration graph."""
     return {
-        "data": service.fetch_sql_attribute_exploration_details(attr_id, zone_ids=None)
+        "data": service.fetch_sql_attribute_exploration_details(
+            attr_id, zone_ids=current_zone_ids()
+        )
     }
 
 
@@ -233,7 +247,11 @@ def get_sql_attribute_exploration_details(attr_id: str) -> dict:
 )
 def get_sql_exploration_details(sql_id: str) -> dict:
     """CustomAnalysis, Column, Table and SqlAttribute nodes hanging off this Sql node, for expanding it on the Exploration graph."""
-    return {"data": service.fetch_sql_exploration_details(sql_id, zone_ids=None)}
+    return {
+        "data": service.fetch_sql_exploration_details(
+            sql_id, zone_ids=current_zone_ids()
+        )
+    }
 
 
 @router.get(
@@ -249,7 +267,9 @@ def get_semantic_link_path(term_id: str, other_term_id: str) -> dict:
     of just showing the collapsed `GraphLink.relationship_types` label.
     """
     return {
-        "data": service.fetch_semantic_link_path(term_id, other_term_id, zone_ids=None)
+        "data": service.fetch_semantic_link_path(
+            term_id, other_term_id, zone_ids=current_zone_ids()
+        )
     }
 
 
@@ -275,7 +295,7 @@ def get_exploration_node_relationships(
         "data": service.fetch_exploration_related_nodes(
             node_id,
             layer,
-            zone_ids=None,
+            zone_ids=current_zone_ids(),
             skip=skip,
             limit=limit,
         )
@@ -289,7 +309,7 @@ def list_table_zones() -> dict:
     Used by the Exploration graph to render Zone chips on every data node
     without a per-node request.
     """
-    return {"data": service.fetch_table_zones_map(zone_ids=None)}
+    return {"data": service.fetch_table_zones_map(zone_ids=current_zone_ids())}
 
 
 @router.get(
@@ -309,9 +329,11 @@ def get_semantic_exploration_graph(
     regardless of *limit*. With *database_id*, every term linked to a table
     in that database is returned and *limit* is ignored.
     """
+    if zone_id:
+        require_zone(zone_id)
     return {
         "data": service.fetch_semantic_exploration_graph(
-            zone_ids=[zone_id] if zone_id else None,
+            zone_ids=[zone_id] if zone_id else current_zone_ids(),
             limit=limit,
             database_id=None if zone_id else database_id,
         )

@@ -4,16 +4,18 @@
 
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { knowledgeApi, type KnowledgeNetwork } from '@/api/knowledge';
+import { zonesApi } from '@/api/zones';
 import { Button } from '@/common/Button';
 import { Icon, IconName } from '@/common/icons';
 import { Spinner } from '@/common/Spinner';
 import { ButtonTheme, Size } from '@/enums/button';
 import { t } from '@/i18n';
+import type { Zone } from '@/types/zones';
 
 const inputClassName =
 	'h-9 w-full rounded-md border border-zinc-300 bg-white px-3 text-sm text-body outline-none transition-colors focus:border-[#76b900] focus:ring-2 focus:ring-[#76b900]/30 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200';
@@ -25,15 +27,18 @@ const statusStyles = (status: string): string => {
 };
 
 const CreateNetworkModal = ({
+	zones,
 	onClose,
 	onCreated,
 }: {
+	zones: Zone[];
 	onClose: () => void;
 	onCreated: (network: KnowledgeNetwork) => void;
 }) => {
 	const [name, setName] = useState('');
 	const [domain, setDomain] = useState('');
 	const [description, setDescription] = useState('');
+	const [zoneId, setZoneId] = useState('');
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -45,13 +50,14 @@ const CreateNetworkModal = ({
 			name: name.trim(),
 			domain: domain.trim() || undefined,
 			description: description.trim() || undefined,
+			zone_id: zoneId || undefined,
 		});
 		setSaving(false);
 		if (response.error || !response.data) {
 			setError(response.message ?? t('Failed to create the knowledge network.'));
 			return;
 		}
-		onCreated(response.data.data);
+		onCreated(response.data);
 	};
 
 	return (
@@ -101,6 +107,23 @@ const CreateNetworkModal = ({
 					</label>
 					<label className="block">
 						<span className="mb-1 block text-xs font-medium text-body">
+							{t('Zone')}
+						</span>
+						<select
+							className={inputClassName}
+							value={zoneId}
+							onChange={(event) => setZoneId(event.target.value)}
+						>
+							<option value="">{t('Visible to all signed-in users')}</option>
+							{zones.map((zone) => (
+								<option key={zone.id} value={zone.id}>
+									{zone.name}
+								</option>
+							))}
+						</select>
+					</label>
+					<label className="block">
+						<span className="mb-1 block text-xs font-medium text-body">
 							{t('Domain')}
 						</span>
 						<input
@@ -118,7 +141,9 @@ const CreateNetworkModal = ({
 							className="min-h-24 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-body outline-none transition-colors focus:border-[#76b900] focus:ring-2 focus:ring-[#76b900]/30 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200"
 							value={description}
 							onChange={(event) => setDescription(event.target.value)}
-							placeholder={t('What this knowledge covers, and which documents it comes from.')}
+							placeholder={t(
+								'What this knowledge covers, and which documents it comes from.',
+							)}
 						/>
 					</label>
 					{error && <p className="text-sm text-red-600">{error}</p>}
@@ -139,27 +164,42 @@ const CreateNetworkModal = ({
 export const KnowledgeWorkspace = () => {
 	const router = useRouter();
 	const [networks, setNetworks] = useState<KnowledgeNetwork[]>([]);
+	const [zones, setZones] = useState<Zone[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [creating, setCreating] = useState(false);
 
-	const load = useCallback(() => {
-		setLoading(true);
+	useEffect(() => {
+		let cancelled = false;
 		knowledgeApi.listNetworks().then((response) => {
+			if (cancelled) return;
 			setLoading(false);
 			if (response.error || !response.data) {
 				setError(response.message ?? t('Failed to load knowledge networks.'));
 				return;
 			}
 			setError(null);
-			setNetworks(response.data.data);
+			setNetworks(response.data);
 		});
+		return () => {
+			cancelled = true;
+		};
 	}, []);
 
-	useEffect(load, [load]);
+	useEffect(() => {
+		let cancelled = false;
+		zonesApi.getAll().then((response) => {
+			if (!cancelled && !response.error && response.data) setZones(response.data);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
 	useEffect(() => {
-		if (window.location.search.includes('new=1')) setCreating(true);
+		if (!window.location.search.includes('new=1')) return;
+		const timer = window.setTimeout(() => setCreating(true), 0);
+		return () => window.clearTimeout(timer);
 	}, []);
 
 	return (
@@ -209,9 +249,11 @@ export const KnowledgeWorkspace = () => {
 								'Create a network, add a successful parsing result, and let the extractor turn the document into concepts, relations and cited facts.',
 							)}
 						</p>
-						<Button className="mt-5" onClick={() => setCreating(true)}>
-							{t('Create the first network')}
-						</Button>
+						<div className="mt-5">
+							<Button onClick={() => setCreating(true)}>
+								{t('Create the first network')}
+							</Button>
+						</div>
 					</div>
 				) : (
 					<div className="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
@@ -228,6 +270,11 @@ export const KnowledgeWorkspace = () => {
 										</h2>
 										<p className="mt-1 text-xs text-secondary">
 											{network.domain || t('No domain')}
+											{' · '}
+											{network.zone_id
+												? zones.find((zone) => zone.id === network.zone_id)
+														?.name || t('Zoned')
+												: t('All signed-in users')}
 										</p>
 									</div>
 									<span
@@ -250,7 +297,9 @@ export const KnowledgeWorkspace = () => {
 											<div className="text-base font-semibold text-heading dark:text-zinc-100">
 												{value}
 											</div>
-											<div className="text-[11px] text-secondary">{label}</div>
+											<div className="text-[11px] text-secondary">
+												{label}
+											</div>
 										</div>
 									))}
 								</div>
@@ -262,6 +311,7 @@ export const KnowledgeWorkspace = () => {
 
 			{creating && (
 				<CreateNetworkModal
+					zones={zones}
 					onClose={() => setCreating(false)}
 					onCreated={(network) => {
 						setCreating(false);

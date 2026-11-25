@@ -7,8 +7,8 @@ import { proxyToBackend } from '@/auth/proxy-backend';
 
 export const GET = withPermission({ catalog: ['read'] })((req) => proxyToBackend(req));
 
-export const PATCH = withPermission({ catalog: ['edit'] })((req, { user }) =>
+export const PATCH = withPermission({ catalog: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );
 
-export const DELETE = withPermission({ catalog: ['edit'] })((req) => proxyToBackend(req));
+export const DELETE = withPermission({ catalog: ['contribute'] })((req) => proxyToBackend(req));

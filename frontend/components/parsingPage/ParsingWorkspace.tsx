@@ -21,10 +21,10 @@ import { ButtonTheme, Size } from '@/enums/button';
 import { t } from '@/i18n';
 
 const ELEMENT_LABELS: Record<string, Record<string, string>> = {
-	image: { url: 'URL', base64: 'Base64', none: '不输出' },
+	image: { url: 'URL', base64: 'Base64', none: 'Do not output' },
 	formula: { latex: 'LaTeX' },
 	table: { html: 'HTML', markdown: 'Markdown' },
-	cs: { smiles: 'SMILES', image: '图片' },
+	cs: { smiles: 'SMILES', image: 'Image' },
 };
 
 const formatBytes = (bytes: number): string => {
@@ -56,6 +56,9 @@ export const ParsingWorkspace = () => {
 	const [outputFormats, setOutputFormats] = useState<string[]>(['markdown', 'json']);
 	const [keepHeaderFooter, setKeepHeaderFooter] = useState(false);
 	const [elementFormats, setElementFormats] = useState<Record<string, string>>({});
+	const [imageUnderstanding, setImageUnderstanding] = useState(true);
+	const [imagePrompt, setImagePrompt] = useState('');
+	const [imageMinArea, setImageMinArea] = useState('200000');
 	const [pageStart, setPageStart] = useState('');
 	const [pageEnd, setPageEnd] = useState('');
 	const [submitting, setSubmitting] = useState(false);
@@ -72,6 +75,12 @@ export const ParsingWorkspace = () => {
 				if (!capsResponse.error && capsResponse.data) {
 					setCapabilities(capsResponse.data);
 					setElementFormats(capsResponse.data.element_format_defaults ?? {});
+					const image = capsResponse.data.image_understanding;
+					if (image) {
+						setImageUnderstanding(image.enabled);
+						setImagePrompt(image.prompt);
+						setImageMinArea(String(image.min_area_px));
+					}
 				}
 				if (!profilesResponse.error && profilesResponse.data) {
 					setProfiles(profilesResponse.data);
@@ -148,6 +157,9 @@ export const ParsingWorkspace = () => {
 				output_formats: outputFormats,
 				keep_header_footer: keepHeaderFooter,
 				element_formats: elementFormats,
+				image_understanding: imageUnderstanding,
+				image_prompt: imagePrompt,
+				image_min_area_px: Number(imageMinArea) || 0,
 			}),
 		);
 		if (pageStart.trim() !== '') form.append('page_start', pageStart.trim());
@@ -398,6 +410,43 @@ export const ParsingWorkspace = () => {
 						</div>
 
 						<h2 className="pt-1 text-xs font-semibold text-heading dark:text-zinc-100">
+							{t('Image understanding')}
+						</h2>
+						<div className="space-y-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+							<label className="flex items-center gap-1.5 text-xs">
+								<input
+									type="checkbox"
+									checked={imageUnderstanding}
+									onChange={(event) =>
+										setImageUnderstanding(event.target.checked)
+									}
+								/>
+								{t('Interpret images above the pixel-area threshold')}
+							</label>
+							<label className="flex flex-col gap-1 text-[11px] text-secondary">
+								{t('Minimum pixel area')}
+								<input
+									type="number"
+									min={0}
+									value={imageMinArea}
+									disabled={!imageUnderstanding}
+									onChange={(event) => setImageMinArea(event.target.value)}
+									className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-xs text-body disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-900"
+								/>
+							</label>
+							<label className="flex flex-col gap-1 text-[11px] text-secondary">
+								{t('Image interpretation prompt')}
+								<textarea
+									rows={3}
+									value={imagePrompt}
+									disabled={!imageUnderstanding}
+									onChange={(event) => setImagePrompt(event.target.value)}
+									className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs text-body disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-900"
+								/>
+							</label>
+						</div>
+
+						<h2 className="pt-1 text-xs font-semibold text-heading dark:text-zinc-100">
 							{t('Element formats')}
 						</h2>
 						<div className="grid grid-cols-2 gap-2">
@@ -419,7 +468,7 @@ export const ParsingWorkspace = () => {
 										>
 											{values.map((value) => (
 												<option key={value} value={value}>
-													{ELEMENT_LABELS[element]?.[value] ?? value}
+													{t(ELEMENT_LABELS[element]?.[value] ?? value)}
 												</option>
 											))}
 										</select>

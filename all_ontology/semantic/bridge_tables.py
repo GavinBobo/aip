@@ -30,7 +30,7 @@ from all_ontology.dal.sql_attributes import (
 )
 from all_ontology.dal.terms import get_term_record_for_table
 from all_ontology.semantic.constants import SQL_ATTR_SOURCE_BRIDGE
-from all_ontology.server.sql_attributes.service import create_sql_attribute
+from all_ontology.domain.sql_attributes import create_sql_attribute
 from all_ontology.utils.llm_invoke import (
     get_llm_client,
     invoke_with_structured_output,

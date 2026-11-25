@@ -9,11 +9,11 @@
 // backend share the same `/api/...` path, so we forward the incoming pathname
 // verbatim.
 //
-// Zone scoping is not applied here: zone membership stopped being an
-// authorization boundary, so the backend's own `zone_ids` default (unscoped)
-// is what every proxied call gets.
+// The authenticated user id is forwarded on every call. The Python tier uses
+// it to resolve effective user/department Zone grants once per request, so a
+// route cannot accidentally default to an unscoped read.
 
-import { buildInternalIdentityHeaders } from '@/lib/internalIdentity';
+import { buildInternalIdentityHeaders, INTERNAL_USER_HEADER } from '@/lib/internalIdentity';
 
 const PYTHON_API_URL = process.env.PYTHON_API_URL ?? 'http://127.0.0.1:3001';
 
@@ -51,7 +51,10 @@ export async function proxyToBackend(
 	const headers: Record<string, string> = { Accept: 'application/json' };
 	const contentType = req.headers.get('content-type');
 	if (contentType) headers['Content-Type'] = contentType;
-	if (userId) Object.assign(headers, buildInternalIdentityHeaders(userId));
+	const forwardedUserId = userId ?? req.headers.get(INTERNAL_USER_HEADER);
+	if (forwardedUserId) {
+		Object.assign(headers, buildInternalIdentityHeaders(forwardedUserId));
+	}
 
 	const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
 	// Bytes, not text: connection setup can upload a spreadsheet or Parquet

@@ -19,9 +19,11 @@ Two shapes recur and are easy to break:
 from __future__ import annotations
 
 import logging
-from typing import Any, Sequence
+from typing import TYPE_CHECKING, Any, Sequence
 
-import pandas as pd
+if TYPE_CHECKING:
+    import pandas as pd
+
 from sqlalchemy import (
     ColumnElement,
     Text,
@@ -421,7 +423,10 @@ def fetch_join_edges() -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 
-def count_columns_for_table(table_id: str) -> int:
+def count_columns_for_table(table_id: str, zone_ids: list[str] | None = None) -> int:
+    scoped = resolve_accessible_catalog_ids(zone_ids)
+    if scoped is not None and table_id not in scoped["table_ids"]:
+        return 0
     rows = store().query_read(
         select(func.count(s.catalog_column.c.id).label("total")).where(
             s.catalog_column.c.table_id == table_id
@@ -441,7 +446,7 @@ def fetch_col_table_contexts(col_ids: list[str]) -> dict[str, dict[str, str]]:
     """Column id → its database/schema/table identity (ids + names).
 
     Ids come back alongside names so a caller that needs to let a client expand
-    a Table/Column further (e.g. :func:`all_ontology.dal.terms.find_term_link_path`'s
+    a Table/Column further (e.g. :func:`all_ontology.dal.term_links.find_term_link_path`'s
     catalog enrichment) can reuse this instead of re-running the same
     database→schema→table→column join itself; a caller that only wants display
     text (e.g. :func:`all_ontology.dal.attributes.find_join_path`) ignores the extra keys.
@@ -969,6 +974,7 @@ def fetch_columns_for_table(
     *,
     skip: int = 0,
     limit: int | None = None,
+    zone_ids: list[str] | None = None,
 ) -> dict[str, Any] | None:
     """A table with its columns nested, or ``None`` if the table is missing.
 
@@ -983,6 +989,10 @@ def fetch_columns_for_table(
     soon as *skip* ran past the last column, turning "page 3 of a 2-page table"
     into "no such table".
     """
+    scoped = resolve_accessible_catalog_ids(zone_ids)
+    if scoped is not None and table_id not in scoped["table_ids"]:
+        return None
+
     header = store().query_read(
         select(
             s.catalog_table.c.name.label("table_name"),
@@ -1244,6 +1254,8 @@ def fetch_tables_and_columns_by_node_ids(
     ``database_name``, and the third return value is the first one found — the
     caller assumes a single database and there is nothing here that enforces it.
     """
+    import pandas as pd
+
     conn = store()
     ids = list(node_ids)
 

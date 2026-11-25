@@ -22,6 +22,12 @@ def _validate_http_url(value: Optional[str]) -> Optional[str]:
     return value
 
 
+DEFAULT_IMAGE_VLM_PROMPT = (
+    "请详细描述这张图片的内容，包括文字、数据、图表、流程与关键结论。"
+    "只依据图片本身，不要猜测。"
+)
+
+
 class ServerConfig(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
 
@@ -82,6 +88,14 @@ class PipelineConfig(BaseModel):
     full_overlap_dedupe: bool = False
     table_image_placeholders: bool = False
     table_image_min_score: float = Field(default=0.5, ge=0.0, le=1.0)
+    # Image understanding: pictures at or above this pixel area are sent to the
+    # configured vision model with this prompt. Per-task options may override
+    # every field.
+    image_vlm_enabled: bool = True
+    image_vlm_min_area_px: int = Field(default=200_000, ge=0)
+    image_vlm_prompt: str = DEFAULT_IMAGE_VLM_PROMPT
+    image_vlm_max_tokens: int = Field(default=1024, gt=0)
+    image_vlm_concurrency: int = Field(default=2, gt=0)
 
 
 class Settings(BaseSettings):

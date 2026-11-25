@@ -16,7 +16,7 @@ from all_ontology.dal.model_interchange import (
     UnknownDatabaseIdsError,
 )
 from all_ontology.server.model_interchange import service
-from all_ontology.server.model_interchange.schemas import ExportRequest
+from all_ontology.model_interchange.schemas import ExportRequest
 from all_ontology.server.responses import ModelImportResponse
 
 router = APIRouter()

@@ -39,12 +39,12 @@ from all_ontology.dal.session import write_transaction
 from all_ontology.server.identity import resolve_internal_user
 from all_ontology.server.pagination import LIMIT_QUERY, SKIP_QUERY
 from all_ontology.server.responses import IdResponse, RulePageResponse, RuleResponse
-from all_ontology.server.rules import service as rule_service
+from all_ontology.domain import rules as rule_service
 
 # A rule's search *is* a global search, so both come from the search router
 # rather than being restated here: the filters a rule saves and the filters a
 # search accepts cannot drift apart if they are the same model.
-from all_ontology.server.search.constants import (
+from all_ontology.domain.search_constants import (
     MIN_SEARCH_LENGTH,
     TEXT_MATCH_CONTAINS,
     UNTAGGED_FILTER_VALUE,
@@ -326,7 +326,7 @@ def create_rule(request: Request, body: RuleCreate) -> dict:
     not left saved and inert -- the create either produces a rule with its
     labels or nothing at all. The search that finds them runs before that
     transaction, holding no write connection and no locks while it does; see
-    ``rules.service.find_targets``.
+    ``domain.rules.find_targets``.
 
     400 for a body that could never be a rule: a blank name, a search term
     shorter than global search accepts, a match option it does not implement,

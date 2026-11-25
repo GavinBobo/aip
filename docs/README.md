@@ -15,7 +15,12 @@ SPDX-License-Identifier: Apache-2.0
 | [architecture/project-review.md](./architecture/project-review.md) | 这个仓库长什么样、有哪些结构问题、按什么顺序重构、哪些已经做完 |
 | [architecture/deployment-plan.md](./architecture/deployment-plan.md) | 用公司现有 PostgreSQL 怎么部署：DBA 前置条件、两个 schema 的初始化顺序、三种部署形态、连接数预算与故障排查 |
 | [architecture/semantic-quality-1.3.md](./architecture/semantic-quality-1.3.md) | Auto-Ontology 1.3 的语义质量功能哪些已移植、哪些是独立架构迁移 |
+| [architecture/performance-notes.md](./architecture/performance-notes.md) | 已落地的算法、启动时间与结构清理优化，附验证基线 |
+| [architecture/image-understanding.md](./architecture/image-understanding.md) | 文档图片的 VLM 解读、两张记录表与知识证据图片引用链路 |
 | [architecture/document-parsing-v2-plan.md](./architecture/document-parsing-v2-plan.md) | 文档解析从“解析示例”到可靠工作台、可校对结果库的建设方案（P0/P1） |
+| [architecture/knowledge-ontology.md](./architecture/knowledge-ontology.md) | 数据本体之外的知识本体：OXR 文档抽取、概念/关系/事实/证据、数据映射与 BKN 导出 |
+| [architecture/bkn-integration-plan.md](./architecture/bkn-integration-plan.md) | 对 bkn-foundry / bkn-studio 的能力复盘：哪些已进 aip、哪些还没进、后续优先级 |
+| [architecture/data-access.md](./architecture/data-access.md) | 用户与部门 Zone 数据权限：数据模型、默认拒绝、请求解析、问数防线与管理入口 |
 
 ## 领域说明
 

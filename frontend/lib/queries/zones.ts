@@ -23,8 +23,9 @@ export const zoneQueries = {
 	/**
 	 * Works from both sides of the render: `requests` reaches the backend
 	 * directly on the server and the permission-gated `/api/zones` route in the
-	 * browser, and `uid` is sent either way — so the layout can prefetch
-	 * exactly what the page then subscribes to.
+	 * browser. The server-side call carries the already-authenticated user id
+	 * as the trusted internal header, so the layout can prefetch exactly what
+	 * the page then subscribes to.
 	 */
 	list: (userId: string) =>
 		queryOptions({

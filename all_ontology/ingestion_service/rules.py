@@ -5,7 +5,7 @@
 """Replaying the tagging rules once a pass has finished changing the catalog.
 
 A rule is a standing instruction rather than a one-off labelling -- see
-``all_ontology.server.rules.service`` -- so something has to replay it over
+``all_ontology.domain.rules`` -- so something has to replay it over
 what was ingested since the last time, and nothing else in either service
 will. This is the shared half of that: containing a failure and getting the
 synchronous work off the event loop. *When* to call it is the caller's
@@ -25,7 +25,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from all_ontology.server.rules.service import reapply_rules
+from all_ontology.domain.rules import reapply_rules
 
 logger = logging.getLogger(__name__)
 

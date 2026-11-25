@@ -33,6 +33,7 @@ def _run_loop(
     connector_batches: list[list[str]],
     *,
     evidence: str | None = None,
+    allowed_table_ids: list[str] | None = None,
 ) -> dict:
     """Drive one ASK through ``_worker_loop`` and return the agent payload it built.
 
@@ -64,9 +65,7 @@ def _run_loop(
         return iter(())
 
     monkeypatch.setattr("all_ontology.connectors.get_connectors", fake_get_connectors)
-    monkeypatch.setattr(
-        "all_ontology.utils.get_data_objects_retriever", lambda: "data"
-    )
+    monkeypatch.setattr("all_ontology.utils.get_data_objects_retriever", lambda: "data")
     monkeypatch.setattr(
         "all_ontology.utils.get_semantic_objects_retriever", lambda: "semantic"
     )
@@ -80,7 +79,14 @@ def _run_loop(
         "all_ontology.retrieval.text_to_sql.main.stream_agent_response", fake_stream
     )
 
-    in_q = _FakeQueue([(worker_module._MSG_ASK, ("q", None, None, None, [], evidence))])
+    in_q = _FakeQueue(
+        [
+            (
+                worker_module._MSG_ASK,
+                ("q", None, None, None, [], evidence, allowed_table_ids, None, None),
+            )
+        ]
+    )
     worker_module._worker_loop(in_q, _FakeQueue())
     return captured
 
@@ -106,6 +112,16 @@ def test_worker_reuses_the_boot_connectors_when_they_are_present(
     payload = _run_loop(monkeypatch, connector_batches=[["boot-connector"]])
 
     assert payload["connectors"] == ["boot-connector"]
+
+
+def test_worker_forwards_the_table_allow_list(monkeypatch: MonkeyPatch) -> None:
+    payload = _run_loop(
+        monkeypatch,
+        connector_batches=[["boot-connector"]],
+        allowed_table_ids=["table-1"],
+    )
+
+    assert payload["allowed_table_ids"] == ["table-1"]
     assert payload["question"] == "q"
     assert payload["evidence"] == ""
 

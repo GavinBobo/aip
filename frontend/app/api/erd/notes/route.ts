@@ -6,6 +6,6 @@ import { withPermission } from '@/auth/with-auth';
 import { proxyToBackend } from '@/auth/proxy-backend';
 
 // erdApi.createNote — add a sticky note (admin only).
-export const POST = withPermission({ zone: ['manage'] })((req, { user }) =>
+export const POST = withPermission({ zone: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );

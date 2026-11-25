@@ -20,6 +20,11 @@ from __future__ import annotations
 
 from typing import Any, Generic, TypeVar
 
+from all_ontology.infra.health import (
+    HealthResponse,
+    SemanticRunningResponse,
+    StatusResponse,
+)
 from all_ontology.server.models import (
     ApiModel as _Payload,  # extra="allow" base — see the module docstring
 )
@@ -206,43 +211,8 @@ class ObjectPageResponse(_Payload, Generic[T]):
 # ---------------------------------------------------------------------------
 
 
-class StatusResponse(_Payload):
-    """``{"status": "ok"}`` or ``{"status": "accepted"}`` for async triggers."""
-
-    status: str
-
-
-class HealthResponse(_Payload):
-    """Readiness body — 200 when healthy, 503 when degraded.
-
-    ``postgres`` reports whether the database answers; ``migrations`` whether it
-    holds the revision this build expects. Both matter and they fail
-    independently: a reachable database carrying no tables at all satisfies the
-    first and not the second, and reporting only the first is how a health
-    check comes to say ``ok`` about a server that 500s on every catalog call.
-
-    Named ``migrations`` rather than the more obvious ``schema`` because that
-    name shadows an attribute on Pydantic's ``BaseModel`` and the field would
-    ship with a ``UserWarning`` on every import.
-    """
-
-    status: str
-    postgres: dict[str, str]
-    migrations: dict[str, str]
-
-
 class SemanticStatusResponse(_Payload):
     calculated: bool
-    running: bool
-    last_success_at: str | None
-    last_failure_at: str | None
-
-
-class SemanticRunningResponse(_Payload):
-    """The ingestion service's own status endpoint: whether a compilation pass
-    is executing right now, when the last one finished successfully, and when
-    it last failed (only set if more recent than the last success)."""
-
     running: bool
     last_success_at: str | None
     last_failure_at: str | None

@@ -6,11 +6,19 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from typing import Literal
 
+from all_ontology.dal import access as access_dal
 from all_ontology.dal import zones as dal
-from all_ontology.server.users import postgres_dal
+from all_ontology.server.access import (
+    current_access,
+    current_zone_ids,
+    require_admin,
+    require_zone_permission,
+)
+from all_ontology.dal.schema import ZONE_PERMISSION_MANAGE
 from all_ontology.server.responses import IdResponse, ZoneListResponse, ZoneResponse
 
 router = APIRouter()
@@ -21,7 +29,6 @@ class ZoneCreate(BaseModel):
     description: str | None = None
     color: str
     items: list[str]
-    created_by: str  # user_id of the requesting user (must be admin)
 
 
 class ZoneUpdate(BaseModel):
@@ -35,37 +42,55 @@ class ZoneStatusUpdate(BaseModel):
     enabled: bool
 
 
-def _require_admin(user_id: str) -> None:
-    """Raise 403 when *user_id* is not an admin per PostgreSQL."""
-    if not postgres_dal.is_admin(user_id):
-        raise HTTPException(
-            status_code=403, detail="Only admins can perform this action"
-        )
+class ZoneGrantInput(BaseModel):
+    subject_type: Literal["user", "department"]
+    subject_id: str
+    permission: Literal["read", "edit", "manage"] = "read"
+    expires_at: str | None = None
+
+
+class ZoneAccessUpdate(BaseModel):
+    grants: list[ZoneGrantInput] = []
+    # Legacy shape from the first access release. These become read grants.
+    user_ids: list[str] = []
+    dept_ids: list[str] = []
+
+
+def _without_admin_details(row: dict) -> dict:
+    """A zone as a non-admin sees it.
+
+    Grant subjects include account names and emails. Those are directory data
+    for an administrator managing access, not something every viewer of the
+    zone needs, so the whole grant block is omitted outside the settings API.
+    """
+    access = current_access()
+    if access is not None and access.is_admin:
+        return row
+    presented = dict(row)
+    presented.pop("access", None)
+    return presented
 
 
 @router.get("/zones", response_model=ZoneListResponse)
-def list_zones(uid: str = Query(..., description="Requesting user id")) -> dict:
-    """Return every zone to the requesting user."""
-    rows = dal.list_zones()
+def list_zones() -> dict:
+    """Return the zones the authenticated caller may access."""
+    rows = [_without_admin_details(row) for row in dal.list_zones(current_zone_ids())]
     return {"data": rows, "count": len(rows)}
 
 
 @router.get("/zones/{zone_id}", response_model=ZoneResponse)
-def get_zone(
-    zone_id: str,
-    uid: str = Query(..., description="Requesting user id"),
-) -> dict:
+def get_zone(zone_id: str) -> dict:
     """Return one zone with its catalog data items."""
-    row = dal.get_zone_by_id(zone_id)
+    row = dal.get_zone_by_id(zone_id, current_zone_ids())
     if row is None:
         raise HTTPException(status_code=404, detail=f"Zone {zone_id!r} not found")
-    return {"data": row}
+    return {"data": _without_admin_details(row)}
 
 
 @router.post("/zones", status_code=201, response_model=ZoneResponse)
 def create_zone(body: ZoneCreate) -> dict:
     """Create a zone and attach catalog items.  Requires admin role."""
-    _require_admin(body.created_by)
+    require_admin()
     normalized_name = body.name.strip()
     if normalized_name == "":
         raise HTTPException(status_code=400, detail="Zone name is required")
@@ -84,6 +109,7 @@ def create_zone(body: ZoneCreate) -> dict:
 @router.patch("/zones/{zone_id}", response_model=ZoneResponse)
 def update_zone(zone_id: str, body: ZoneUpdate) -> dict:
     """Update zone fields and optionally replace catalog data items."""
+    require_zone_permission(zone_id, ZONE_PERMISSION_MANAGE)
     field_updates: dict[str, str | None] = {}
     provided_fields = body.model_fields_set
 
@@ -117,6 +143,7 @@ def update_zone(zone_id: str, body: ZoneUpdate) -> dict:
 @router.delete("/zones/{zone_id}", response_model=IdResponse)
 def delete_zone(zone_id: str) -> dict:
     """Delete one zone by id."""
+    require_admin()
     if not dal.delete_zone(zone_id):
         raise HTTPException(status_code=404, detail=f"Zone {zone_id!r} not found")
     return {"data": {"id": zone_id}}
@@ -126,7 +153,6 @@ def delete_zone(zone_id: str) -> dict:
 def set_zone_status(
     zone_id: str,
     body: ZoneStatusUpdate,
-    admin_uid: str = Query(..., description="Admin user id performing the request"),
 ) -> dict:
     """Enable or disable a zone.  Requires admin role.
 
@@ -134,8 +160,46 @@ def set_zone_status(
     (re-enabling reverses it), which immediately revokes the catalog access
     the zone granted without deleting it.
     """
-    _require_admin(admin_uid)
+    require_zone_permission(zone_id, ZONE_PERMISSION_MANAGE)
     row = dal.set_zone_enabled(zone_id, body.enabled)
     if row is None:
         raise HTTPException(status_code=404, detail=f"Zone {zone_id!r} not found")
     return {"data": row}
+
+
+@router.put("/zones/{zone_id}/access", response_model=ZoneResponse)
+def replace_zone_access(zone_id: str, body: ZoneAccessUpdate) -> dict:
+    """Replace the users and departments this zone is granted to.
+
+    Requires admin. A user sees the union of their direct zone grants and the
+    grants held by every department they belong to.
+    """
+    require_zone_permission(zone_id, ZONE_PERMISSION_MANAGE)
+    try:
+        access_dal.replace_zone_grants(
+            zone_id,
+            grants=[grant.model_dump() for grant in body.grants],
+            user_ids=list(
+                dict.fromkeys(item.strip() for item in body.user_ids if item.strip())
+            ),
+            dept_ids=list(
+                dict.fromkeys(item.strip() for item in body.dept_ids if item.strip())
+            ),
+            actor_user_id=(
+                current_access().user_id if current_access() is not None else None
+            ),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    row = dal.get_zone_by_id(zone_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Zone {zone_id!r} not found")
+    return {"data": row}
+
+
+@router.get("/zones/{zone_id}/grant-audit")
+def list_zone_grant_audit(zone_id: str) -> dict:
+    """Return recent grant changes; requires manage permission on the Zone."""
+    require_zone_permission(zone_id, ZONE_PERMISSION_MANAGE)
+    rows = access_dal.list_zone_grant_audit(zone_id)
+    return {"data": rows, "count": len(rows)}

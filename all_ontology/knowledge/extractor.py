@@ -98,11 +98,53 @@ class ExtractedFact(BaseModel):
     confidence: float = Field(default=0.7, ge=0.0, le=1.0)
 
 
+class ExtractedAction(BaseModel):
+    name: str = Field(description="行动名称，例如 提交采购申请、审批采购订单")
+    description: str = Field(default="", description="这个行动做什么，依据原文")
+    action_intent: str = Field(
+        default="execute",
+        description="add/modify/delete/execute 之一；无法判断时用 execute",
+    )
+    bound_concept: str | None = Field(
+        default=None, description="行动作用的概念名称；独立工具调用可为空"
+    )
+    parameters: list[dict] = Field(
+        default_factory=list, description="参数名、类型、说明等"
+    )
+    evidence_quote: str | None = None
+    confidence: float = Field(default=0.7, ge=0.0, le=1.0)
+
+
+class ExtractedRisk(BaseModel):
+    name: str = Field(description="风险名称，例如 越权审批风险")
+    description: str = Field(default="", description="风险是什么，依据原文")
+    severity: str = Field(default="medium", description="low/medium/high/critical 之一")
+    mitigation: str | None = Field(default=None, description="原文给出的缓解措施")
+    related_concept: str | None = Field(default=None, description="风险关联的概念名称")
+    evidence_quote: str | None = None
+    confidence: float = Field(default=0.7, ge=0.0, le=1.0)
+
+
+class ExtractedMetric(BaseModel):
+    name: str = Field(description="指标名称，例如 月采购额、审批通过率")
+    description: str = Field(default="", description="指标口径说明")
+    expression: str | None = Field(
+        default=None, description="原文给出的计算公式或 SQL 表达式；没有则为空"
+    )
+    unit: str | None = Field(default=None, description="单位，例如 元、百分比、天")
+    related_concept: str | None = Field(default=None, description="指标所属概念")
+    evidence_quote: str | None = None
+    confidence: float = Field(default=0.7, ge=0.0, le=1.0)
+
+
 class ExtractedChunk(BaseModel):
     summary: str = Field(default="", description="本片段的一句话摘要")
     concepts: list[ExtractedConcept] = Field(default_factory=list)
     relations: list[ExtractedRelation] = Field(default_factory=list)
     facts: list[ExtractedFact] = Field(default_factory=list)
+    actions: list[ExtractedAction] = Field(default_factory=list)
+    risks: list[ExtractedRisk] = Field(default_factory=list)
+    metrics: list[ExtractedMetric] = Field(default_factory=list)
 
 
 @dataclass
@@ -111,6 +153,9 @@ class NormalizedExtraction:
     concepts: list[dict[str, Any]] = field(default_factory=list)
     relations: list[dict[str, Any]] = field(default_factory=list)
     facts: list[dict[str, Any]] = field(default_factory=list)
+    actions: list[dict[str, Any]] = field(default_factory=list)
+    risks: list[dict[str, Any]] = field(default_factory=list)
+    metrics: list[dict[str, Any]] = field(default_factory=list)
 
 
 SYSTEM_PROMPT = """\
@@ -120,12 +165,15 @@ SYSTEM_PROMPT = """\
 1. concepts：业务对象、事件、流程、规则、指标、角色等概念。合并同义叫法，名称使用原文用词。
 2. relations：概念之间有明确文字依据的有向关系。source/target 必须是 concepts 中的 name。
 3. facts：原文明确陈述的事实。每条 fact 必须附 evidence_quote，且 evidence_quote 必须是原文中连续出现的一段文字。
+4. actions：原文描述的可执行操作，写明作用对象（bound_concept）和参数；没有明确操作时返回空数组。
+5. risks：原文描述的风险、控制点或失败后果，尽量给出 severity 与 mitigation。
+6. metrics：原文定义的业务指标，写清名称、口径、单位与公式；公式可以是自然语言或 SQL。
 
 要求：
 - 不要输出 Markdown，不要解释过程。
 - 不要编造概念、关系或值。片段没有的内容就不要抽取。
-- 一个片段最多 12 个概念、10 条关系、15 条事实。
-- 描述和事实使用中文；专有名词保留原文。
+- 一个片段最多 12 个概念、10 条关系、15 条事实、8 个行动、8 个风险、8 个指标。
+- 描述和事实使用原文语言；专有名词保留原文。
 - 如果片段只是目录、页眉页脚、无意义编号，返回空数组。
 """
 
@@ -151,6 +199,11 @@ def relation_key(source_key: str, target_key: str, name: str) -> str:
     if ascii_name:
         return f"r_{ascii_name[:48]}_{digest}"[:96]
     return f"r_{digest}"
+
+
+def definition_key(value: str, *, prefix: str) -> str:
+    """A stable BKN-compatible id for a user-named definition."""
+    return _slug(value, prefix=prefix)
 
 
 def _norm(value: str) -> str:
@@ -218,10 +271,11 @@ def merge_chunks(
         if key in aliases:
             return aliases[key]
         base = concept_key(name)
-        used = {item["key"] for item in concepts.values()}
         final_key = base
         suffix = 2
-        while final_key in used:
+        # ``concepts`` is keyed by the final key, so membership is O(1). Rebuilding
+        # a set of every key here made this loop O(C²) across a large document.
+        while final_key in concepts:
             final_key = f"{base}_{suffix}"
             suffix += 1
         record = {
@@ -322,6 +376,129 @@ def merge_chunks(
             if evidence:
                 record["evidence"].append(evidence)
 
+    actions: dict[str, dict[str, Any]] = {}
+    for chunk, result in results:
+        for action in result.actions:
+            name = " ".join(action.name.split()).strip()
+            if not name:
+                continue
+            key = _slug(name, prefix="a")
+            bound_key = (
+                aliases.get(_norm(action.bound_concept))
+                if action.bound_concept
+                else None
+            )
+            record = actions.setdefault(
+                key,
+                {
+                    "key": key,
+                    "name": name,
+                    "description": action.description.strip(),
+                    "action_intent": action.action_intent
+                    if action.action_intent in {"add", "modify", "delete", "execute"}
+                    else "execute",
+                    "bound_key": bound_key,
+                    "parameters": [
+                        item for item in action.parameters if isinstance(item, dict)
+                    ][:20],
+                    "confidence": _clamp(action.confidence),
+                    "evidence": [],
+                },
+            )
+            record["confidence"] = max(
+                float(record["confidence"]), _clamp(action.confidence)
+            )
+            if len(action.description.strip()) > len(record["description"]):
+                record["description"] = action.description.strip()
+            if record.get("bound_key") is None and bound_key:
+                record["bound_key"] = bound_key
+            quote = action.evidence_quote or _quote_around(chunk.text, name)
+            evidence = _evidence(chunk, quote)
+            if evidence:
+                record["evidence"].append(evidence)
+
+    risks: dict[str, dict[str, Any]] = {}
+    for chunk, result in results:
+        for risk in result.risks:
+            name = " ".join(risk.name.split()).strip()
+            if not name:
+                continue
+            key = _slug(name, prefix="k")
+            related_key = (
+                aliases.get(_norm(risk.related_concept))
+                if risk.related_concept
+                else None
+            )
+            record = risks.setdefault(
+                key,
+                {
+                    "key": key,
+                    "name": name,
+                    "description": risk.description.strip(),
+                    "severity": risk.severity
+                    if risk.severity in {"low", "medium", "high", "critical"}
+                    else "medium",
+                    "mitigation": (risk.mitigation or "").strip() or None,
+                    "related_key": related_key,
+                    "confidence": _clamp(risk.confidence),
+                    "evidence": [],
+                },
+            )
+            record["confidence"] = max(
+                float(record["confidence"]), _clamp(risk.confidence)
+            )
+            if len(risk.description.strip()) > len(record["description"]):
+                record["description"] = risk.description.strip()
+            if not record.get("mitigation") and risk.mitigation:
+                record["mitigation"] = risk.mitigation.strip()
+            if record.get("related_key") is None and related_key:
+                record["related_key"] = related_key
+            quote = risk.evidence_quote or _quote_around(chunk.text, name)
+            evidence = _evidence(chunk, quote)
+            if evidence:
+                record["evidence"].append(evidence)
+
+    metrics: dict[str, dict[str, Any]] = {}
+    for chunk, result in results:
+        for metric in result.metrics:
+            name = " ".join(metric.name.split()).strip()
+            if not name:
+                continue
+            key = _slug(name, prefix="m")
+            owner_key = (
+                aliases.get(_norm(metric.related_concept))
+                if metric.related_concept
+                else None
+            )
+            record = metrics.setdefault(
+                key,
+                {
+                    "key": key,
+                    "name": name,
+                    "description": metric.description.strip(),
+                    "expression": (metric.expression or "").strip() or None,
+                    "unit": (metric.unit or "").strip() or None,
+                    "concept_key": owner_key,
+                    "confidence": _clamp(metric.confidence),
+                    "evidence": [],
+                },
+            )
+            record["confidence"] = max(
+                float(record["confidence"]), _clamp(metric.confidence)
+            )
+            if len(metric.description.strip()) > len(record["description"]):
+                record["description"] = metric.description.strip()
+            if not record.get("expression") and metric.expression:
+                record["expression"] = metric.expression.strip()
+            if not record.get("unit") and metric.unit:
+                record["unit"] = metric.unit.strip()
+            if record.get("concept_key") is None and owner_key:
+                record["concept_key"] = owner_key
+            quote = metric.evidence_quote or _quote_around(chunk.text, name)
+            evidence = _evidence(chunk, quote)
+            if evidence:
+                record["evidence"].append(evidence)
+
     facts: dict[str, dict[str, Any]] = {}
     for chunk, result in results:
         for fact in result.facts:
@@ -339,7 +516,7 @@ def merge_chunks(
                     "subject_key": subject_key,
                     "object_key": object_key,
                     "object_text": None if object_key else fact.object.strip() or None,
-                    "predicate": fact.predicate.strip() or "相关于",
+                    "predicate": fact.predicate.strip() or "related_to",
                     "statement": statement,
                     "confidence": _clamp(fact.confidence),
                     "evidence": [],
@@ -353,12 +530,18 @@ def merge_chunks(
                 record["evidence"].append(evidence)
     # A fact with no quotable support is a guess, not knowledge.
     facts = {key: value for key, value in facts.items() if value["evidence"]}
+    actions = {key: value for key, value in actions.items() if value["evidence"]}
+    risks = {key: value for key, value in risks.items() if value["evidence"]}
+    metrics = {key: value for key, value in metrics.items() if value["evidence"]}
 
     return NormalizedExtraction(
-        summary="；".join(dict.fromkeys(summaries))[:1200],
+        summary="; ".join(dict.fromkeys(summaries))[:1200],
         concepts=sorted(concepts.values(), key=lambda item: item["name"]),
         relations=sorted(relations.values(), key=lambda item: item["name"]),
         facts=sorted(facts.values(), key=lambda item: item["statement"]),
+        actions=sorted(actions.values(), key=lambda item: item["name"]),
+        risks=sorted(risks.values(), key=lambda item: item["name"]),
+        metrics=sorted(metrics.values(), key=lambda item: item["name"]),
     )
 
 
@@ -376,18 +559,18 @@ def _extract_chunk(
         SystemMessage(content=SYSTEM_PROMPT),
         HumanMessage(
             content=(
-                f"文档标题：{title}\n"
-                f"片段 {index}/{total}，页码范围：{chunk.page_start}-{chunk.page_end}\n\n"
-                "----- 文档片段开始 -----\n"
+                f"Document title: {title}\n"
+                f"Chunk {index}/{total}, pages {chunk.page_start}-{chunk.page_end}\n\n"
+                "----- document chunk start -----\n"
                 f"{chunk.text}\n"
-                "----- 文档片段结束 -----"
+                "----- document chunk end -----"
             )
         ),
     ]
     result = safe_invoke_structured_nr(messages, ExtractedChunk)
     if result is None:
         raise RuntimeError(
-            "知识抽取模型没有返回有效结果。请到“设置 → 模型设置”检查对话模型是否可用。"
+            "The extraction model returned no usable result. Check that the chat model is configured under Settings > Model settings."
         )
     return result
 
@@ -401,9 +584,11 @@ def extract_document(
     """Extract one knowledge document synchronously and persist its graph."""
     document = knowledge_dal.get_document(document_id)
     if document is None:
-        raise ValueError("知识文档不存在。")
+        raise ValueError("Knowledge document not found.")
     if not document.get("run_id"):
-        raise ValueError("这个知识文档没有绑定解析结果，无法抽取。")
+        raise ValueError(
+            "This knowledge document is not linked to a parsing result, so it cannot be extracted."
+        )
 
     knowledge_dal.update_document(document_id, status="extracting", error_message="")
     try:
@@ -413,7 +598,9 @@ def extract_document(
             max_chars=max(1200, chunk_chars),
             max_chunks=max(1, max_chunks),
         )
-        title = str(document.get("title") or metadata.get("file_name") or "文档")
+        title = str(
+            document.get("title") or metadata.get("file_name") or "Untitled document"
+        )
         results: list[tuple[SourceChunk, ExtractedChunk]] = []
         for index, chunk in enumerate(chunks, start=1):
             results.append((chunk, _extract_chunk(title, chunk, index, len(chunks))))
@@ -424,6 +611,9 @@ def extract_document(
             concepts=normalized.concepts,
             relations=normalized.relations,
             facts=normalized.facts,
+            actions=normalized.actions,
+            risks=normalized.risks,
+            metrics=normalized.metrics,
             chunk_count=len(chunks),
         )
     except Exception as exc:
@@ -441,4 +631,7 @@ def extract_document(
         "concepts": len(normalized.concepts),
         "relations": len(normalized.relations),
         "facts": len(normalized.facts),
+        "actions": len(normalized.actions),
+        "risks": len(normalized.risks),
+        "metrics": len(normalized.metrics),
     }

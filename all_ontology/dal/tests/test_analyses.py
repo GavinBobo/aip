@@ -344,6 +344,7 @@ def test_pql_upsert_is_by_id_and_overwrites(pql) -> None:
             "name": f"{pql.prefix}-churn",
             "description": "revised",
             "pql": "PREDICT y",
+            "zone_id": None,
         }
     ]
 
@@ -360,6 +361,34 @@ def test_pql_fetch_by_ids_strips_and_defaults(pql) -> None:
     row = pa.fetch_pql_analyses_by_ids([pql.pql_id])[pql.pql_id]
     assert row["description"] == ""
     assert row["pql"] == "PREDICT x"
+
+
+def test_pql_zone_scope_is_default_deny_for_scoped_callers(pql) -> None:
+    own_zone = _add(s.zone, name=f"{pql.prefix}-pql-zone")
+    other_zone = _add(s.zone, name=f"{pql.prefix}-other-pql-zone")
+    analysis_id = str(uuid.uuid4())
+    try:
+        pa.upsert_pql_analysis_node(
+            analysis_id,
+            f"{pql.prefix}-zoned-pql",
+            "zoned",
+            "PREDICT zone",
+            zone_id=own_zone,
+        )
+        assert analysis_id in {
+            row["id"] for row in pa.list_pql_analyses(zone_ids=[own_zone])
+        }
+        assert analysis_id not in {
+            row["id"] for row in pa.list_pql_analyses(zone_ids=[other_zone])
+        }
+        assert analysis_id not in {
+            row["id"] for row in pa.list_pql_analyses(zone_ids=[])
+        }
+    finally:
+        pa.delete_pql_analysis_node(analysis_id)
+        store().query_write(
+            s.zone.delete().where(s.zone.c.id.in_([own_zone, other_zone]))
+        )
 
 
 def test_pql_delete(pql) -> None:

@@ -11,6 +11,8 @@ from pydantic import BaseModel, Field
 
 from all_ontology.retrieval.entity_coverage.state import DEFAULT_MAX_DISTANCE
 from all_ontology.server.metadata import service as dal
+from all_ontology.server.access import current_zone_ids
+from all_ontology.dal.users import resolve_accessible_catalog_ids
 from all_ontology.server.responses import EntityCoverageResponse
 
 router = APIRouter()
@@ -41,9 +43,15 @@ def entity_coverage(body: EntityCoverageRequest) -> dict:
     Returns 422 when the flow cannot produce a result for the question.
     """
     try:
+        zone_ids = current_zone_ids()
         result = dal.entity_coverage(
             body.question,
             max_distance=body.max_distance,
+            allowed_table_ids=(
+                None
+                if zone_ids is None
+                else sorted(resolve_accessible_catalog_ids(zone_ids)["table_ids"])
+            ),
         )
     except dal.PredictionFlowError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

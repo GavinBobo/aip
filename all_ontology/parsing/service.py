@@ -32,7 +32,8 @@ from typing import Any
 from fastapi import HTTPException
 
 from all_ontology.parsing import settings as parsing_settings
-from all_ontology.parsing.config.settings import settings
+from all_ontology.parsing.config.settings import DEFAULT_IMAGE_VLM_PROMPT, settings
+from all_ontology.parsing.image_understanding import understand_result_images
 from all_ontology.parsing.model.backend import model_backend
 from all_ontology.parsing.pipeline.errors import (
     ParsingCancelledError,
@@ -99,7 +100,13 @@ FUNCTIONAL_ELEMENT_FORMATS = {
     "table": {"html", "markdown"},
     "cs": {"smiles", "image"},
 }
-FEATURE_CONFIG_SUPPORTED_KEYS = {"keep_header_footer"}
+FEATURE_CONFIG_SUPPORTED_KEYS = {
+    "keep_header_footer",
+    "image_understanding",
+    "image_min_area_px",
+    "image_prompt",
+    "image_max_tokens",
+}
 MODEL_OPTION_RANGES = {
     "temperature": (0.0, 2.0, True),
     "top_p": (0.0, 1.0, True),
@@ -117,6 +124,10 @@ class ParseOptions:
     element_formats: dict[str, str] = field(
         default_factory=lambda: DEFAULT_ELEMENT_FORMATS.copy()
     )
+    image_vlm_enabled: bool = True
+    image_vlm_min_area_px: int = 200_000
+    image_vlm_prompt: str = DEFAULT_IMAGE_VLM_PROMPT
+    image_vlm_max_tokens: int = 1024
     warnings: list[str] = field(default_factory=list)
 
 
@@ -175,25 +186,55 @@ def _parse_model_option(config: dict[str, Any], key: str) -> float | None:
 
 def _parse_feature_config(
     feature_config: str | None,
-) -> tuple[bool, list[str], list[str]]:
+) -> tuple[bool, dict[str, Any], list[str], list[str]]:
     warnings: list[str] = []
     errors: list[str] = []
     if not feature_config:
-        return False, warnings, errors
+        return False, {}, warnings, errors
     try:
         config = json.loads(feature_config)
     except json.JSONDecodeError:
         errors.append("feature_config must be a JSON object.")
-        return False, warnings, errors
+        return False, {}, warnings, errors
 
     if not isinstance(config, dict):
         errors.append("feature_config must be a JSON object.")
-        return False, warnings, errors
+        return False, {}, warnings, errors
 
     keep_header_footer = config.get("keep_header_footer", False)
     if not isinstance(keep_header_footer, bool):
         errors.append("feature_config.keep_header_footer must be a boolean.")
         keep_header_footer = False
+
+    image: dict[str, Any] = {}
+    if "image_understanding" in config:
+        value = config["image_understanding"]
+        if not isinstance(value, bool):
+            errors.append("feature_config.image_understanding must be a boolean.")
+        else:
+            image["enabled"] = value
+    if "image_min_area_px" in config:
+        value = config["image_min_area_px"]
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            errors.append(
+                "feature_config.image_min_area_px must be a non-negative integer."
+            )
+        else:
+            image["min_area_px"] = value
+    if "image_prompt" in config:
+        value = config["image_prompt"]
+        if not isinstance(value, str) or not value.strip():
+            errors.append("feature_config.image_prompt must be a non-empty string.")
+        else:
+            image["prompt"] = value.strip()
+    if "image_max_tokens" in config:
+        value = config["image_max_tokens"]
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            errors.append(
+                "feature_config.image_max_tokens must be a positive integer."
+            )
+        else:
+            image["max_tokens"] = value
 
     for key, value in sorted(config.items()):
         if key in FEATURE_CONFIG_SUPPORTED_KEYS:
@@ -205,7 +246,7 @@ def _parse_feature_config(
                 f"feature_config.{key}=true is accepted but ignored; open-source OXR "
                 "only implements feature_config.keep_header_footer."
             )
-    return keep_header_footer, warnings, errors
+    return keep_header_footer, image, warnings, errors
 
 
 def _parse_extra(extra: str | None) -> tuple[dict[str, float], list[str]]:
@@ -313,8 +354,8 @@ def build_options(
     errors: list[str] = []
     parsed_output_formats, output_errors = _parse_output_formats(output_formats)
     element_format_options, element_errors = _parse_element_formats(element_formats)
-    keep_header_footer, feature_warnings, feature_errors = _parse_feature_config(
-        feature_config
+    keep_header_footer, image_config, feature_warnings, feature_errors = (
+        _parse_feature_config(feature_config)
     )
     model_options, extra_errors = _parse_extra(extra)
     errors.extend(output_errors)
@@ -329,6 +370,22 @@ def build_options(
             keep_header_footer=keep_header_footer,
             model_options=model_options,
             element_formats=element_format_options,
+            image_vlm_enabled=bool(
+                image_config.get("enabled", settings.pipeline.image_vlm_enabled)
+            ),
+            image_vlm_min_area_px=int(
+                image_config.get(
+                    "min_area_px", settings.pipeline.image_vlm_min_area_px
+                )
+            ),
+            image_vlm_prompt=str(
+                image_config.get("prompt", settings.pipeline.image_vlm_prompt)
+            ),
+            image_vlm_max_tokens=int(
+                image_config.get(
+                    "max_tokens", settings.pipeline.image_vlm_max_tokens
+                )
+            ),
             warnings=feature_warnings,
         ),
         errors,
@@ -368,7 +425,7 @@ def create_instance(file_bytes: bytes, file_name: str) -> Instance | None:
         return None
 
 
-def write_result(instance: Instance, result: dict[str, Any]) -> None:
+def write_result(instance: Instance, result: dict[str, Any]) -> Path | None:
     """Persist one run's answer beside its source, for the instances list.
 
     Best effort: the directory was writable moments ago, and the caller is
@@ -383,7 +440,20 @@ def write_result(instance: Instance, result: dict[str, Any]) -> None:
         "created": datetime.now().astimezone().isoformat(timespec="seconds"),
         "outputs": result.get("outputs", {}),
         "metadata": result.get("metadata", {}),
+        "images": result.get("images") or [],
     }
+    markdown = str((result.get("outputs") or {}).get("markdown") or "")
+    markdown_path = instance.directory / "result.md"
+    if markdown:
+        try:
+            markdown_path.write_text(markdown, encoding="utf-8")
+        except OSError:
+            logger.warning(
+                "Could not write Markdown for %s", instance.id, exc_info=True
+            )
+            markdown_path = None
+    else:
+        markdown_path = None
     try:
         instance.result_path.write_text(
             json.dumps(record, ensure_ascii=False), encoding="utf-8"
@@ -392,6 +462,7 @@ def write_result(instance: Instance, result: dict[str, Any]) -> None:
         logger.warning(
             "Could not write the parse result for %s", instance.id, exc_info=True
         )
+    return markdown_path
 
 
 def list_instances(limit: int = 50) -> list[dict[str, Any]]:
@@ -569,21 +640,39 @@ async def parse_now(
     metadata = result["metadata"]
     if extra_metadata:
         metadata.update(extra_metadata)
+    images: list[dict[str, Any]] = []
+    if instance is not None:
+        images = await understand_result_images(
+            result,
+            prompt=options.image_vlm_prompt,
+            min_area_px=options.image_vlm_min_area_px,
+            enabled=options.image_vlm_enabled,
+            max_tokens=options.image_vlm_max_tokens,
+            model_options=options.model_options,
+        )
+        metadata["image_count"] = len(images)
+        metadata["images_interpreted"] = sum(
+            1 for image in images if image.get("vlm_status") == "succeeded"
+        )
     if instance is not None:
         metadata["instance_id"] = instance.id
         metadata["stored_path"] = str(instance.source)
-        write_result(
+        markdown_path = write_result(
             instance,
             {
                 "file_name": result["file_name"],
                 "outputs": result["outputs"],
                 "metadata": metadata,
+                "images": images,
             },
         )
+        if markdown_path is not None:
+            metadata["parsed_md_path"] = str(markdown_path)
     return {
         "file_name": result["file_name"],
         "outputs": result["outputs"],
         "metadata": metadata,
+        "images": images,
     }
 
 
@@ -669,6 +758,14 @@ async def capabilities() -> dict[str, Any]:
         },
         "element_format_defaults": DEFAULT_ELEMENT_FORMATS,
         "model_options": sorted(MODEL_OPTION_RANGES),
+        "image_understanding": described.get("image_understanding")
+        or {
+            "enabled": settings.pipeline.image_vlm_enabled,
+            "min_area_px": settings.pipeline.image_vlm_min_area_px,
+            "prompt": settings.pipeline.image_vlm_prompt,
+            "max_tokens": settings.pipeline.image_vlm_max_tokens,
+            "concurrency": settings.pipeline.image_vlm_concurrency,
+        },
     }
 
 

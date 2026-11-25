@@ -19,10 +19,9 @@ from decimal import Decimal
 from itertools import combinations
 from typing import Any
 
-import pandas as pd
-
 from all_ontology.connectors.registry import get_connectors
 from all_ontology.dal.datasources import fetch_table_location
+from all_ontology.dal.users import resolve_accessible_catalog_ids
 from all_ontology.dal.zones import get_zone_by_id
 from all_ontology.retrieval.text_to_sql.chat_sql import execute_chat_sql
 from all_ontology.utils.sql_limits import with_row_limit
@@ -216,6 +215,8 @@ def _candidate_suggestions(
 
 def _preview_value(value: Any) -> Any:
     """JSON-safe rendering of one cell."""
+    import pandas as pd
+
     if value is None:
         return None
     if pd.api.types.is_scalar(value):
@@ -245,12 +246,21 @@ def _preview_value(value: Any) -> Any:
     return str(value)
 
 
-def fetch_table_preview(table_id: str, *, limit: int = 20) -> dict[str, Any]:
+def fetch_table_preview(
+    table_id: str,
+    *,
+    limit: int = 20,
+    zone_ids: list[str] | None = None,
+) -> dict[str, Any]:
     """Run a bounded ``SELECT *`` against the table's live source.
 
     Raises ``LookupError`` when the table is unknown or its database has no
     live connector, and ``StatementTimeout`` when the source is too slow.
     """
+    scoped = resolve_accessible_catalog_ids(zone_ids)
+    if scoped is not None and table_id not in scoped["table_ids"]:
+        raise LookupError(f"No table found for id {table_id!r}")
+
     location = fetch_table_location(table_id)
     if location is None:
         raise LookupError(f"No table found for id {table_id!r}")

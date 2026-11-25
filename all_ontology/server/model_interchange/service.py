@@ -24,11 +24,11 @@ from ossie_nvidia_auto_ontology import (
 from all_ontology.connectors import get_connectors
 from all_ontology.dal import model_interchange as dal
 from all_ontology.dal.connections import list_connections
-from all_ontology.server.model_interchange.embed import (
+from all_ontology.model_interchange.embed import (
     ImportEmbedBuffer,
     flush_import_embeddings,
 )
-from all_ontology.server.model_interchange.schemas import (
+from all_ontology.model_interchange.schemas import (
     ExportRequest,
     AllOntologyModelDocument,
     ModelFormat,

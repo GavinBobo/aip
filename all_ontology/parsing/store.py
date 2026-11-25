@@ -20,8 +20,9 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
 
-from sqlalchemy import text
+from sqlalchemy import delete, select, text, update
 
+from all_ontology.dal import schema as s
 from all_ontology.dal.session import store, write_transaction
 
 TERMINAL_DOCUMENT_STATUSES = {"succeeded", "failed", "cancelled"}
@@ -181,10 +182,12 @@ def create_task(
                     """
                     INSERT INTO parsing_document
                         (id, task_id, file_name, source_name, source_path,
-                         instance_id, sha256, size_bytes, page_start, page_end)
+                         instance_id, sha256, source_md5, size_bytes,
+                         page_start, page_end)
                     VALUES
                         (:id, :task_id, :file_name, :source_name, :source_path,
-                         :instance_id, :sha256, :size_bytes, :page_start, :page_end)
+                         :instance_id, :sha256, :source_md5, :size_bytes,
+                         :page_start, :page_end)
                     """
                 ),
                 {
@@ -195,6 +198,7 @@ def create_task(
                     "source_path": document.get("source_path"),
                     "instance_id": document.get("instance_id"),
                     "sha256": document.get("sha256"),
+                    "source_md5": document.get("source_md5"),
                     "size_bytes": document.get("size_bytes"),
                     "page_start": document.get("page_start"),
                     "page_end": document.get("page_end"),
@@ -492,6 +496,7 @@ def finish_run_success(
     page_count: int,
     quality: dict[str, Any],
     processing_time_ms: int | None = None,
+    parsed_md_path: str | None = None,
 ) -> None:
     with write_transaction():
         store().query_write(
@@ -513,6 +518,7 @@ def finish_run_success(
             text(
                 "UPDATE parsing_document SET status = 'succeeded', "
                 "page_count = :pages, processing_time_ms = :elapsed, "
+                "parsed_md_path = COALESCE(:parsed_md_path, parsed_md_path), "
                 "progress_done = :pages, progress_total = :pages, "
                 "progress_percent = 100, stage = 'done', "
                 "finished = :now, error_code = NULL, error_message = NULL "
@@ -521,11 +527,92 @@ def finish_run_success(
             {
                 "pages": page_count,
                 "elapsed": processing_time_ms,
+                "parsed_md_path": parsed_md_path,
                 "now": _now(),
                 "document_id": document_id,
             },
         )
         _refresh_task(task_id)
+
+
+def replace_images(
+    run_id: str,
+    document_id: str,
+    images: list[dict[str, Any]],
+) -> int:
+    """Replace one run's picture records with the freshly interpreted set."""
+    with write_transaction():
+        store().query_write(
+            delete(s.parsing_image).where(s.parsing_image.c.run_id == run_id)
+        )
+        for image in images:
+            store().query_write(
+                s.parsing_image.insert().values(
+                    id=str(uuid.uuid4()),
+                    run_id=run_id,
+                    document_id=document_id,
+                    page=int(image.get("page") or 0),
+                    block_index=int(image.get("block_index") or 0),
+                    image_md5=str(image.get("image_md5") or ""),
+                    image_path=str(image.get("image_path") or ""),
+                    image_file_path=image.get("image_file_path"),
+                    width=image.get("width"),
+                    height=image.get("height"),
+                    area_px=image.get("area_px"),
+                    vlm_prompt=image.get("vlm_prompt"),
+                    vlm_content=image.get("vlm_content"),
+                    vlm_status=str(image.get("vlm_status") or "pending"),
+                    vlm_error=image.get("vlm_error"),
+                )
+            )
+    return len(images)
+
+
+def list_images(
+    *,
+    run_id: str | None = None,
+    document_id: str | None = None,
+) -> list[dict[str, Any]]:
+    statement = select(s.parsing_image)
+    if run_id is not None:
+        statement = statement.where(s.parsing_image.c.run_id == run_id)
+    if document_id is not None:
+        statement = statement.where(s.parsing_image.c.document_id == document_id)
+    statement = statement.order_by(
+        s.parsing_image.c.page, s.parsing_image.c.block_index
+    )
+    return [dict(row) for row in store().query_read(statement)]
+
+
+def mark_learned(
+    *,
+    document_id: str,
+    knowledge_document_id: str,
+    image_ids: Iterable[str],
+) -> None:
+    """Mark a source document and the cited pictures as learned."""
+    ids = list(dict.fromkeys(str(item) for item in image_ids if item))
+    now = _now()
+    with write_transaction():
+        store().query_write(
+            update(s.parsing_document)
+            .where(s.parsing_document.c.id == document_id)
+            .values(
+                learned_to_knowledge=True,
+                learned_at=now,
+                knowledge_document_id=knowledge_document_id,
+            )
+        )
+        if ids:
+            store().query_write(
+                update(s.parsing_image)
+                .where(s.parsing_image.c.id.in_(ids))
+                .values(
+                    learned_to_knowledge=True,
+                    learned_at=now,
+                    knowledge_document_id=knowledge_document_id,
+                )
+            )
 
 
 def finish_run_failure(

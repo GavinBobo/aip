@@ -100,6 +100,89 @@ There is no way to configure a token for the server itself. One would make every
 caller act as its owner — their permissions, their conversation history — and
 nothing in the protocol would reveal it.
 
+## Per-user identity for embedded deployments
+
+Two additional modes exist for hosts that already know who the caller is and
+cannot run the browser sign-in flow. Both keep the same rule: **the MCP server
+does not decide permissions**. It relays an identity, and All Ontology resolves
+that person to their departments, zones, and knowledge-network grants on every
+request, so two callers of the same MCP server see different data.
+
+### Forward the caller's credential (recommended)
+
+```sh
+ALL_ONTOLOGY_MCP_PASSTHROUGH_AUTH=true
+```
+
+The host sends the user's own credential on every MCP HTTP request — either an
+SSO ID token (`Authorization: Bearer <jwt>` from the same IdP All Ontology
+trusts) or an All Ontology API token (`x-api-key: all_ontology_…`). The server
+forwards exactly one of them; All Ontology verifies it and maps it to the user,
+their departments, and their effective zones.
+
+```json
+{
+  "mcpServers": {
+    "all-ontology": {
+      "url": "https://all-ontology-mcp.example/mcp",
+      "headers": { "x-api-key": "all_ontology_..." }
+    }
+  }
+}
+```
+
+- Requires HTTP transport, because stdio has no request headers.
+- The MCP server is a relay, not the verifier. Keep it on a network only the
+  host can reach; a caller without a valid credential is rejected upstream.
+- Revocation, role changes, department moves, and grant expiry take effect on
+  the next call, because nothing is cached.
+
+### Delegated subject (a bare user id)
+
+When the host cannot forward a credential but can name the person, both sides
+share one delegation key:
+
+```sh
+# All Ontology (frontend)
+ALL_ONTOLOGY_DELEGATION_KEY=<at least 32 random characters>
+
+# MCP server
+ALL_ONTOLOGY_MCP_DELEGATION_KEY=<the same value>
+ALL_ONTOLOGY_MCP_SUBJECT_HEADER=x-all-ontology-subject   # default
+```
+
+Each MCP request then carries:
+
+```text
+x-all-ontology-delegation-key: <the shared key>
+x-all-ontology-subject: alice@example.com        # or sso:<sub> / id:<user id>
+```
+
+```json
+{
+  "mcpServers": {
+    "all-ontology": {
+      "url": "https://all-ontology-mcp.example/mcp",
+      "headers": {
+        "x-all-ontology-delegation-key": "<shared key>",
+        "x-all-ontology-subject": "alice@example.com"
+      }
+    }
+  }
+}
+```
+
+All Ontology checks the key, resolves the subject to a non-banned user (email,
+then SSO subject, then user id), and derives departments and zones from the
+authoritative store. A subject supplied in tool arguments or by the model is
+never used: identity comes from the transport only.
+
+> [!WARNING]
+> The delegation key can act as any user in the deployment. Store it in a
+> secret manager, never ship it to a browser or model, and rotate it by
+> changing both sides together. Prefer credential passthrough whenever the
+> host can send the user's own token.
+
 ## Pointing at an All-Ontology on your own machine
 
 Only `ALL_ONTOLOGY_API_URL` changes. For the Docker stack the web app is on `:3010`:
@@ -135,12 +218,21 @@ underlying databases.
 | `get_term_sql_attributes` | The SQL attributes defined under a term. |
 | `get_sql_attribute` | One SQL attribute: its expression and purpose. |
 | `describe_table` | A table's columns, related terms, and SQL attributes together. |
+| `search_knowledge_networks` | List knowledge networks extracted from parsed documents. |
+| `get_knowledge_graph` | Concepts, relations and data-ontology mappings in one knowledge network. |
+| `list_knowledge_facts` | Grounded statements with page numbers and quoted evidence. |
 
 There is deliberately no tool for browsing databases, schemas, or raw columns.
 Consumers are meant to reach the data through the semantic layer, and a catalog
 browser invites an agent to reason about raw tables instead. `describe_table`
 covers the legitimate case, since what it returns is the terms and SQL attributes
 a table participates in.
+
+The three knowledge tools read the knowledge ontology: document-defined
+concepts, relations and facts. Use them when a question depends on a policy,
+procedure or role that is written in a PDF rather than stored in a warehouse
+column. `list_knowledge_facts` returns the citation for each statement, so an
+answer can point at the page it came from.
 
 The server also advertises **instructions** at handshake describing how the tools
 sequence, which spares the model from inferring it — left to itself it tends to
@@ -178,6 +270,9 @@ under `unverified` and the verdict stands on what could be checked.
 | --- | --- | --- |
 | `ALL_ONTOLOGY_API_URL` | `http://localhost:3010` | Base URL of the All Ontology web app. |
 | `ALL_ONTOLOGY_MCP_PUBLIC_URL` | `http://localhost:3003` | Public MCP origin, without `/mcp`. The frontend must receive the same value so issued tokens have the resource URL clients use. |
+| `ALL_ONTOLOGY_MCP_PASSTHROUGH_AUTH` | unset | Forward the caller's `Authorization` / `x-api-key` instead of requiring OAuth sign-in. |
+| `ALL_ONTOLOGY_MCP_DELEGATION_KEY` | unset | Shared key for the delegated-subject mode; must equal All Ontology's `ALL_ONTOLOGY_DELEGATION_KEY`. |
+| `ALL_ONTOLOGY_MCP_SUBJECT_HEADER` | `x-all-ontology-subject` | Incoming header naming the delegated user. |
 
 Rarely needed: `ALL_ONTOLOGY_MCP_HOST` and `ALL_ONTOLOGY_MCP_PORT` (bind address and port, default
 `0.0.0.0:3003`), `ALL_ONTOLOGY_MCP_TIMEOUT_S` and `ALL_ONTOLOGY_MCP_CHAT_TIMEOUT_S` (request
@@ -187,7 +282,7 @@ generated from).
 ## Extending the tool surface
 
 The tool set is an explicit allow-list in
-[`mcp/all_ontology_mcp/tools.py`](../mcp/all_ontology_mcp/tools.py). The spec publishes 87
+[`mcp/all_ontology_mcp/tools.py`](../mcp/all_ontology_mcp/tools.py). The spec publishes the full
 operations, and exposing all of them would degrade tool selection badly. To
 publish another, add a `ToolSpec` naming its method, path, an agent-facing name,
 and a description that says *when to reach for it*. Startup fails loudly if a

@@ -34,8 +34,8 @@ const byName = (left: TagChip, right: TagChip): number =>
  * Throws where `tagsApi` reports — the cache needs a rejection to record a
  * failed read, and it is what puts a picker into its error state.
  */
-const readVocabulary = async (): Promise<TagChip[]> => {
-	const res = await tagsApi.getAll();
+const readVocabulary = async (serverUserId?: string): Promise<TagChip[]> => {
+	const res = await tagsApi.getAll(undefined, serverUserId);
 	if (res.error) throw new Error(res.message ?? 'Failed to load tags.');
 	return (res.data ?? []).map((tag) => ({ id: tag.id, name: tag.name })).sort(byName);
 };
@@ -48,10 +48,10 @@ export const tagQueries = {
 	 * route in the browser, and that route is a plain proxy for a read that
 	 * asks for no authors — so both get the same answer.
 	 */
-	vocabulary: () =>
+	vocabulary: (serverUserId?: string) =>
 		queryOptions({
 			queryKey: VOCABULARY_KEY,
-			queryFn: readVocabulary,
+			queryFn: () => readVocabulary(serverUserId),
 		}),
 };
 

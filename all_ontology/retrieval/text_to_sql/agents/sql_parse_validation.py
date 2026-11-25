@@ -88,6 +88,15 @@ _JOINS_VALIDATED_ELSEWHERE = os.environ.get(
 _TRUTHY = {"1", "true", "yes", "on"}
 
 
+def denied_tables(
+    sql_tables: list[str] | None, allowed_table_ids: list[str] | None
+) -> list[str]:
+    """Tables referenced by SQL that the caller's allow-list excludes."""
+    if allowed_table_ids is None:
+        return []
+    return sorted(set(sql_tables or []) - set(allowed_table_ids))
+
+
 class IntentValidationModel(BaseModel):
     """Structured response for the LLM phase of unified SQL validation."""
 
@@ -868,6 +877,24 @@ class SQLValidationAgent(BaseAgent):
             error_msg = validation_result["error"]
             self.logger.info(f"SQL validation failed: {error_msg}")
             path_state["error"] = error_msg
+            return {
+                "decision": "invalid_sql",
+                "path_state": path_state,
+            }
+
+        # Data permission boundary. Retrieval is already narrowed, but this is
+        # the deterministic last line: a model-authored query may only touch
+        # tables the authenticated caller is allowed to see. ``None`` means an
+        # unscoped/admin caller; an empty list means no table is allowed.
+        denied = denied_tables(
+            validation_result.get("sql_tables"),
+            state.get("allowed_table_ids"),
+        )
+        if denied:
+            path_state["error"] = (
+                "The query references tables outside your data permissions: "
+                + ", ".join(denied)
+            )
             return {
                 "decision": "invalid_sql",
                 "path_state": path_state,

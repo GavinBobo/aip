@@ -6,9 +6,9 @@ import { withPermission } from '@/auth/with-auth';
 import { proxyToBackend } from '@/auth/proxy-backend';
 
 // Editing/deleting a custom analysis is admin-only (analysis:manage).
-export const PUT = withPermission({ analysis: ['manage'] })((req, { user }) =>
+export const PUT = withPermission({ analysis: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );
-export const DELETE = withPermission({ analysis: ['manage'] })((req, { user }) =>
+export const DELETE = withPermission({ analysis: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );

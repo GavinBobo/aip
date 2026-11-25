@@ -16,6 +16,8 @@ from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
 from all_ontology.dal.connections import list_connections as _list_connections
+from all_ontology.dal.datasources import fetch_databases
+from all_ontology.server.access import current_zone_ids
 from all_ontology.server.connections import apis, files, service
 from all_ontology.server.responses import (
     ConnectionListResponse,
@@ -178,7 +180,18 @@ def list_connections() -> dict:
     in the UI. ``database_name`` doubles as the connection's identity in the
     other routes here.
     """
-    rows = [_serialize_connection(conn) for conn in _list_connections()]
+    scoped = current_zone_ids()
+    visible_databases = (
+        None
+        if scoped is None
+        else {str(database["name"]) for database in fetch_databases(zone_ids=scoped)}
+    )
+    rows = [
+        _serialize_connection(conn)
+        for conn in _list_connections()
+        if visible_databases is None
+        or str(conn.get("database") or "") in visible_databases
+    ]
     return {"data": rows, "count": len(rows)}
 
 

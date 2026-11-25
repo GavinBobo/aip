@@ -27,13 +27,16 @@ permanent puzzle.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
-import pandas as pd
 from sqlalchemy import Text, cast, distinct, func, literal, select, update
 from sqlalchemy.dialects.postgresql import ARRAY, insert
 
 from all_ontology.catalog.constants import Edges, Props
 from all_ontology.catalog.model.node import CatalogNode
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 # Pure, so it lives outside this module rather than being reimplemented.
 from all_ontology.catalog.query_stats import (  # noqa: F401
@@ -285,6 +288,8 @@ def update_counters_and_timestamps_for_query_and_affected_data(
 
 def load_sqls_to_tables() -> pd.DataFrame:
     """Every stored statement with the table and column ids it references."""
+    import pandas as pd
+
     rows = store().query_read(
         select(
             s.sql_query.c.id.label("sql_id"),

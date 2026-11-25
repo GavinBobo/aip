@@ -83,9 +83,11 @@ def _edited_content(
 def blocks_for_run(run_id: str) -> tuple[list[SourceBlock], dict[str, Any]]:
     run = get_run(run_id)
     if run is None:
-        raise ValueError("解析结果不存在。")
+        raise ValueError("Parsing result not found.")
     if run.get("status") != "succeeded":
-        raise ValueError("只能从已成功的解析结果抽取知识。")
+        raise ValueError(
+            "Knowledge can only be extracted from a successful parsing result."
+        )
     record = _read_result(run)
     outputs = record.get("outputs") or {}
 
@@ -118,7 +120,7 @@ def blocks_for_run(run_id: str) -> tuple[list[SourceBlock], dict[str, Any]]:
             )
 
     if not blocks:
-        raise ValueError("这个解析结果没有可用于抽取的文本。")
+        raise ValueError("This parsing result has no text to extract from.")
     metadata = {
         "run_id": run_id,
         "file_name": record.get("file_name") or run.get("file_name"),
@@ -165,7 +167,25 @@ def chunk_blocks(
         current = []
         current_chars = 0
 
+    expanded: list[SourceBlock] = []
     for block in blocks:
+        if len(block.content) <= max_chars:
+            expanded.append(block)
+            continue
+        # A Markdown fallback is one block that can be much larger than the
+        # model window. Split it while keeping the same page/idx so citations
+        # still point at the page they came from.
+        for start in range(0, len(block.content), max_chars):
+            expanded.append(
+                SourceBlock(
+                    page=block.page,
+                    idx=block.idx,
+                    type=block.type,
+                    content=block.content[start : start + max_chars],
+                )
+            )
+
+    for block in expanded:
         length = len(block.content)
         if current and current_chars + length + 2 > max_chars:
             finish()

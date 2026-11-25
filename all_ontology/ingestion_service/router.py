@@ -19,11 +19,12 @@ from all_ontology.ingestion_service.ingest import (
     trigger_ingest,
     trigger_reset_semantic,
 )
-from all_ontology.server.health.checks import check_schema, check_store
-from all_ontology.server.responses import (
+from all_ontology.infra.health import (
     HealthResponse,
     SemanticRunningResponse,
     StatusResponse,
+    check_schema,
+    check_store,
 )
 
 router = APIRouter()

@@ -16,10 +16,12 @@ from __future__ import annotations
 import io
 import json
 import logging
-from typing import Any, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 import httpx
-import pandas as pd
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -200,6 +202,8 @@ def apply_column_names(
 
 def fetch_frame(config: Mapping[str, Any]) -> pd.DataFrame:
     """Call the endpoint and return its rows as a DataFrame."""
+    import pandas as pd
+
     headers = dict(config.get("headers") or {})
     auth = None
     if config.get("auth_type") == "bearer":
@@ -276,6 +280,8 @@ def preview_api(
     config: Mapping[str, Any], *, row_limit: int = PREVIEW_ROW_LIMIT
 ) -> dict[str, Any]:
     """Describe the endpoint's rows for the rename step of the wizard."""
+    import pandas as pd
+
     frame = fetch_frame(config)
     frame, pairs = apply_column_names(frame, None)
 

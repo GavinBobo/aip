@@ -13,14 +13,11 @@ from all_ontology.dal import attributes as attributes_dal
 from all_ontology.dal import sql_attributes as sql_attr_dal
 from all_ontology.dal import terms as terms_dal
 from all_ontology.dal.users import resolve_accessible_catalog_ids
-from all_ontology.semantic.embed import build_semantic_embedder
 from all_ontology.server.datasources import service as datasources_service
 from all_ontology.utils import (
-    get_embed_params,
     sample_values_edit_error,
     stringify_sample_values,
 )
-from all_ontology.utils.embedding import embed_docs_into_vdb
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +156,8 @@ def update_column_attribute(
     else:
         row["sample_values"] = stringify_sample_values(row.get("sample_values"))
 
+    from all_ontology.semantic.embed import build_semantic_embedder
+
     embedder = build_semantic_embedder(row.get("database_name") or "", reset=False)
     if embedder is not None:
         embedder.vdb.delete_by_id(attr_id)
@@ -183,6 +182,10 @@ def update_column_attribute(
 
 def refresh_term_embeddings(term_id: str, *, refresh_dependent_attrs: bool) -> None:
     """Best-effort semantic VDB refresh for one Term update."""
+    from all_ontology.semantic.embed import build_semantic_embedder
+    from all_ontology.utils import get_embed_params
+    from all_ontology.utils.embedding import embed_docs_into_vdb
+
     term, column_attrs = terms_dal.fetch_term_and_column_attributes_for_embedding(
         term_id
     )

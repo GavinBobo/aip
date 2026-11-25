@@ -26,6 +26,7 @@ People use it through a web UI; agents use it through a REST API or the bundled 
 | **Ask** | Natural-language to SQL over the semantic layer, with probe-based validation (literal checks, join-path checks, row caps) before a result is returned, plus the SQL, charts and saved analyses behind each answer. |
 | **Review** | A per-zone ER canvas that reconciles itself with the catalog: drag tables, draw relationships, annotate columns and tables, keep versions and templates, import/export DBML, SQL or JSON, export SVG/PNG, and ask an assistant whose proposed edits are validated before they land. |
 | **Parse** | PDFs and images turned into Markdown or JSON with tables, formulas, figures and chemical structures extracted, as asynchronous jobs the UI polls. |
+| **Know** | A knowledge ontology built from parsed documents: concepts, relations, actions, risks, concept groups, grounded facts and page-level evidence, reviewable and exportable as a BKN package. Its graph uses the same Sigma canvas as Exploration, and concepts link to terms or tables to connect both ontologies. |
 | **Govern** | Zones scope data per team; tags, owners, certification and saved-search rules label what they match; Better Auth provides SSO, invitations, API tokens and role-based access. |
 | **Serve** | A React web UI (English and 中文), a REST API with OpenAPI documents, and a read-only MCP server (`all-ontology-mcp`) with three agent skills for setup, modelling and querying. |
 

@@ -25,12 +25,11 @@ the API's ``type`` field and the key the frontend tabs results by, so ``Term``
 and ``ColumnAttribute`` are part of the response contract -- renaming them here
 renames them in the UI.
 
-**Nothing here filters by zone.** Every other read path in ``all_ontology.dal`` takes a
-``zone_ids`` argument -- :func:`all_ontology.dal.terms.fetch_all_terms` calls it "a hard
-authorization boundary" -- and these functions have no such parameter. That is
-not a leak today, because every router passes ``zone_ids=None`` and the
-filtering is switched off application-wide; the point is that when it is
-switched on, this is the module with nowhere to pass it.
+**Zone scope is a visibility filter, not just a relevance one.** The public
+search entry points take ``zone_ids`` and drop every object outside the
+caller's effective user/department grants. Terms and attributes are all-or-
+nothing: if any table representing them is out of scope, the object is hidden
+rather than shown with a dangling, unopenable parent.
 """
 
 from __future__ import annotations
@@ -59,6 +58,7 @@ from sqlalchemy import (
 from all_ontology.catalog.constants import Labels, TableTypes
 from all_ontology.dal import schema as s
 from all_ontology.dal.session import store
+from all_ontology.dal.users import resolve_accessible_catalog_ids
 from all_ontology.semantic.constants import (
     LABEL_COLUMN_ATTRIBUTE,
     LABEL_PQL_ANALYSIS,
@@ -522,6 +522,108 @@ def _data_filter_rules_out(label: str, data_ids: list[str]) -> bool:
     return bool(data_ids) and label not in _DATA_SCHEMA_ROUTES
 
 
+def _zone_where(label: str, resolved: dict[str, set[str]] | None):
+    """This label's rows the caller's effective zones admit, or ``None``.
+
+    Search is a read like every catalog page, so it must apply the same zone
+    boundary. A Term or an attribute is visible only when every table it is
+    represented by is in scope; a partial match would disclose the name of a
+    table the caller cannot open.
+    """
+    if resolved is None:
+        return None
+
+    table_ids = list(resolved["table_ids"])
+    db_ids = list(resolved["db_ids"])
+    schema_ids = list(resolved["schema_ids"])
+    if not table_ids:
+        return literal(False)
+
+    if label == Labels.DB:
+        return s.catalog_database.c.id.in_(db_ids)
+    if label == Labels.SCHEMA:
+        return s.catalog_schema.c.id.in_(schema_ids)
+    if label == Labels.TABLE:
+        return s.catalog_table.c.id.in_(table_ids)
+    if label == Labels.COLUMN:
+        return (
+            select(literal(1))
+            .select_from(s.catalog_table)
+            .where(
+                s.catalog_table.c.id == s.catalog_column.c.table_id,
+                s.catalog_table.c.id.in_(table_ids),
+            )
+            .correlate(s.catalog_column)
+            .exists()
+        )
+    if label == LABEL_COLUMN_ATTRIBUTE:
+        return s.column_attribute.c.table_id.in_(table_ids)
+    if label == LABEL_TERM:
+        represented = (
+            select(literal(1))
+            .select_from(s.table__term)
+            .where(
+                s.table__term.c.term_id == s.term.c.id,
+                s.table__term.c.table_id.in_(table_ids),
+            )
+            .correlate(s.term)
+            .exists()
+        )
+        outside = (
+            select(literal(1))
+            .select_from(s.table__term)
+            .where(
+                s.table__term.c.term_id == s.term.c.id,
+                s.table__term.c.table_id.notin_(table_ids),
+            )
+            .correlate(s.term)
+            .exists()
+        )
+        return and_(represented, not_(outside))
+    if label == LABEL_SQL_ATTRIBUTE:
+        outside = (
+            select(literal(1))
+            .select_from(
+                s.sql_attribute__sql.join(
+                    s.sql_query__table,
+                    s.sql_query__table.c.sql_query_id
+                    == s.sql_attribute__sql.c.sql_query_id,
+                )
+            )
+            .where(
+                s.sql_attribute__sql.c.attribute_id == s.sql_attribute.c.id,
+                s.sql_query__table.c.table_id.notin_(table_ids),
+            )
+            .correlate(s.sql_attribute)
+            .exists()
+        )
+        return not_(outside)
+    if label == Labels.CUSTOM_ANALYSIS:
+        outside = (
+            select(literal(1))
+            .select_from(
+                s.custom_analysis__sql.join(
+                    s.sql_query__table,
+                    s.sql_query__table.c.sql_query_id
+                    == s.custom_analysis__sql.c.sql_query_id,
+                )
+            )
+            .where(
+                s.custom_analysis__sql.c.analysis_id == s.custom_analysis.c.id,
+                s.sql_query__table.c.table_id.notin_(table_ids),
+            )
+            .correlate(s.custom_analysis)
+            .exists()
+        )
+        return not_(outside)
+    if label == LABEL_PQL_ANALYSIS:
+        # A PQL analysis has no catalog table edge to prove its scope. Hiding
+        # it from scoped callers is the conservative choice; admins still see
+        # it because their resolved scope is None.
+        return literal(False)
+    return None
+
+
 def _hit_select(
     table,
     label: str,
@@ -663,6 +765,7 @@ def _synonym_term_select(
     tag_ids: list[str],
     include_untagged: bool,
     data_ids: list[str],
+    zone_scope: dict[str, set[str]] | None,
 ):
     """Visible Terms reached *only* by their synonyms, or ``None``.
 
@@ -711,7 +814,10 @@ def _synonym_term_select(
         ),
     )
     tagged = _tag_where(LABEL_TERM, tag_ids, include_untagged=include_untagged)
-    return aliased if tagged is None else aliased.where(tagged)
+    zoned = _zone_where(LABEL_TERM, zone_scope)
+    if tagged is not None:
+        aliased = aliased.where(tagged)
+    return aliased if zoned is None else aliased.where(zoned)
 
 
 def _table_where(
@@ -735,6 +841,7 @@ def _hit_selects(
     tag_ids: list[str],
     include_untagged: bool,
     data_ids: list[str],
+    zone_scope: dict[str, set[str]] | None,
 ) -> list[Any]:
     """One select per requested entity, ready to be unioned."""
     selects: list[Any] = []
@@ -757,13 +864,14 @@ def _hit_selects(
 
         tagged = _tag_where(label, tag_ids, include_untagged=include_untagged)
         located = _data_where(label, data_ids)
+        zoned = _zone_where(label, zone_scope)
         match = _match_where(label, tokens, include_description=include_description)
 
         if label == LABEL_TERM:
             selects.append(
                 _term_select(synonym_tokens).where(
                     _term_is_visible(),
-                    _all_of(match, tagged, located),
+                    _all_of(match, tagged, located, zoned),
                 )
             )
             continue
@@ -772,12 +880,14 @@ def _hit_selects(
             selects.append(
                 _hit_select(table, label, certified_flag=table.c.certified).where(
                     _attribute_is_visible(label),
-                    _all_of(match, tagged, located),
+                    _all_of(match, tagged, located, zoned),
                 )
             )
             continue
 
-        selects.append(_hit_select(table, label).where(_all_of(match, tagged, located)))
+        selects.append(
+            _hit_select(table, label).where(_all_of(match, tagged, located, zoned))
+        )
 
     if Labels.TABLE in object_types or SEARCH_TYPE_VIEW in object_types:
         selects.append(
@@ -794,6 +904,7 @@ def _hit_selects(
                         Labels.TABLE, tag_ids, include_untagged=include_untagged
                     ),
                     _data_where(Labels.TABLE, data_ids),
+                    _zone_where(Labels.TABLE, zone_scope),
                 )
             )
         )
@@ -930,7 +1041,7 @@ def _list_rank(
 ) -> tuple[Any, Any, Any]:
     """ORDER BY for the list cap: name hit, then synonym hit, then shorter name.
 
-    Mirrors ``all_ontology.server.search.service.rank_key`` so LIMIT keeps the same 200
+    Mirrors ``all_ontology.domain.search.rank_key`` so LIMIT keeps the same 200
     rows that Python would have picked from the full match set. Without this,
     Postgres fills the cap from the first UNION ALL branches (Column before
     Table/View) and the later ranking only reorders that arbitrary subset.
@@ -992,6 +1103,7 @@ def fetch_global_search(
     tag_ids: list[str] | None = None,
     include_untagged: bool = False,
     data_ids: list[str] | None = None,
+    zone_ids: list[str] | None = None,
     limit: int = LIST_LIMIT,
     synonym_limit: int | None = None,
 ) -> list[dict[str, Any]]:
@@ -1019,6 +1131,7 @@ def fetch_global_search(
     if not tokens or not object_types:
         return []
 
+    zone_scope = resolve_accessible_catalog_ids(zone_ids)
     selects = _hit_selects(
         tokens,
         object_types,
@@ -1027,6 +1140,7 @@ def fetch_global_search(
         tag_ids=tag_ids or [],
         include_untagged=include_untagged,
         data_ids=data_ids or [],
+        zone_scope=zone_scope,
     )
     # ``union_all``: each branch reads a different table, so no row can appear
     # in two of them, and paying for a DISTINCT over 200 rows with an array
@@ -1050,6 +1164,7 @@ def fetch_global_search(
         tag_ids=tag_ids or [],
         include_untagged=include_untagged,
         data_ids=data_ids or [],
+        zone_scope=zone_scope,
     )
     if synonym_select is not None:
         if synonym_limit is not None:
@@ -1083,6 +1198,7 @@ def count_global_search(
     tag_ids: list[str] | None = None,
     include_untagged: bool = False,
     data_ids: list[str] | None = None,
+    zone_ids: list[str] | None = None,
 ) -> dict[str, int]:
     """Hit counts by object type, uncapped.
 
@@ -1096,6 +1212,7 @@ def count_global_search(
     if not tokens or not object_types:
         return {}
 
+    zone_scope = resolve_accessible_catalog_ids(zone_ids)
     selects = _hit_selects(
         tokens,
         object_types,
@@ -1104,6 +1221,7 @@ def count_global_search(
         tag_ids=tag_ids or [],
         include_untagged=include_untagged,
         data_ids=data_ids or [],
+        zone_scope=zone_scope,
     )
     synonym_select = _synonym_term_select(
         synonym_tokens or [],
@@ -1113,6 +1231,7 @@ def count_global_search(
         tag_ids=tag_ids or [],
         include_untagged=include_untagged,
         data_ids=data_ids or [],
+        zone_scope=zone_scope,
     )
     if synonym_select is not None:
         selects.append(synonym_select)
@@ -1144,6 +1263,7 @@ def matching_id_selects(
     tag_ids: list[str] | None = None,
     include_untagged: bool = False,
     data_ids: list[str] | None = None,
+    zone_ids: list[str] | None = None,
 ) -> dict[str, Select]:
     """The same match as the list, as one ``SELECT id`` per label — unexecuted.
 
@@ -1195,6 +1315,7 @@ def matching_id_selects(
     aliases = synonym_tokens or []
     tags = tag_ids or []
     data = data_ids or []
+    zone_scope = resolve_accessible_catalog_ids(zone_ids)
     selects: dict[str, Select] = {}
 
     for label in _SEARCH_LABELS:
@@ -1207,6 +1328,7 @@ def matching_id_selects(
             continue
         if _data_filter_rules_out(label, data):
             continue
+        zoned = _zone_where(label, zone_scope)
 
         table = SEARCH_TABLES[label]
         match = _match_where(label, tokens, include_description=include_description)
@@ -1217,14 +1339,17 @@ def matching_id_selects(
             if aliases:
                 match = or_(match, _synonym_exists(aliases))
             selects[label] = select(table.c.id).where(
-                _term_is_visible(), _all_of(match, tagged, located)
+                _term_is_visible(), _all_of(match, tagged, located, zoned)
             )
         elif label in _ATTRIBUTE_TERM_LINKS:
             selects[label] = select(table.c.id).where(
-                _attribute_is_visible(label), _all_of(match, tagged, located)
+                _attribute_is_visible(label),
+                _all_of(match, tagged, located, zoned),
             )
         else:
-            selects[label] = select(table.c.id).where(_all_of(match, tagged, located))
+            selects[label] = select(table.c.id).where(
+                _all_of(match, tagged, located, zoned)
+            )
 
     if Labels.TABLE in object_types or SEARCH_TYPE_VIEW in object_types:
         selects[Labels.TABLE] = select(s.catalog_table.c.id).where(
@@ -1234,6 +1359,7 @@ def matching_id_selects(
                 ),
                 _tag_where(Labels.TABLE, tags, include_untagged=include_untagged),
                 _data_where(Labels.TABLE, data),
+                _zone_where(Labels.TABLE, zone_scope),
             )
         )
 

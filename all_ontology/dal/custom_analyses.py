@@ -24,7 +24,7 @@ from all_ontology.dal import schema as s
 from all_ontology.dal.session import store, write_transaction
 from all_ontology.dal.sql_fragments import column_description_expr, name_contains
 from all_ontology.dal.users import resolve_accessible_catalog_ids
-from all_ontology.server.sql_utils import SqlParseError
+from all_ontology.sql.validation import SqlParseError
 
 if TYPE_CHECKING:
     from all_ontology.utils.embedding import EmbedParams
@@ -234,6 +234,22 @@ def get_custom_analysis_by_id(analysis_id: str) -> str | None:
         .limit(1)
     )
     return rows[0]["id"] if rows else None
+
+
+def custom_analysis_table_ids(analysis_id: str) -> list[str]:
+    """Catalog tables referenced by one analysis's SQL."""
+    rows = store().query_read(
+        select(s.sql_query__table.c.table_id)
+        .select_from(
+            s.custom_analysis__sql.join(
+                s.sql_query__table,
+                s.sql_query__table.c.sql_query_id
+                == s.custom_analysis__sql.c.sql_query_id,
+            )
+        )
+        .where(s.custom_analysis__sql.c.analysis_id == analysis_id)
+    )
+    return sorted({str(row["table_id"]) for row in rows})
 
 
 def fetch_custom_analyses() -> list[dict[str, str]]:
@@ -546,9 +562,7 @@ def embed_custom_analyses(
         # A stored row key, not a reference to the store -- see the note in
         # pg/pql_analyses.py.
         path = (
-            f"all_ontology:{node_id}"
-            if node_id is not None
-            else "all_ontology:unknown"
+            f"all_ontology:{node_id}" if node_id is not None else "all_ontology:unknown"
         )
         tabular_fields = {
             "id": node_id,

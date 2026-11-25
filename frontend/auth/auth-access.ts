@@ -19,10 +19,10 @@ const applicationStatements = {
 	sso: ['read', 'manage'],
 	conversation: ['read', 'write', 'delete'],
 	chat: ['use'],
-	analysis: ['read', 'manage'],
-	catalog: ['read', 'edit'],
+	analysis: ['read', 'contribute', 'manage'],
+	catalog: ['read', 'contribute', 'edit'],
 	connection: ['read', 'manage'],
-	zone: ['read', 'manage'],
+	zone: ['read', 'contribute', 'manage'],
 	group: ['read', 'manage'],
 	tag: ['read', 'manage'],
 	semanticCompilation: ['read', 'manage'],
@@ -79,8 +79,10 @@ const roleAccess = {
  * Viewer is a subset. Reading and changing groups stay with admins, because a
  * group lists its members' names and emails. A viewer may read the catalog,
  * zones, tags, connections, glossary, prompts, and analyses, may use chat,
- * including saving a conversation, and may manage their own API tokens. Other
- * writes, and deleting a conversation, stay with admins.
+ * including saving a conversation, and may manage their own API tokens. The
+ * `contribute` grants admit resource write endpoints; the Python API then
+ * requires `edit`/`manage` on the Zone or knowledge network that owns the
+ * object. Global administration and deleting a conversation stay with admins.
  */
 const statement = {
 	...defaultStatements,

@@ -7,4 +7,4 @@ import { proxyToBackend } from '@/auth/proxy-backend';
 
 // Validating SQL is part of the create/edit flow, so it shares the same
 // analysis:manage permission as POST /custom-analyses.
-export const POST = withPermission({ analysis: ['manage'] })((req) => proxyToBackend(req));
+export const POST = withPermission({ analysis: ['contribute'] })((req) => proxyToBackend(req));

@@ -767,6 +767,7 @@ pql_analysis = Table(
     "pql_analysis",
     METADATA,
     _id(),
+    Column("zone_id", Text, ForeignKey("zone.id", ondelete="SET NULL"), nullable=True),
     Column("name", Text, nullable=False),
     Column("description", Text, nullable=True),
     Column("pql", Text, nullable=True),
@@ -858,6 +859,136 @@ zone_target = Table(
         name="exactly_one_target",
     ),
 )
+
+# ---------------------------------------------------------------------------
+# Data access: departments and the users/grants that reach a zone
+# ---------------------------------------------------------------------------
+
+
+class ZonePermission(StrEnum):
+    """How far a user may go inside one Zone.
+
+    The levels are ordered: ``manage`` implies ``edit``, which implies
+    ``read``. Direct user grants and department grants are combined by taking
+    the highest level the caller holds for that zone.
+    """
+
+    READ = "read"
+    EDIT = "edit"
+    MANAGE = "manage"
+
+
+ZONE_PERMISSION_READ = ZonePermission.READ
+ZONE_PERMISSION_EDIT = ZonePermission.EDIT
+ZONE_PERMISSION_MANAGE = ZonePermission.MANAGE
+
+ZONE_PERMISSION_RANK = {
+    ZONE_PERMISSION_READ: 1,
+    ZONE_PERMISSION_EDIT: 2,
+    ZONE_PERMISSION_MANAGE: 3,
+}
+
+#: Departments are the second subject type a zone can be granted to, beside an
+#: individual account. Membership lives in ``department__member`` rather than a
+#: column on the Better Auth user table because Prisma owns that table and a
+#: user may belong to more than one department.
+department = Table(
+    "department",
+    METADATA,
+    _id(),
+    Column("name", Text, nullable=False),
+    Column("description", Text, nullable=True),
+    Column(
+        "created",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    ),
+    Index(
+        "uq_department_name_lower",
+        text("lower(TRIM(BOTH FROM name))"),
+        unique=True,
+    ),
+)
+
+#: ``user_id`` is a Better Auth id in ``frontend."user"``. No foreign key for
+#: the same cross-schema reason as ``user_group__member``; a deleted account
+#: leaves a membership that contributes no access because resolution starts
+#: from an existing, non-banned account.
+department__member = Table(
+    "department__member",
+    METADATA,
+    Column(
+        "dept_id",
+        Text,
+        ForeignKey("department.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column("user_id", Text, primary_key=True),
+)
+
+#: A zone grant names exactly one subject: a user or a department. Two nullable
+#: columns with a CHECK, matching ``zone_target``, keeps referential integrity
+#: for the department side while still allowing a Better Auth id with no FK.
+zone_grant = Table(
+    "zone_grant",
+    METADATA,
+    _id(),
+    Column("zone_id", Text, ForeignKey(zone.c.id, ondelete="CASCADE"), nullable=False),
+    Column("user_id", Text, nullable=True),
+    Column(
+        "dept_id",
+        Text,
+        ForeignKey(department.c.id, ondelete="CASCADE"),
+        nullable=True,
+    ),
+    Column(
+        "created",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    ),
+    Column(
+        "permission",
+        Text,
+        nullable=False,
+        server_default=text("'read'"),
+    ),
+    Column("expires_at", DateTime(timezone=True), nullable=True),
+    CheckConstraint(
+        "num_nonnulls(user_id, dept_id) = 1",
+        name="exactly_one_subject",
+    ),
+    CheckConstraint(
+        "permission IN ('read', 'edit', 'manage')",
+        name="permission_value",
+    ),
+    UniqueConstraint("zone_id", "user_id", name="uq_zone_grant_zone_user"),
+    UniqueConstraint("zone_id", "dept_id", name="uq_zone_grant_zone_dept"),
+)
+
+zone_grant_audit = Table(
+    "zone_grant_audit",
+    METADATA,
+    _id(),
+    Column(
+        "zone_id",
+        Text,
+        ForeignKey(zone.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("actor_user_id", Text, nullable=True),
+    Column("action", Text, nullable=False),
+    Column("before", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    Column("after", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    Column(
+        "created",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    ),
+)
+
 
 # ---------------------------------------------------------------------------
 # Tags
@@ -1305,6 +1436,13 @@ Index("ix_zone_target_zone_id", zone_target.c.zone_id)
 Index("ix_zone_target_database_id", zone_target.c.database_id)
 Index("ix_zone_target_schema_id", zone_target.c.schema_id)
 Index("ix_zone_target_table_id", zone_target.c.table_id)
+Index("ix_department__member_user_id", department__member.c.user_id)
+Index("ix_zone_grant_zone_id", zone_grant.c.zone_id)
+Index("ix_zone_grant_user_id", zone_grant.c.user_id)
+Index("ix_zone_grant_dept_id", zone_grant.c.dept_id)
+Index(
+    "ix_zone_grant_audit_zone", zone_grant_audit.c.zone_id, zone_grant_audit.c.created
+)
 
 # "The groups of this account". The primary key of ``user_group__member`` leads
 # with ``group_id`` and so cannot serve it.
@@ -1766,6 +1904,21 @@ parsing_document = Table(
     Column("source_path", Text, nullable=True),
     Column("instance_id", Text, nullable=True),
     Column("sha256", Text, nullable=True),
+    Column("source_md5", Text, nullable=True),
+    Column("parsed_md_path", Text, nullable=True),
+    Column(
+        "learned_to_knowledge",
+        Boolean,
+        nullable=False,
+        server_default=text("false"),
+    ),
+    Column("learned_at", DateTime(timezone=True), nullable=True),
+    Column(
+        "knowledge_document_id",
+        Text,
+        ForeignKey("knowledge_document.id", ondelete="SET NULL"),
+        nullable=True,
+    ),
     Column("size_bytes", BigInteger, nullable=True),
     Column("page_count", Integer, nullable=True),
     Column("page_start", Integer, nullable=True),
@@ -1868,6 +2021,72 @@ parsing_block_edit = Table(
     ),
 )
 
+
+# One picture extracted from a parse run, plus the optional VLM reading of it.
+# Rows exist for every picture, so "why was this one not interpreted?" is
+# answerable; vlm_status says which threshold/feature decided that.
+parsing_image = Table(
+    "parsing_image",
+    METADATA,
+    _id(),
+    Column(
+        "run_id",
+        Text,
+        ForeignKey(parsing_run.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "document_id",
+        Text,
+        ForeignKey(parsing_document.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("page", Integer, nullable=False),
+    Column("block_index", Integer, nullable=False),
+    Column("image_md5", Text, nullable=False),
+    # Browser-facing URL (`/api/parsing/assets/...`) and the local file it maps to.
+    Column("image_path", Text, nullable=False),
+    Column("image_file_path", Text, nullable=True),
+    Column("width", Integer, nullable=True),
+    Column("height", Integer, nullable=True),
+    Column("area_px", BigInteger, nullable=True),
+    Column("vlm_prompt", Text, nullable=True),
+    Column("vlm_content", Text, nullable=True),
+    Column(
+        "vlm_status",
+        Text,
+        nullable=False,
+        server_default=text("'pending'"),
+    ),
+    Column("vlm_error", Text, nullable=True),
+    Column(
+        "learned_to_knowledge",
+        Boolean,
+        nullable=False,
+        server_default=text("false"),
+    ),
+    Column("learned_at", DateTime(timezone=True), nullable=True),
+    Column(
+        "knowledge_document_id",
+        Text,
+        ForeignKey("knowledge_document.id", ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column(
+        "created",
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    ),
+    UniqueConstraint(
+        "run_id", "page", "block_index", name="uq_parsing_image_run_page_block"
+    ),
+    CheckConstraint(
+        "vlm_status IN ('pending', 'succeeded', 'failed', 'skipped_small', 'disabled')",
+        name="known_vlm_status",
+    ),
+)
+
 Index("ix_parsing_task_created", parsing_task.c.created)
 Index(
     "ix_parsing_document_task", parsing_document.c.task_id, parsing_document.c.created
@@ -1877,6 +2096,18 @@ Index(
 )
 Index("ix_parsing_run_document", parsing_run.c.document_id, parsing_run.c.created)
 Index("ix_parsing_run_task", parsing_run.c.task_id, parsing_run.c.created)
+Index("ix_parsing_document_source_md5", parsing_document.c.source_md5)
+Index(
+    "ix_parsing_image_run",
+    parsing_image.c.run_id,
+    parsing_image.c.page,
+)
+Index("ix_parsing_image_document", parsing_image.c.document_id)
+Index("ix_parsing_image_md5", parsing_image.c.image_md5)
+Index(
+    "ix_parsing_image_knowledge_document",
+    parsing_image.c.knowledge_document_id,
+)
 
 # ---------------------------------------------------------------------------
 # Knowledge ontology — documents -> concepts/relations/facts -> evidence
@@ -1900,6 +2131,9 @@ knowledge_network = Table(
     Column("name", Text, nullable=False),
     Column("description", Text, nullable=True),
     Column("domain", Text, nullable=True),
+    # Optional data-zone scope. NULL means visible to every signed-in user;
+    # a zone-scoped network is filtered by the same grants as the catalog.
+    Column("zone_id", Text, ForeignKey("zone.id", ondelete="SET NULL"), nullable=True),
     Column(
         "status",
         Text,
@@ -1912,6 +2146,67 @@ knowledge_network = Table(
         "status IN ('draft', 'published', 'archived')",
         name="known_status",
     ),
+)
+
+knowledge_network_grant = Table(
+    "knowledge_network_grant",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("user_id", Text, nullable=True),
+    Column(
+        "dept_id",
+        Text,
+        ForeignKey("department.id", ondelete="CASCADE"),
+        nullable=True,
+    ),
+    Column(
+        "created", DateTime(timezone=True), nullable=False, server_default=func.now()
+    ),
+    Column(
+        "permission",
+        Text,
+        nullable=False,
+        server_default=text("'read'"),
+    ),
+    Column("expires_at", DateTime(timezone=True), nullable=True),
+    CheckConstraint(
+        "num_nonnulls(user_id, dept_id) = 1",
+        name="exactly_one_subject",
+    ),
+    CheckConstraint(
+        "permission IN ('read', 'edit', 'manage')",
+        name="permission_value",
+    ),
+    UniqueConstraint(
+        "network_id", "user_id", name="uq_knowledge_network_grant_network_user"
+    ),
+    UniqueConstraint(
+        "network_id", "dept_id", name="uq_knowledge_network_grant_network_dept"
+    ),
+)
+
+knowledge_network_grant_audit = Table(
+    "knowledge_network_grant_audit",
+    METADATA,
+    _id(),
+    # Deliberately no FK: an authorization audit must outlive the network it
+    # describes, otherwise deleting the network erases the evidence of who
+    # granted what.
+    Column("network_id", Text, nullable=False),
+    Column("actor_user_id", Text, nullable=True),
+    Column("action", Text, nullable=False, server_default=text("'replace'")),
+    Column("before", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    Column("after", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    Column(
+        "created", DateTime(timezone=True), nullable=False, server_default=func.now()
+    ),
+    CheckConstraint("action IN ('replace')", name="known_action"),
 )
 
 knowledge_document = Table(
@@ -1935,6 +2230,9 @@ knowledge_document = Table(
     ),
     Column("title", Text, nullable=False),
     Column("source_name", Text, nullable=True),
+    Column("source_md5", Text, nullable=True),
+    Column("source_path", Text, nullable=True),
+    Column("parsed_md_path", Text, nullable=True),
     Column(
         "status",
         Text,
@@ -1944,7 +2242,9 @@ knowledge_document = Table(
     Column("summary", Text, nullable=True),
     Column("error_message", Text, nullable=True),
     Column("chunk_count", Integer, nullable=False, server_default=text("0")),
-    Column("created", DateTime(timezone=True), nullable=True, server_default=func.now()),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
     Column("created_by", Text, nullable=True),
     Column("extracted_at", DateTime(timezone=True), nullable=True),
     UniqueConstraint("network_id", "run_id", name="uq_knowledge_document_network_run"),
@@ -1979,7 +2279,9 @@ knowledge_concept = Table(
         ForeignKey(knowledge_document.c.id, ondelete="SET NULL"),
         nullable=True,
     ),
-    Column("created", DateTime(timezone=True), nullable=True, server_default=func.now()),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
     Column("modified", DateTime(timezone=True), nullable=True),
     UniqueConstraint("network_id", "key", name="uq_knowledge_concept_network_key"),
     CheckConstraint(
@@ -2026,7 +2328,9 @@ knowledge_relation = Table(
         ForeignKey(knowledge_document.c.id, ondelete="SET NULL"),
         nullable=True,
     ),
-    Column("created", DateTime(timezone=True), nullable=True, server_default=func.now()),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
     Column("modified", DateTime(timezone=True), nullable=True),
     UniqueConstraint("network_id", "key", name="uq_knowledge_relation_network_key"),
     CheckConstraint(
@@ -2079,7 +2383,9 @@ knowledge_fact = Table(
         ForeignKey(knowledge_document.c.id, ondelete="SET NULL"),
         nullable=True,
     ),
-    Column("created", DateTime(timezone=True), nullable=True, server_default=func.now()),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
     Column("modified", DateTime(timezone=True), nullable=True),
     CheckConstraint(
         "status IN ('draft', 'reviewed', 'certified')",
@@ -2121,12 +2427,42 @@ knowledge_evidence = Table(
         ForeignKey(knowledge_fact.c.id, ondelete="CASCADE"),
         nullable=True,
     ),
+    Column(
+        "action_id",
+        Text,
+        ForeignKey("knowledge_action.id", ondelete="CASCADE"),
+        nullable=True,
+    ),
+    Column(
+        "risk_id",
+        Text,
+        ForeignKey("knowledge_risk.id", ondelete="CASCADE"),
+        nullable=True,
+    ),
+    Column(
+        "metric_id",
+        Text,
+        ForeignKey("knowledge_metric.id", ondelete="CASCADE"),
+        nullable=True,
+    ),
+    Column(
+        "image_id",
+        Text,
+        ForeignKey("parsing_image.id", ondelete="SET NULL"),
+        nullable=True,
+    ),
+    # Snapshots, so a citation still names its source after a parse run or
+    # image row is deleted.
+    Column("source_path", Text, nullable=True),
+    Column("image_path", Text, nullable=True),
     Column("page", Integer, nullable=True),
     Column("block_index", Integer, nullable=True),
     Column("quote", Text, nullable=False),
-    Column("created", DateTime(timezone=True), nullable=True, server_default=func.now()),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
     CheckConstraint(
-        "num_nonnulls(concept_id, relation_id, fact_id) = 1",
+        "num_nonnulls(concept_id, relation_id, fact_id, action_id, risk_id, metric_id) = 1",
         name="exactly_one_target",
     ),
 )
@@ -2153,25 +2489,462 @@ knowledge_concept__data = Table(
     ),
     Column("confidence", Double, nullable=False, server_default=text("0.8")),
     Column("note", Text, nullable=True),
-    Column("created", DateTime(timezone=True), nullable=True, server_default=func.now()),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
     CheckConstraint(
         "num_nonnulls(term_id, table_id) = 1",
         name="exactly_one_target",
     ),
 )
 
-Index("ix_knowledge_document_network", knowledge_document.c.network_id, knowledge_document.c.created)
-Index("ix_knowledge_concept_network", knowledge_concept.c.network_id, knowledge_concept.c.name)
+# BKN's remaining definition kinds. Object/relation already exist above as
+# concepts/relations; these three complete the four-element business model:
+# what can be done (action), what can go wrong (risk), and how objects are
+# grouped for navigation and context loading (concept group).
+knowledge_action = Table(
+    "knowledge_action",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("key", Text, nullable=False),
+    Column("name", Text, nullable=False),
+    Column("description", Text, nullable=True),
+    Column("action_intent", Text, nullable=False, server_default=text("'execute'")),
+    Column(
+        "bound_concept_id",
+        Text,
+        ForeignKey(knowledge_concept.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column("parameters", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    Column("status", Text, nullable=False, server_default=text("'draft'")),
+    Column("confidence", Double, nullable=False, server_default=text("0.6")),
+    Column(
+        "source_document_id",
+        Text,
+        ForeignKey(knowledge_document.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
+    Column("modified", DateTime(timezone=True), nullable=True),
+    UniqueConstraint("network_id", "key", name="uq_knowledge_action_network_key"),
+    CheckConstraint(
+        "action_intent IN ('add', 'modify', 'delete', 'execute')",
+        name="known_intent",
+    ),
+    CheckConstraint(
+        "status IN ('draft', 'reviewed', 'certified')",
+        name="known_status",
+    ),
+)
+
+knowledge_risk = Table(
+    "knowledge_risk",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("key", Text, nullable=False),
+    Column("name", Text, nullable=False),
+    Column("description", Text, nullable=True),
+    Column("severity", Text, nullable=False, server_default=text("'medium'")),
+    Column("mitigation", Text, nullable=True),
+    Column(
+        "related_concept_id",
+        Text,
+        ForeignKey(knowledge_concept.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column("status", Text, nullable=False, server_default=text("'draft'")),
+    Column("confidence", Double, nullable=False, server_default=text("0.6")),
+    Column(
+        "source_document_id",
+        Text,
+        ForeignKey(knowledge_document.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
+    Column("modified", DateTime(timezone=True), nullable=True),
+    UniqueConstraint("network_id", "key", name="uq_knowledge_risk_network_key"),
+    CheckConstraint(
+        "severity IN ('low', 'medium', 'high', 'critical')",
+        name="known_severity",
+    ),
+    CheckConstraint(
+        "status IN ('draft', 'reviewed', 'certified')",
+        name="known_status",
+    ),
+)
+
+knowledge_metric = Table(
+    "knowledge_metric",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("key", Text, nullable=False),
+    Column("name", Text, nullable=False),
+    Column("description", Text, nullable=True),
+    Column("expression", Text, nullable=True),
+    Column("unit", Text, nullable=True),
+    Column(
+        "concept_id",
+        Text,
+        ForeignKey(knowledge_concept.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column(
+        "sql_attribute_id",
+        Text,
+        ForeignKey(sql_attribute.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column("status", Text, nullable=False, server_default=text("'draft'")),
+    Column("confidence", Double, nullable=False, server_default=text("0.6")),
+    Column(
+        "source_document_id",
+        Text,
+        ForeignKey(knowledge_document.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
+    Column("modified", DateTime(timezone=True), nullable=True),
+    UniqueConstraint("network_id", "key", name="uq_knowledge_metric_network_key"),
+    CheckConstraint(
+        "status IN ('draft', 'reviewed', 'certified')",
+        name="known_status",
+    ),
+)
+
+knowledge_concept_group = Table(
+    "knowledge_concept_group",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("key", Text, nullable=False),
+    Column("name", Text, nullable=False),
+    Column("description", Text, nullable=True),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
+    Column("modified", DateTime(timezone=True), nullable=True),
+    UniqueConstraint(
+        "network_id", "key", name="uq_knowledge_concept_group_network_key"
+    ),
+)
+
+knowledge_capability = Table(
+    "knowledge_capability",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("key", Text, nullable=False),
+    Column("name", Text, nullable=False),
+    Column("kind", Text, nullable=False, server_default=text("'skill'")),
+    Column("description", Text, nullable=True),
+    # Skill/function/MCP/knowledge-base addressing fields, kept together so
+    # every capability kind round-trips through BKN without a sparse column per
+    # variant.
+    Column("config", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
+    Column("enabled", Boolean, nullable=False, server_default=text("true")),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
+    Column("modified", DateTime(timezone=True), nullable=True),
+    UniqueConstraint("network_id", "key", name="uq_knowledge_capability_network_key"),
+    CheckConstraint(
+        "kind IN ('skill', 'function', 'mcp_tool', 'knowledge_base')",
+        name="known_kind",
+    ),
+)
+
+knowledge_action__capability = Table(
+    "knowledge_action__capability",
+    METADATA,
+    _id(),
+    Column(
+        "action_id",
+        Text,
+        ForeignKey(
+            knowledge_action.c.id,
+            ondelete="CASCADE",
+            name="fk_action_capability_action",
+        ),
+        nullable=False,
+    ),
+    Column(
+        "capability_id",
+        Text,
+        ForeignKey(
+            knowledge_capability.c.id,
+            ondelete="CASCADE",
+            name="fk_action_capability_capability",
+        ),
+        nullable=False,
+    ),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
+    UniqueConstraint(
+        "action_id",
+        "capability_id",
+        name="uq_knowledge_action__capability_pair",
+    ),
+)
+
+knowledge_action_execution = Table(
+    "knowledge_action_execution",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "action_id",
+        Text,
+        ForeignKey(knowledge_action.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("status", Text, nullable=False, server_default=text("'planned'")),
+    Column("parameters", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
+    Column("plan", JSONB, nullable=False, server_default=text("'{}'::jsonb")),
+    Column("result", JSONB, nullable=True),
+    Column("error_message", Text, nullable=True),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
+    Column("created_by", Text, nullable=True),
+    Column("finished", DateTime(timezone=True), nullable=True),
+    CheckConstraint(
+        "status IN ('planned', 'completed', 'failed')",
+        name="known_status",
+    ),
+)
+
+knowledge_network_version = Table(
+    "knowledge_network_version",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("version", Integer, nullable=False),
+    Column("label", Text, nullable=True),
+    Column("snapshot", JSONB, nullable=False),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
+    Column("created_by", Text, nullable=True),
+    UniqueConstraint(
+        "network_id", "version", name="uq_knowledge_network_version_network_version"
+    ),
+)
+
+knowledge_eval_case = Table(
+    "knowledge_eval_case",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("question", Text, nullable=False),
+    Column(
+        "expected_concepts", JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    ),
+    Column("expected_facts", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    Column("notes", Text, nullable=True),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
+    Column("modified", DateTime(timezone=True), nullable=True),
+)
+
+knowledge_eval_run = Table(
+    "knowledge_eval_run",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("total", Integer, nullable=False, server_default=text("0")),
+    Column("passed", Integer, nullable=False, server_default=text("0")),
+    Column("details", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
+    Column("created_by", Text, nullable=True),
+)
+
+knowledge_concept_group__concept = Table(
+    "knowledge_concept_group__concept",
+    METADATA,
+    _id(),
+    Column(
+        "group_id",
+        Text,
+        ForeignKey(
+            knowledge_concept_group.c.id,
+            ondelete="CASCADE",
+            name="fk_knowledge_group_member_group",
+        ),
+        nullable=False,
+    ),
+    Column(
+        "concept_id",
+        Text,
+        ForeignKey(
+            knowledge_concept.c.id,
+            ondelete="CASCADE",
+            name="fk_knowledge_group_member_concept",
+        ),
+        nullable=False,
+    ),
+    UniqueConstraint(
+        "group_id", "concept_id", name="uq_knowledge_concept_group__concept"
+    ),
+)
+
+Index(
+    "ix_knowledge_document_network",
+    knowledge_document.c.network_id,
+    knowledge_document.c.created,
+)
+Index("ix_knowledge_network_zone", knowledge_network.c.zone_id)
+Index(
+    "ix_knowledge_network_grant_network",
+    knowledge_network_grant.c.network_id,
+)
+Index(
+    "ix_knowledge_network_grant_audit_network",
+    knowledge_network_grant_audit.c.network_id,
+    knowledge_network_grant_audit.c.created,
+)
+Index(
+    "ix_knowledge_concept_network",
+    knowledge_concept.c.network_id,
+    knowledge_concept.c.name,
+)
 Index(
     "ix_knowledge_relation_network",
     knowledge_relation.c.network_id,
     knowledge_relation.c.source_concept_id,
 )
-Index("ix_knowledge_fact_network", knowledge_fact.c.network_id, knowledge_fact.c.created)
+Index(
+    "ix_knowledge_fact_network", knowledge_fact.c.network_id, knowledge_fact.c.created
+)
 Index("ix_knowledge_evidence_document", knowledge_evidence.c.document_id)
 Index("ix_knowledge_evidence_concept", knowledge_evidence.c.concept_id)
 Index("ix_knowledge_evidence_fact", knowledge_evidence.c.fact_id)
+Index("ix_knowledge_evidence_image", knowledge_evidence.c.image_id)
 Index("ix_knowledge_concept__data_concept", knowledge_concept__data.c.concept_id)
+Index(
+    "ix_knowledge_action_network",
+    knowledge_action.c.network_id,
+    knowledge_action.c.name,
+)
+Index("ix_knowledge_risk_network", knowledge_risk.c.network_id, knowledge_risk.c.name)
+Index(
+    "ix_knowledge_metric_network",
+    knowledge_metric.c.network_id,
+    knowledge_metric.c.name,
+)
+# Knowledge-context retrieval matches substrings of these free-text columns on
+# every chat turn. A btree cannot serve an unanchored ILIKE; these get the same
+# pg_trgm GIN treatment as global search (see TRIGRAM_SEARCH_TABLES above).
+for _knowledge_table, _knowledge_columns in (
+    (knowledge_concept, ("name", "description")),
+    (knowledge_fact, ("statement",)),
+    (knowledge_action, ("name", "description")),
+    (knowledge_risk, ("name", "description", "mitigation")),
+    (knowledge_metric, ("name", "description", "expression")),
+):
+    for _knowledge_column in _knowledge_columns:
+        Index(
+            f"ix_{_knowledge_table.name}_{_knowledge_column}_trgm",
+            _knowledge_table.c[_knowledge_column],
+            postgresql_using="gin",
+            postgresql_ops={_knowledge_column: "gin_trgm_ops"},
+        )
+Index(
+    "ix_knowledge_concept_group_network",
+    knowledge_concept_group.c.network_id,
+    knowledge_concept_group.c.name,
+)
+Index(
+    "ix_knowledge_concept_group__concept_group",
+    knowledge_concept_group__concept.c.group_id,
+)
+Index(
+    "ix_knowledge_capability_network",
+    knowledge_capability.c.network_id,
+    knowledge_capability.c.name,
+)
+Index(
+    "ix_knowledge_action__capability_action",
+    knowledge_action__capability.c.action_id,
+)
+Index(
+    "ix_knowledge_action_execution_network",
+    knowledge_action_execution.c.network_id,
+    knowledge_action_execution.c.created,
+)
+Index(
+    "ix_knowledge_network_version_network",
+    knowledge_network_version.c.network_id,
+    knowledge_network_version.c.version,
+)
+Index(
+    "ix_knowledge_eval_case_network",
+    knowledge_eval_case.c.network_id,
+    knowledge_eval_case.c.created,
+)
+Index(
+    "ix_knowledge_eval_run_network",
+    knowledge_eval_run.c.network_id,
+    knowledge_eval_run.c.created,
+)
 
 # ---------------------------------------------------------------------------
 # 表的中文说明
@@ -2224,6 +2997,10 @@ TABLE_COMMENTS: dict[str, str] = {
     # 权限
     "zone": "分区：一组目录对象的集合，是权限的最小单位",
     "zone_target": "分区指向的对象：数据库、schema 或表，三者取其一",
+    "department": "部门：数据权限的部门主体，成员可继承部门的 Zone 授权",
+    "department__member": "部门成员关系，user_id 指向 Prisma 的 frontend.user",
+    "zone_grant": "分区授权：把 Zone 授权给一个用户或一个部门，二者取其一",
+    "zone_grant_audit": "分区授权审计：操作者、变更前后授权与权限等级",
     # ER 画布
     "erd_canvas": "ER 画布：每个分区一块，保存视口位置与缩放",
     "erd_node": "画布上的表卡片：table_id 为空表示仅存在于图上的虚拟表",
@@ -2234,17 +3011,31 @@ TABLE_COMMENTS: dict[str, str] = {
     # 文档解析
     "parsing_profile": "解析档位：快速/标准/高精度等预设，保存 DPI、页范围与重试策略",
     "parsing_task": "解析任务：一次批量提交，记录文件数、完成数与总体状态",
-    "parsing_document": "解析文件：任务里的单个文件，记录源文件、页数与页级进度",
+    "parsing_document": "解析文件：源文件 MD5/路径、解析后 Markdown 路径、进度与知识学习状态",
     "parsing_run": "解析运行：一次实际解析，记录模型快照、结果路径、质量与校对状态",
+    "parsing_image": "解析图片：图片 MD5/路径、像素面积、VLM 解读内容与知识学习状态",
     "parsing_block_edit": "解析块修订：人工改过的块内容，按 run/page/idx 覆盖原始结果",
     # 知识本体
     "knowledge_network": "知识网络：一组从文档中抽取、审核并可发布的概念与关系",
+    "knowledge_network_grant": "知识网络显式授权：用户或部门二选一",
+    "knowledge_network_grant_audit": "知识网络授权审计：操作者、变更前后授权",
     "knowledge_document": "知识文档：一条绑定解析结果的抽取记录，保存状态、摘要与错误",
     "knowledge_concept": "知识概念：业务对象/事件/规则等，带别名、属性与认证状态",
     "knowledge_relation": "知识关系：两个概念之间的有向关系及其类型与可信度",
     "knowledge_fact": "知识事实：从原文抽取的一条陈述，可指向概念或字面值",
     "knowledge_evidence": "知识证据：事实/关系/概念在解析文档中的页码、块号与原文引文",
     "knowledge_concept__data": "概念与数据本体的映射：指向术语或目录表，二者取其一",
+    "knowledge_action": "知识行动：从文档抽取的可执行操作，可绑定到概念并导出为 BKN action_type",
+    "knowledge_risk": "知识风险：从文档抽取的风险、严重度与缓解措施，可导出为 BKN risk_type",
+    "knowledge_metric": "对象指标：归属于概念的可计算表达式，可链接数据本体的 SQL 属性并导出为 BKN object_metric",
+    "knowledge_concept_group": "概念分组：把相关概念组织在一起，可导出为 BKN concept_group",
+    "knowledge_concept_group__concept": "概念分组成员关系",
+    "knowledge_capability": "知识网络能力：Skill、Function、MCP 工具或知识库的依赖声明",
+    "knowledge_action__capability": "行动类与能力的挂载关系",
+    "knowledge_action_execution": "行动执行记录：参数、执行计划、结果与状态",
+    "knowledge_network_version": "知识网络版本：完整图定义快照，用于发布审计与回滚",
+    "knowledge_eval_case": "知识评测用例：问题、期望命中的概念与事实关键词",
+    "knowledge_eval_run": "知识评测运行：通过数、总数与逐用例明细",
     # 运行期
     "uploaded_dataset": "上传的数据集：Excel/CSV 连接上传的字节，以 Parquet 存在库里",
     "user_group": "用户组：一组账号与组级角色（admin/viewer）",
@@ -2303,6 +3094,15 @@ __all__ = [
     "GROUP_ROLE_VIEWER",
     "zone",
     "zone_target",
+    "department",
+    "department__member",
+    "zone_grant",
+    "zone_grant_audit",
+    "ZonePermission",
+    "ZONE_PERMISSION_READ",
+    "ZONE_PERMISSION_EDIT",
+    "ZONE_PERMISSION_MANAGE",
+    "ZONE_PERMISSION_RANK",
     "ERD_CARDINALITIES",
     "erd_canvas",
     "erd_node",
@@ -2314,14 +3114,28 @@ __all__ = [
     "parsing_task",
     "parsing_document",
     "parsing_run",
+    "parsing_image",
     "parsing_block_edit",
     "knowledge_network",
+    "knowledge_network_grant",
+    "knowledge_network_grant_audit",
     "knowledge_document",
     "knowledge_concept",
     "knowledge_relation",
     "knowledge_fact",
     "knowledge_evidence",
     "knowledge_concept__data",
+    "knowledge_action",
+    "knowledge_risk",
+    "knowledge_metric",
+    "knowledge_concept_group",
+    "knowledge_concept_group__concept",
+    "knowledge_capability",
+    "knowledge_action__capability",
+    "knowledge_action_execution",
+    "knowledge_network_version",
+    "knowledge_eval_case",
+    "knowledge_eval_run",
     "term_family",
     "term__term_family",
 ]

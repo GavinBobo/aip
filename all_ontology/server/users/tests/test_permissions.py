@@ -34,10 +34,13 @@ def test_an_admin_group_can_manage_zones() -> None:
     assert "zone:read" in permissions_for_role("admin")
 
 
-def test_a_viewer_group_can_read_but_not_write() -> None:
+def test_a_viewer_group_can_read_and_contribute_inside_its_resources() -> None:
     granted = permissions_for_role("viewer")
     assert "zone:read" in granted
     assert "catalog:read" in granted
+    assert "catalog:contribute" in granted
+    assert "zone:contribute" in granted
+    assert "analysis:contribute" in granted
     assert "chat:use" in granted
     assert "catalog:edit" not in granted
     assert "zone:manage" not in granted

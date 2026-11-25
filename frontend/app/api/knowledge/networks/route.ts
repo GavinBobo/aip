@@ -7,6 +7,6 @@ import { proxyToBackend } from '@/auth/proxy-backend';
 
 export const GET = withPermission({ catalog: ['read'] })((req) => proxyToBackend(req));
 
-export const POST = withPermission({ catalog: ['edit'] })((req, { user }) =>
+export const POST = withPermission({ catalog: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );

@@ -42,8 +42,10 @@ export const layeredLayout = (
 		if (depth.has(start.id)) continue;
 		depth.set(start.id, 0);
 		const queue = [start.id];
-		while (queue.length > 0) {
-			const current = queue.shift() as string;
+		// An index cursor, not shift(): shift() re-indexes the whole array on
+		// every pop, which turns this BFS into O(n²) on a large canvas.
+		for (let cursor = 0; cursor < queue.length; cursor += 1) {
+			const current = queue[cursor];
 			const next = (depth.get(current) ?? 0) + 1;
 			for (const neighbour of adjacency.get(current) ?? []) {
 				if (depth.has(neighbour)) continue;

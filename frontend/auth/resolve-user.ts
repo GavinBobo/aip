@@ -5,7 +5,10 @@
 // Resolve the All Ontology user behind a request, for handlers that accept both browser
 // and service callers.
 //
-// Four credentials are accepted, in order:
+// Five identities are accepted, in order:
+//   0. A trusted gateway's delegated subject (`x-all-ontology-delegation-key`
+//      plus `x-all-ontology-subject` — see auth/delegation.ts). Off unless
+//      ALL_ONTOLOGY_DELEGATION_KEY is configured.
 //   1. A Better Auth session cookie (browser).
 //   2. An All Ontology API token, `x-api-key: all_ontology_...` (scripts, CI — see auth/api-token.ts).
 //      Checked before the SSO bearer because both may arrive as `Authorization:
@@ -22,6 +25,7 @@ import { getCurrentSession } from '@/auth/auth-guards';
 import { extractApiToken, verifyApiToken } from '@/auth/api-token';
 import { extractOAuthToken, verifyOAuthToken } from '@/auth/oauth-token';
 import { verifyBearer } from '@/auth/bearer';
+import { resolveDelegatedUser } from '@/auth/delegation';
 import { getPrisma } from '@/lib/prisma';
 
 export type ResolvedUser = { id: string; role: string | null };
@@ -39,6 +43,13 @@ export async function resolveUser(): Promise<ResolvedUser | null> {
 	if (session?.user.id) return { id: session.user.id, role: session.user.role ?? null };
 
 	const requestHeaders = await headers();
+
+	// A trusted gateway may name the person the request is for (see
+	// auth/delegation.ts). Checked before the credential paths because a
+	// delegated request deliberately carries no user credential of its own;
+	// `null` is a hard rejection rather than a fall-through.
+	const delegated = await resolveDelegatedUser(requestHeaders);
+	if (delegated !== undefined) return delegated;
 
 	// An All Ontology token is unambiguous, so presenting one settles which credential is
 	// being offered: a revoked or expired token is a 401, not an invitation to

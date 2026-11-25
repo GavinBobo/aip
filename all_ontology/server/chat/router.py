@@ -85,8 +85,8 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from all_ontology.dal import datasources as datasources_dal
+from all_ontology.dal.users import resolve_accessible_catalog_ids
 from all_ontology.dal.terms import semantic_layer_calculated
-from all_ontology.retrieval.text_to_sql.visualization import analyze_and_visualize
 from all_ontology.server.chat.helpers import (
     NODE_LABELS,
     ChatRequest,
@@ -102,8 +102,8 @@ from all_ontology.server.chat.conversation_dal import (
 )
 from all_ontology.server.chat.settings_dal import is_visualization_enabled
 from all_ontology.server.chat.worker import PrewarmedWorker, get_pool
+from all_ontology.server.access import current_access, current_zone_ids
 from all_ontology.server.identity import resolve_internal_user
-from all_ontology.utils.llm_invoke import get_llm_client, get_non_reasoning_llm_client
 from all_ontology.server.responses import ChatCancelResponse
 
 logger = logging.getLogger(__name__)
@@ -144,6 +144,13 @@ def _ensure_chart_llms() -> None:
     if _chart_llms_ready:
         return
     _chart_llms_ready = True
+    # Charts are optional and need their own LLM clients; the streaming chat
+    # path runs in the worker subprocess and must not pay for openai at import.
+    from all_ontology.utils.llm_invoke import (
+        get_llm_client,
+        get_non_reasoning_llm_client,
+    )
+
     try:
         _non_reasoning_llm = get_non_reasoning_llm_client(max_tokens=2048)
     except (ValueError, EnvironmentError) as e:
@@ -152,6 +159,7 @@ def _ensure_chart_llms() -> None:
         _reasoning_llm = get_llm_client()
     except (ValueError, EnvironmentError) as e:
         logger.warning("Chart generation: failed to init reasoning LLM: %s", e)
+
 
 # Returned as the 409 detail when a chat is attempted before the semantic
 # layer has been built.
@@ -188,7 +196,7 @@ def _resolve_chat_target_db(target_db: str | None) -> str | None:
         return None
 
     requested = target_db.strip()
-    databases = datasources_dal.fetch_databases(zone_ids=None)
+    databases = datasources_dal.fetch_databases(zone_ids=current_zone_ids())
     for database in databases:
         database_id = str(database.get("id") or "").strip()
         database_name = str(database.get("name") or "").strip()
@@ -358,6 +366,13 @@ def _build_charts_event(slot: _Slot, answer: dict[str, Any]) -> dict[str, Any] |
     if llm is not None:
         try:
             if is_visualization_enabled():
+                # Imported here, not at module scope: chart analysis pulls the
+                # text-to-SQL/visualization stack, which the streaming path
+                # itself never needs.
+                from all_ontology.retrieval.text_to_sql.visualization import (
+                    analyze_and_visualize,
+                )
+
                 charts = analyze_and_visualize(
                     llm=llm,
                     question=slot.question,
@@ -662,6 +677,22 @@ async def chat_completions(
         except Exception:  # noqa: BLE001 — analytics is best-effort
             logger.exception("Failed to create stateless conversation analytics")
 
+    access = current_access()
+    chat_zone_ids = current_zone_ids()
+    if chat_zone_ids is None:
+        knowledge_network_ids = None
+    else:
+        from all_ontology.dal import knowledge as knowledge_dal
+
+        knowledge_network_ids = [
+            str(item["id"])
+            for item in knowledge_dal.list_networks(
+                chat_zone_ids,
+                user_id=access.user_id if access else None,
+                dept_ids=access.dept_ids if access else (),
+            )
+        ]
+
     worker.submit(
         request.question,
         prediction=request.prediction,
@@ -669,6 +700,13 @@ async def chat_completions(
         subject_token=subject_token,
         conversation_history=conversation_history,
         evidence=request.evidence,
+        allowed_table_ids=(
+            None
+            if current_zone_ids() is None
+            else sorted(resolve_accessible_catalog_ids(current_zone_ids())["table_ids"])
+        ),
+        zone_ids=chat_zone_ids,
+        knowledge_network_ids=knowledge_network_ids,
     )
     threading.Thread(target=_pump, args=(slot,), daemon=True).start()
     asyncio.create_task(_watch_disconnect(http_request, slot))

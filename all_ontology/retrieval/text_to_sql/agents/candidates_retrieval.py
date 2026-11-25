@@ -35,6 +35,7 @@ from all_ontology.semantic.constants import (
 )
 
 from all_ontology.dal.custom_analyses import custom_analysis_exists
+from all_ontology.dal.access import visible_object_ids
 from all_ontology.retrieval.data_access.semantic_search import search_semantic_index
 from all_ontology.utils.llm_invoke import invoke_with_structured_output
 from all_ontology.retrieval.text_to_sql.base import BaseAgent
@@ -118,6 +119,18 @@ def _dedupe_best_score(hits: list[dict]) -> list[dict]:
         result,
         key=lambda h: float(h.get("score") or float("inf")),
     )
+
+
+def _filter_hits_to_scope(hits: list[dict], allowed_table_ids: list[str]) -> list[dict]:
+    """Drop vector hits whose catalog object is outside the caller's tables."""
+    ids_by_label: dict[str, list[str]] = {}
+    for hit in hits:
+        label = str(hit.get("label") or "")
+        item_id = hit.get("id")
+        if label and item_id:
+            ids_by_label.setdefault(label, []).append(str(item_id))
+    visible = visible_object_ids(ids_by_label, allowed_table_ids)
+    return [hit for hit in hits if str(hit.get("id") or "") in visible]
 
 
 def _database_name(hit: dict) -> str | None:
@@ -680,6 +693,19 @@ class CandidateRetrievalAgent(BaseAgent):
                                     tagged = dict(hit)
                                     tagged["query_entity"] = entity
                                     all_col_attr_hits.append(tagged)
+
+        allowed_table_ids = state.get("allowed_table_ids")
+        if allowed_table_ids is not None:
+            all_col_attr_hits = _filter_hits_to_scope(
+                all_col_attr_hits, allowed_table_ids
+            )
+            all_custom_hits = _filter_hits_to_scope(all_custom_hits, allowed_table_ids)
+            all_sql_attr_hits = _filter_hits_to_scope(
+                all_sql_attr_hits, allowed_table_ids
+            )
+            subject_term_hits = _filter_hits_to_scope(
+                subject_term_hits, allowed_table_ids
+            )
 
         if _all_bridge_sourced(all_sql_attr_hits):
             # All hits are structural bridge-table joins — nothing to judge

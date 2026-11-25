@@ -5,10 +5,10 @@
 import { withPermission } from '@/auth/with-auth';
 import { proxyToBackend } from '@/auth/proxy-backend';
 
-// zonesApi.getById — fetch one zone (viewable by all).
+// zonesApi.getById — fetch one accessible zone.
 export const GET = withPermission({ zone: ['read'] })((req) => proxyToBackend(req));
-// zonesApi.update — edit a zone (admin only).
-export const PATCH = withPermission({ zone: ['manage'] })((req, { user }) =>
+// zonesApi.update — edit a zone; the backend checks manage permission on it.
+export const PATCH = withPermission({ zone: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );
 // zonesApi.delete — remove a zone (admin only).

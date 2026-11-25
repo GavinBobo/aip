@@ -151,6 +151,9 @@ def _worker_loop(
             subject_token,
             conversation_history,
             evidence,
+            allowed_table_ids,
+            zone_ids,
+            knowledge_network_ids,
         ) = payload
         try:
             # Connections are resolved once at worker init. If that
@@ -192,11 +195,25 @@ def _worker_loop(
                 processing_question,
             )
             custom_prompts = fetch_custom_prompts()
+            try:
+                from all_ontology.knowledge.context import retrieve_knowledge_context
+
+                knowledge_context = retrieve_knowledge_context(
+                    processing_question,
+                    zone_ids=zone_ids,
+                    network_ids=knowledge_network_ids,
+                )
+            except Exception:
+                logger.exception(
+                    "Knowledge ontology retrieval failed; continuing without it"
+                )
+                knowledge_context = ""
 
             agent_payload = {
                 "question": question,
                 "evidence": evidence or "",
                 "processing_question": processing_question,
+                "knowledge_context": knowledge_context,
                 "prediction": prediction,
                 "data_retriever": data_retriever,
                 "semantic_retriever": semantic_retriever,
@@ -204,6 +221,8 @@ def _worker_loop(
                 "acronyms": fetch_acronyms(),
                 "custom_prompts": custom_prompts,
             }
+            if allowed_table_ids is not None:
+                agent_payload["allowed_table_ids"] = list(allowed_table_ids)
             if target_db:
                 agent_payload["target_db"] = target_db
             for event in stream_agent_response(agent_payload):
@@ -256,6 +275,9 @@ class PrewarmedWorker:
         subject_token: str | None = None,
         conversation_history: list[dict[str, str | None]] | None = None,
         evidence: str | None = None,
+        allowed_table_ids: list[str] | None = None,
+        zone_ids: list[str] | None = None,
+        knowledge_network_ids: list[str] | None = None,
     ) -> None:
         """Ask *question*, optionally forcing the prediction/SQL branch.
 
@@ -278,6 +300,9 @@ class PrewarmedWorker:
                     subject_token,
                     conversation_history or [],
                     evidence,
+                    allowed_table_ids,
+                    zone_ids,
+                    knowledge_network_ids,
                 ),
             )
         )

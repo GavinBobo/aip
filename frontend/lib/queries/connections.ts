@@ -5,8 +5,9 @@
 /**
  * Where the configured connections live in the query cache.
  *
- * Not keyed by account, unlike zones: the list route strips credentials and
- * answers every role the same, so one entry serves whoever is signed in.
+ * Keyed by account: the list is narrowed to connections attached to catalog
+ * databases the caller can access, so one user's entries must not survive a
+ * sign-out and be shown to the next.
  */
 
 import { queryOptions, type QueryClient } from '@tanstack/react-query';
@@ -14,14 +15,14 @@ import { queryOptions, type QueryClient } from '@tanstack/react-query';
 import { connectionsApi } from '@/api/connections';
 import type { Connection } from '@/types/connection';
 
-const LIST_KEY = ['connections', 'list'] as const;
+const listKey = (userId: string) => ['connections', 'list', userId] as const;
 
 export const connectionQueries = {
-	list: () =>
+	list: (userId: string, serverUserId?: string) =>
 		queryOptions({
-			queryKey: LIST_KEY,
+			queryKey: listKey(userId),
 			queryFn: async (): Promise<Connection[]> => {
-				const res = await connectionsApi.getAll();
+				const res = await connectionsApi.getAll(serverUserId ?? userId);
 				if (res.error) throw new Error(res.message ?? 'Failed to load connections.');
 				return res.data ?? [];
 			},
@@ -50,15 +51,17 @@ export const connectionQueries = {
  */
 export const patchConnectionList = async (
 	queryClient: QueryClient,
+	userId: string,
 	update: (connections: Connection[]) => Connection[],
 ): Promise<void> => {
-	await queryClient.cancelQueries({ queryKey: LIST_KEY });
-	const held = queryClient.getQueryData<Connection[]>(LIST_KEY);
+	const key = listKey(userId);
+	await queryClient.cancelQueries({ queryKey: key });
+	const held = queryClient.getQueryData<Connection[]>(key);
 	if (held === undefined) {
-		await queryClient.invalidateQueries({ queryKey: LIST_KEY });
+		await queryClient.invalidateQueries({ queryKey: key });
 		return;
 	}
-	queryClient.setQueryData(LIST_KEY, update(held));
+	queryClient.setQueryData(key, update(held));
 };
 
 /**
@@ -68,5 +71,5 @@ export const patchConnectionList = async (
  * wrote, while the list also carries state the backend derives — so re-reading
  * is the honest way to redraw it.
  */
-export const invalidateConnectionList = (queryClient: QueryClient): Promise<void> =>
-	queryClient.invalidateQueries({ queryKey: LIST_KEY });
+export const invalidateConnectionList = (queryClient: QueryClient, userId: string): Promise<void> =>
+	queryClient.invalidateQueries({ queryKey: listKey(userId) });

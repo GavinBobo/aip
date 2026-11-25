@@ -9,6 +9,6 @@ import { proxyToBackend } from '@/auth/proxy-backend';
 export const GET = withPermission({ zone: ['read'] })((req) => proxyToBackend(req));
 
 // erdApi.createVersion — snapshot the canvas (admin only).
-export const POST = withPermission({ zone: ['manage'] })((req, { user }) =>
+export const POST = withPermission({ zone: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );

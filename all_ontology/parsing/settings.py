@@ -79,6 +79,11 @@ KEYS = {
     # Where the parser keeps its files. Empty means "the default under logs/".
     "upload_dir": "parsing_upload_dir",
     "image_dir": "parsing_image_dir",
+    "image_vlm_enabled": "parsing_image_vlm_enabled",
+    "image_vlm_min_area_px": "parsing_image_vlm_min_area_px",
+    "image_vlm_prompt": "parsing_image_vlm_prompt",
+    "image_vlm_max_tokens": "parsing_image_vlm_max_tokens",
+    "image_vlm_concurrency": "parsing_image_vlm_concurrency",
 }
 
 _lock = asyncio.Lock()
@@ -194,6 +199,22 @@ def apply_paths(values: dict[str, str]) -> None:
     image_dir = _as_text(values, "image_dir")
     settings.pipeline.upload_dir = upload_dir or PipelineConfig().upload_dir
     settings.pipeline.image_output_dir = image_dir or PipelineConfig().image_output_dir
+    defaults = PipelineConfig()
+    settings.pipeline.image_vlm_enabled = _as_bool(
+        values, "image_vlm_enabled", defaults.image_vlm_enabled
+    )
+    settings.pipeline.image_vlm_min_area_px = _as_int(
+        values, "image_vlm_min_area_px", defaults.image_vlm_min_area_px
+    )
+    settings.pipeline.image_vlm_prompt = _as_text(
+        values, "image_vlm_prompt", defaults.image_vlm_prompt
+    )
+    settings.pipeline.image_vlm_max_tokens = _as_int(
+        values, "image_vlm_max_tokens", defaults.image_vlm_max_tokens
+    )
+    settings.pipeline.image_vlm_concurrency = _as_int(
+        values, "image_vlm_concurrency", defaults.image_vlm_concurrency
+    )
     logger.debug(
         "Parsing paths: uploads=%s images=%s",
         settings.pipeline.upload_dir,
@@ -299,6 +320,13 @@ async def status() -> dict[str, Any]:
         "upload_dir": str(Path(settings.pipeline.upload_dir).resolve()),
         "image_dir": str(Path(settings.pipeline.image_output_dir).resolve()),
         "image_url_prefix": settings.pipeline.image_url_prefix,
+    }
+    described["image_understanding"] = {
+        "enabled": settings.pipeline.image_vlm_enabled,
+        "min_area_px": settings.pipeline.image_vlm_min_area_px,
+        "prompt": settings.pipeline.image_vlm_prompt,
+        "max_tokens": settings.pipeline.image_vlm_max_tokens,
+        "concurrency": settings.pipeline.image_vlm_concurrency,
     }
 
     # The browser edits these fields, but it must never receive the stored

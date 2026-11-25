@@ -17,7 +17,7 @@ from typing import Any, Mapping, Sequence
 
 from all_ontology.dal.uploads import delete_dataset, upsert_dataset
 from all_ontology.server.connections import service
-from all_ontology.server.connections.files import validate_name
+from all_ontology.server.connections.files import _tabular_files, validate_name
 from all_ontology.utils.api_source import (
     ApiSourceError,
     apply_column_names,
@@ -25,8 +25,6 @@ from all_ontology.utils.api_source import (
     normalize_config,
     preview_api,
 )
-from all_ontology.utils.tabular_files import frame_to_parquet, sanitize_table_name
-
 logger = logging.getLogger(__name__)
 
 
@@ -40,7 +38,7 @@ def _materialise(
 ) -> tuple[bytes, list[dict[str, str]], int]:
     frame = fetch_frame(config)
     frame, pairs = apply_column_names(frame, columns)
-    return frame_to_parquet(frame), pairs, len(frame)
+    return _tabular_files().frame_to_parquet(frame), pairs, len(frame)
 
 
 def _store_dataset(
@@ -49,7 +47,7 @@ def _store_dataset(
     upsert_dataset(
         name=database,
         filename=f"{config['method']} {config['url']}",
-        table_name=sanitize_table_name(database),
+        table_name=_tabular_files().sanitize_table_name(database),
         row_count=rows,
         content=payload,
     )

@@ -9,6 +9,6 @@ import { proxyToBackend } from '@/auth/proxy-backend';
 // flow. The account role must allow a catalog edit, the same way editing the
 // attribute does. The generated text is cached on the attribute, so the
 // caller's identity goes with the request.
-export const GET = withPermission({ catalog: ['edit'] })((req, { user }) =>
+export const GET = withPermission({ catalog: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );

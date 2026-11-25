@@ -41,6 +41,7 @@ def coverage_llm_client() -> Any | None:
             logger.error("Failed to initialize LLM client: %s", exc)
     return _llm_client
 
+
 graph = create_graph()
 app = graph.compile()
 
@@ -92,6 +93,7 @@ def _build_state(payload: EntityCoveragePayload) -> AgentState:
         "decision": "",
         "domain_rules": domain_rules,
         "glossary": list(acronyms or []),
+        "allowed_table_ids": payload.get("allowed_table_ids"),
     }
     return state  # type: ignore[return-value]
 

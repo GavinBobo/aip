@@ -121,6 +121,37 @@ CURATED: tuple[ToolSpec, ...] = (
         ),
     ),
     ToolSpec(
+        method="GET",
+        path="/api/knowledge/networks",
+        name="search_knowledge_networks",
+        description=(
+            "List the governed knowledge networks built from parsed documents. "
+            "Use this when a question depends on policies, procedures, roles or "
+            "definitions that may live in documents rather than in warehouse "
+            "columns."
+        ),
+    ),
+    ToolSpec(
+        method="GET",
+        path="/api/knowledge/networks/{network_id}/graph",
+        name="get_knowledge_graph",
+        description=(
+            "Fetch a knowledge network as concepts, relations and links into "
+            "the data ontology. Use it to see how document-defined concepts "
+            "connect to each other and to glossary terms or catalog tables."
+        ),
+    ),
+    ToolSpec(
+        method="GET",
+        path="/api/knowledge/networks/{network_id}/facts",
+        name="list_knowledge_facts",
+        description=(
+            "List grounded statements extracted from a knowledge network, each "
+            "with its source page and quoted passage. Use this instead of "
+            "guessing when an answer needs a policy, threshold or business rule."
+        ),
+    ),
+    ToolSpec(
         method="POST",
         path="/api/question-entity-coverage",
         name="check_answerable",

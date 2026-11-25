@@ -73,6 +73,18 @@ def accumulate_updated_column(
     )
 
 
+def _edge_payload(node_from, node_to):
+    """Shape one parent/child pair the way ``add_schemas_edge_batch`` expects."""
+    return {
+        "from_label": node_from.get_label(),
+        "from_identProps": node_from.get_match_props(),
+        "v_props": node_from.get_properties(),
+        "to_label": node_to.get_label(),
+        "to_identProps": node_to.get_match_props(),
+        "u_props": node_to.get_properties(),
+    }
+
+
 def update_diff_from_existing_schema(new_schema, latest_timestamp):
     from all_ontology.catalog.store.db import (
         add_schemas_edge_batch,
@@ -80,10 +92,7 @@ def update_diff_from_existing_schema(new_schema, latest_timestamp):
         delete_table,
         update_properties_in_graph_batch,
     )
-    from all_ontology.catalog.store.schemas import (
-        add_schemas_edge,
-        load_schema_from_graph,
-    )
+    from all_ontology.catalog.store.schemas import load_schema_from_graph
 
     try:
         # load existing schema
@@ -103,27 +112,20 @@ def update_diff_from_existing_schema(new_schema, latest_timestamp):
             f"Tables to add in schema {schema_name}: {len(tables_names_to_add)}"
         )
 
+        edges_to_add = []
         for table_name in tables_names_to_add:
-            edge_params = {}
-            add_schemas_edge(
-                [
-                    existing_schema_node,
-                    new_schema.get_table_node(table_name),
-                    edge_params,
-                ],
-                latest_timestamp,
-            )
-
+            table_node = new_schema.get_table_node(table_name)
+            edges_to_add.append(_edge_payload(existing_schema_node, table_node))
             column_names = new_schema.get_table_columns_by_table_name(table_name)
             for column_name in column_names:
-                add_schemas_edge(
-                    [
-                        new_schema.get_table_node(table_name),
+                edges_to_add.append(
+                    _edge_payload(
+                        table_node,
                         new_schema.get_column_node(column_name, table_name),
-                        edge_params,
-                    ],
-                    latest_timestamp,
+                    )
                 )
+        if edges_to_add:
+            add_schemas_edge_batch(edges_to_add, created=latest_timestamp)
 
         # Tables in both: refresh the facts the source owns. Only additions and
         # deletions used to be handled, so a table that changed *shape* kept its

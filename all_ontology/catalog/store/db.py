@@ -157,19 +157,22 @@ def add_schemas_edge_batch(edges, created):
 
     *created* is ignored: the column carries a server default.
     """
-    for edge in edges:
-        try:
-            parent_id = upsert_row(
-                edge["from_label"], edge["from_identProps"], edge["v_props"]
-            )
-            upsert_row(
-                edge["to_label"],
-                edge["to_identProps"],
-                edge["u_props"],
-                parent_id=parent_id,
-            )
-        except Exception as err:
-            raise Exception(f'Error in "add_schemas_edge_batch": {err}') from err
+    # One transaction for the whole batch: a schema with thousands of columns
+    # would otherwise commit twice per edge.
+    with write_transaction():
+        for edge in edges:
+            try:
+                parent_id = upsert_row(
+                    edge["from_label"], edge["from_identProps"], edge["v_props"]
+                )
+                upsert_row(
+                    edge["to_label"],
+                    edge["to_identProps"],
+                    edge["u_props"],
+                    parent_id=parent_id,
+                )
+            except Exception as err:
+                raise Exception(f'Error in "add_schemas_edge_batch": {err}') from err
 
 
 def update_properties_in_graph_batch(items):
@@ -179,18 +182,21 @@ def update_properties_in_graph_batch(items):
     description must survive a re-ingest, which would otherwise overwrite it
     with whatever the source database reports (usually nothing).
     """
-    for item in items:
-        spec = _spec_for(item["label"])
-        props = {k: v for k, v in item["props"].items() if k in spec.columns}
-        description = props.pop("description", None)
-        props.pop("id", None)
+    with write_transaction():
+        for item in items:
+            spec = _spec_for(item["label"])
+            props = {k: v for k, v in item["props"].items() if k in spec.columns}
+            description = props.pop("description", None)
+            props.pop("id", None)
 
-        values = dict(props)
-        if description is not None:
-            values["description"] = func.coalesce(spec.table.c.description, description)
+            values = dict(props)
+            if description is not None:
+                values["description"] = func.coalesce(
+                    spec.table.c.description, description
+                )
 
-        if not values:
-            continue
-        store().query_write(
-            update(spec.table).where(spec.table.c.id == item["id"]).values(**values)
-        )
+            if not values:
+                continue
+            store().query_write(
+                update(spec.table).where(spec.table.c.id == item["id"]).values(**values)
+            )

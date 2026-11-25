@@ -35,7 +35,7 @@ from all_ontology.dal.custom_analyses import (
     get_custom_analysis_by_id,
     list_custom_analyses,
 )
-from all_ontology.server.sql_utils import get_dialects, get_schemas, validate_sql
+from all_ontology.sql.validation import get_dialects, get_schemas, validate_sql
 
 if TYPE_CHECKING:
     pass
@@ -68,8 +68,12 @@ def validate_custom_analysis_sql(sql: str) -> dict[str, Any]:
 
     Raises :class:`CustomAnalysisSqlError` when the SQL can't be resolved.
     """
-    validate_sql(sql, get_dialects(), get_schemas())
-    return {"valid": True, "sql": sql}
+    query_obj = validate_sql(sql, get_dialects(), get_schemas())
+    return {
+        "valid": True,
+        "sql": sql,
+        "table_ids": [str(table_id) for table_id in query_obj.get_tables_ids()],
+    }
 
 
 # ---------------------------------------------------------------------------

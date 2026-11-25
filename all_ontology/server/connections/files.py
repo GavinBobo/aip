@@ -21,18 +21,15 @@ from typing import Any, Sequence
 from all_ontology.dal.uploads import delete_dataset, upsert_dataset
 from all_ontology.server.connections import service
 from all_ontology.server.ingestion.proxy import trigger_ingest
-from all_ontology.utils.tabular_files import (
-    SUPPORTED_SUFFIXES,
-    TabularFileError,
-    build_frame,
-    detect_format,
-    frame_to_parquet,
-    normalize_delimiter,
-    preview,
-    sanitize_table_name,
-)
+
 
 logger = logging.getLogger(__name__)
+
+
+def _tabular_files():
+    """Tabular-file helpers, imported on first use (they pull pandas)."""
+    from all_ontology.utils import tabular_files
+    return tabular_files
 
 #: Largest upload accepted. Bigger files are rejected before parsing: the
 #: workbook is decoded in memory and the result is stored on the catalog row,
@@ -176,7 +173,7 @@ def browse_source_path(raw_path: str | None = None) -> dict[str, Any]:
             entries.append(
                 {"name": child.name, "path": str(resolved), "kind": "directory"}
             )
-        elif resolved.is_file() and resolved.suffix.lower() in SUPPORTED_SUFFIXES:
+        elif resolved.is_file() and resolved.suffix.lower() in _tabular_files().SUPPORTED_SUFFIXES:
             try:
                 size = resolved.stat().st_size
             except OSError:
@@ -324,7 +321,7 @@ def _checked_content(filename: str, content: bytes) -> bytes:
             f"The file is larger than the {MAX_UPLOAD_BYTES // (1024 * 1024)} MB "
             "upload limit"
         )
-    detect_format(filename)
+    _tabular_files().detect_format(filename)
     return content
 
 
@@ -337,7 +334,7 @@ def preview_file(
 ) -> dict[str, Any]:
     """Describe an upload for the header/rename step."""
     _checked_content(filename, content)
-    return preview(filename, content, sheet=sheet, delimiter=delimiter)
+    return _tabular_files().preview(filename, content, sheet=sheet, delimiter=delimiter)
 
 
 def _materialise(
@@ -353,7 +350,7 @@ def _materialise(
     """Build the stored Parquet plus the column names and row count."""
     _checked_content(filename, content)
     try:
-        frame = build_frame(
+        frame = _tabular_files().build_frame(
             filename,
             content,
             sheet=sheet,
@@ -362,11 +359,11 @@ def _materialise(
             delimiter=delimiter,
             keep_columns=keep_columns,
         )
-    except TabularFileError:
+    except _tabular_files().TabularFileError:
         raise
     except Exception as exc:  # noqa: BLE001 - driver/engine specific
-        raise TabularFileError(f"Could not read the file: {exc}") from exc
-    return frame_to_parquet(frame), [str(name) for name in frame.columns], len(frame)
+        raise _tabular_files().TabularFileError(f"Could not read the file: {exc}") from exc
+    return _tabular_files().frame_to_parquet(frame), [str(name) for name in frame.columns], len(frame)
 
 
 def create_file_connection(
@@ -383,7 +380,7 @@ def create_file_connection(
 ) -> dict[str, Any]:
     """Store the upload and register it as a connection."""
     database = validate_name(database)
-    delimiter = normalize_delimiter(delimiter)
+    delimiter = _tabular_files().normalize_delimiter(delimiter)
     if service._database_already_connected(database):
         raise ValueError(f"A connection for database {database!r} already exists")
 
@@ -396,7 +393,7 @@ def create_file_connection(
         delimiter=delimiter,
         keep_columns=keep_columns,
     )
-    table_name = sanitize_table_name(database)
+    table_name = _tabular_files().sanitize_table_name(database)
     upsert_dataset(
         name=database,
         filename=filename,
@@ -449,7 +446,7 @@ def replace_file_dataset(
     if str(stored.get("type") or "") != "file":
         raise ValueError(f"Connection {database_name!r} is not a file connection")
 
-    delimiter = normalize_delimiter(delimiter)
+    delimiter = _tabular_files().normalize_delimiter(delimiter)
     payload, column_names, row_count = _materialise(
         filename,
         content,
@@ -459,7 +456,7 @@ def replace_file_dataset(
         delimiter=delimiter,
         keep_columns=keep_columns,
     )
-    table_name = sanitize_table_name(database_name)
+    table_name = _tabular_files().sanitize_table_name(database_name)
     upsert_dataset(
         name=database_name,
         filename=filename,

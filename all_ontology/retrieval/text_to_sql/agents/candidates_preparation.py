@@ -727,6 +727,21 @@ class CandidatePreparationAgent(BaseAgent):
                 [t["name"] for t in forced_tables],
             )
 
+        allowed_table_ids = state.get("allowed_table_ids")
+        if allowed_table_ids is not None:
+            allowed = set(allowed_table_ids)
+            before = len(relevant_tables)
+            relevant_tables = [
+                table
+                for table in relevant_tables
+                if str(table.get("id") or "") in allowed
+            ]
+            if len(relevant_tables) != before:
+                self.logger.info(
+                    "Dropped %d table(s) outside the caller's data permissions",
+                    before - len(relevant_tables),
+                )
+
         self.logger.info(
             "Final %d table(s) reaching SQL generation: %s",
             len(relevant_tables),

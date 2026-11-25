@@ -1,14 +1,18 @@
+from __future__ import annotations
+
 import asyncio
 import base64
 import logging
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import cv2
 import httpx
 import numpy as np
-from openai import AsyncOpenAI, DefaultAsyncHttpxClient
 
 from all_ontology.parsing.config.settings import OXRModelConfig, settings
+
+if TYPE_CHECKING:
+    from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +74,10 @@ class OXRModelClient:
     @property
     def client(self) -> Optional[AsyncOpenAI]:
         if self._client is None and self.config.url:
+            # Imported on first use: the API server imports the parsing router at
+            # startup, and openai is only needed once a parse actually runs.
+            from openai import AsyncOpenAI, DefaultAsyncHttpxClient
+
             self._client = AsyncOpenAI(
                 base_url=self.config.url,
                 api_key=self.config.api_key or "EMPTY",
@@ -180,6 +188,23 @@ class OXRModelClient:
             image=image,
             timeout=self.config.timeout,
             model_options=None,
+            max_tokens=max_tokens,
+        )
+
+    async def describe_image(
+        self,
+        prompt: str,
+        image: np.ndarray,
+        *,
+        model_options: Optional[Dict[str, Any]] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        """Interpret one extracted picture with the configured vision model."""
+        return await self._call_vision_model(
+            prompt=prompt,
+            image=image,
+            timeout=self.config.timeout,
+            model_options=model_options,
             max_tokens=max_tokens,
         )
 

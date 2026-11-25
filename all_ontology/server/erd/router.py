@@ -14,7 +14,8 @@ from sqlalchemy import select
 from all_ontology.dal import erd as dal
 from all_ontology.dal import schema as s
 from all_ontology.dal.session import store
-from all_ontology.server.erd import assistant
+from all_ontology.server.access import require_zone, require_zone_permission
+from all_ontology.dal.schema import ZONE_PERMISSION_EDIT
 from all_ontology.server.erd.schemas import (
     AreaCreate,
     AreaUpdate,
@@ -46,10 +47,79 @@ router = APIRouter()
 
 def canvas_or_404(zone_id: str) -> dict[str, Any]:
     """The zone's canvas, or a 404. Shared with the import/export routes."""
+    require_zone(zone_id)
     canvas = dal.get_or_create_canvas(zone_id)
     if canvas is None:
         raise HTTPException(status_code=404, detail=f"Zone {zone_id!r} not found")
     return canvas
+
+
+def _require_zone_edit(zone_id: str) -> None:
+    require_zone_permission(zone_id, ZONE_PERMISSION_EDIT)
+
+
+def _canvas_zone_id(canvas_id: str) -> str:
+    rows = store().query_read(
+        select(s.erd_canvas.c.zone_id).where(s.erd_canvas.c.id == canvas_id).limit(1)
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail="Canvas not found")
+    return str(rows[0]["zone_id"])
+
+
+def _require_canvas_edit(canvas_id: str) -> None:
+    _require_zone_edit(_canvas_zone_id(canvas_id))
+
+
+def _require_node_edit(node_id: str) -> None:
+    rows = store().query_read(
+        select(s.erd_node.c.canvas_id).where(s.erd_node.c.id == node_id).limit(1)
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail=f"Node {node_id!r} not found")
+    _require_canvas_edit(str(rows[0]["canvas_id"]))
+
+
+def _require_relationship_edit(rel_id: str) -> None:
+    rows = store().query_read(
+        select(s.erd_relationship.c.canvas_id)
+        .where(s.erd_relationship.c.id == rel_id)
+        .limit(1)
+    )
+    if not rows:
+        raise HTTPException(
+            status_code=404, detail=f"Relationship {rel_id!r} not found"
+        )
+    _require_canvas_edit(str(rows[0]["canvas_id"]))
+
+
+def _require_note_edit(note_id: str) -> None:
+    rows = store().query_read(
+        select(s.erd_note.c.canvas_id).where(s.erd_note.c.id == note_id).limit(1)
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail=f"Note {note_id!r} not found")
+    _require_canvas_edit(str(rows[0]["canvas_id"]))
+
+
+def _require_area_edit(area_id: str) -> None:
+    rows = store().query_read(
+        select(s.erd_area.c.canvas_id).where(s.erd_area.c.id == area_id).limit(1)
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail=f"Area {area_id!r} not found")
+    _require_canvas_edit(str(rows[0]["canvas_id"]))
+
+
+def _require_version_edit(version_id: str) -> None:
+    rows = store().query_read(
+        select(s.erd_canvas_version.c.canvas_id)
+        .where(s.erd_canvas_version.c.id == version_id)
+        .limit(1)
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail=f"Version {version_id!r} not found")
+    _require_canvas_edit(str(rows[0]["canvas_id"]))
 
 
 @router.post("/erd/assistant", response_model=ErdAssistantResponse)
@@ -65,6 +135,10 @@ def erd_assistant(body: AssistantRequest) -> dict:
     ``zone_id`` is only used to confirm the zone exists: a canvas for a zone the
     caller cannot see should fail before spending an LLM call on it.
     """
+    # Optional LLM feature: keep langchain out of the startup import graph.
+    from all_ontology.server.erd import assistant
+
+    _require_zone_edit(body.zone_id)
     canvas_or_404(body.zone_id)
     reply = assistant.ask(body)
     return {"data": reply.model_dump()}
@@ -84,6 +158,7 @@ def get_canvas(zone_id: str) -> dict:
 @router.patch("/erd/canvases/{zone_id}", response_model=ErdCanvasResponse)
 def patch_canvas(zone_id: str, body: ViewportUpdate) -> dict:
     """Persist the canvas pan/zoom so the next visit opens at the same view."""
+    _require_zone_edit(zone_id)
     updated = dal.update_viewport(zone_id, body.model_dump())
     if updated is None:
         raise HTTPException(
@@ -104,6 +179,7 @@ def put_canvas_state(zone_id: str, body: CanvasState) -> dict:
     Node and relationship ids are preserved so the browser's history stack
     keeps pointing at the same rows after the round trip.
     """
+    _require_zone_edit(zone_id)
     canvas = canvas_or_404(zone_id)
     payload = dal.restore_canvas_state(
         canvas["id"],
@@ -128,6 +204,7 @@ def patch_node(node_id: str, body: NodeUpdate) -> dict:
     ``column_order`` and ``width`` are presentation-only and work for either
     kind of table.
     """
+    _require_node_edit(node_id)
     try:
         node = dal.update_node(
             node_id,
@@ -152,6 +229,7 @@ def patch_node(node_id: str, body: NodeUpdate) -> dict:
 @router.post("/erd/nodes", status_code=201, response_model=ErdNodeResponse)
 def post_node(body: NodeCreate) -> dict:
     """Add a table card by hand, typically a virtual table that is not catalogued."""
+    _require_canvas_edit(body.canvas_id)
     name = body.name.strip()
     if not name:
         raise HTTPException(status_code=400, detail="A node needs a name")
@@ -186,6 +264,7 @@ def remove_node(node_id: str) -> dict:
     reconciliation does not put it back; it can be restored later. A
     canvas-only card is deleted outright.
     """
+    _require_node_edit(node_id)
     if not dal.delete_node(node_id):
         raise HTTPException(status_code=404, detail=f"Node {node_id!r} not found")
     return {"data": {"id": node_id}}
@@ -194,6 +273,7 @@ def remove_node(node_id: str) -> dict:
 @router.post("/erd/nodes/{node_id}/restore", response_model=ErdNodeResponse)
 def restore_hidden_node(node_id: str) -> dict:
     """Put a hidden catalog table back on the canvas, where it was before."""
+    _require_node_edit(node_id)
     node = dal.restore_node(node_id)
     if node is None:
         raise HTTPException(
@@ -212,6 +292,7 @@ def post_relationship(body: RelationshipCreate) -> dict:
     lists describe the same number of columns; empty lists mean a table-level
     relationship.
     """
+    _require_canvas_edit(body.canvas_id)
     try:
         relationship = dal.create_relationship(
             canvas_id=body.canvas_id,
@@ -230,6 +311,7 @@ def post_relationship(body: RelationshipCreate) -> dict:
 @router.patch("/erd/relationships/{rel_id}", response_model=ErdRelationshipResponse)
 def patch_relationship(rel_id: str, body: RelationshipUpdate) -> dict:
     """Change a relationship's cardinality, label or column pair."""
+    _require_relationship_edit(rel_id)
     try:
         relationship = dal.update_relationship(
             rel_id,
@@ -250,6 +332,7 @@ def patch_relationship(rel_id: str, body: RelationshipUpdate) -> dict:
 @router.delete("/erd/relationships/{rel_id}", response_model=IdResponse)
 def remove_relationship(rel_id: str) -> dict:
     """Delete one relationship line."""
+    _require_relationship_edit(rel_id)
     if not dal.delete_relationship(rel_id):
         raise HTTPException(
             status_code=404, detail=f"Relationship {rel_id!r} not found"
@@ -260,6 +343,7 @@ def remove_relationship(rel_id: str) -> dict:
 @router.post("/erd/notes", status_code=201, response_model=ErdNoteResponse)
 def post_note(body: NoteCreate) -> dict:
     """Add a sticky note to the canvas."""
+    _require_canvas_edit(body.canvas_id)
     return {
         "data": dal.create_note(
             canvas_id=body.canvas_id,
@@ -274,6 +358,7 @@ def post_note(body: NoteCreate) -> dict:
 @router.patch("/erd/notes/{note_id}", response_model=ErdNoteResponse)
 def patch_note(note_id: str, body: NoteUpdate) -> dict:
     """Move, resize or retype a sticky note."""
+    _require_note_edit(note_id)
     note = dal.update_note(
         note_id,
         text=body.text,
@@ -291,6 +376,7 @@ def patch_note(note_id: str, body: NoteUpdate) -> dict:
 @router.delete("/erd/notes/{note_id}", response_model=IdResponse)
 def remove_note(note_id: str) -> dict:
     """Delete a sticky note."""
+    _require_note_edit(note_id)
     if not dal.delete_note(note_id):
         raise HTTPException(status_code=404, detail=f"Note {note_id!r} not found")
     return {"data": {"id": note_id}}
@@ -299,6 +385,7 @@ def remove_note(note_id: str) -> dict:
 @router.post("/erd/areas", status_code=201, response_model=ErdAreaResponse)
 def post_area(body: AreaCreate) -> dict:
     """Add a grouping rectangle to the canvas."""
+    _require_canvas_edit(body.canvas_id)
     return {
         "data": dal.create_area(
             canvas_id=body.canvas_id,
@@ -315,6 +402,7 @@ def post_area(body: AreaCreate) -> dict:
 @router.patch("/erd/areas/{area_id}", response_model=ErdAreaResponse)
 def patch_area(area_id: str, body: AreaUpdate) -> dict:
     """Move, resize, rename or recolour a grouping rectangle."""
+    _require_area_edit(area_id)
     area = dal.update_area(
         area_id,
         name=body.name,
@@ -332,6 +420,7 @@ def patch_area(area_id: str, body: AreaUpdate) -> dict:
 @router.delete("/erd/areas/{area_id}", response_model=IdResponse)
 def remove_area(area_id: str) -> dict:
     """Delete a grouping rectangle. Its tables stay on the canvas."""
+    _require_area_edit(area_id)
     if not dal.delete_area(area_id):
         raise HTTPException(status_code=404, detail=f"Area {area_id!r} not found")
     return {"data": {"id": area_id}}
@@ -357,6 +446,7 @@ def create_version(
     uid: str | None = Query(None, description="User saving the version"),
 ) -> dict:
     """Snapshot the canvas as it stands, under a user-provided label."""
+    _require_zone_edit(zone_id)
     row = dal.create_version(zone_id, body.label, uid)
     if row is None:
         raise HTTPException(status_code=404, detail=f"Zone {zone_id!r} not found")
@@ -366,6 +456,7 @@ def create_version(
 @router.post("/erd/versions/{version_id}/restore", response_model=ErdCanvasResponse)
 def restore_version(version_id: str) -> dict:
     """Put a saved version back on the canvas."""
+    _require_version_edit(version_id)
     canvas = dal.restore_version(version_id)
     if canvas is None:
         raise HTTPException(status_code=404, detail=f"Version {version_id!r} not found")
@@ -375,6 +466,7 @@ def restore_version(version_id: str) -> dict:
 @router.delete("/erd/versions/{version_id}", response_model=IdResponse)
 def remove_version(version_id: str) -> dict:
     """Delete a saved version. The canvas is untouched."""
+    _require_version_edit(version_id)
     if not dal.delete_version(version_id):
         raise HTTPException(status_code=404, detail=f"Version {version_id!r} not found")
     return {"data": {"id": version_id}}

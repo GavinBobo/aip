@@ -9,6 +9,38 @@ export type Zone = {
 	description: string | null;
 	color: string | null;
 	enabled: boolean;
+	access?: ZoneAccess;
+};
+
+export type ZoneAccessUser = {
+	id: string;
+	name: string;
+	email: string;
+	role: string | null;
+};
+
+export type ZoneAccessDepartment = {
+	id: string;
+	name: string;
+};
+
+export type ZoneAccess = {
+	user_ids: string[];
+	dept_ids: string[];
+	users: ZoneAccessUser[];
+	departments: ZoneAccessDepartment[];
+	grants?: ZoneGrant[];
+	user_permissions?: Record<string, ZonePermission>;
+	dept_permissions?: Record<string, ZonePermission>;
+};
+
+export type ZonePermission = 'read' | 'edit' | 'manage';
+
+export type ZoneGrant = {
+	subject_type: 'user' | 'department';
+	subject_id: string;
+	permission: ZonePermission;
+	expires_at?: string | null;
 };
 
 export type ZoneItem = {
@@ -31,7 +63,6 @@ export type ZoneCreateInput = {
 	description?: string;
 	color: string;
 	items: string[];
-	created_by: string;
 };
 
 export type ZoneUpdateInput = {
@@ -39,4 +70,10 @@ export type ZoneUpdateInput = {
 	description?: string | null;
 	color?: string | null;
 	items?: string[];
+};
+
+export type ZoneAccessInput = {
+	grants: ZoneGrant[];
+	user_ids?: string[];
+	dept_ids?: string[];
 };

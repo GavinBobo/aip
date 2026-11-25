@@ -22,10 +22,10 @@ import { ButtonTheme, Size } from '@/enums/button';
 import { t } from '@/i18n';
 
 const ELEMENT_LABELS: Record<string, Record<string, string>> = {
-	image: { url: 'URL', base64: 'Base64', none: '不输出' },
+	image: { url: 'URL', base64: 'Base64', none: 'Do not output' },
 	formula: { latex: 'LaTeX' },
 	table: { html: 'HTML', markdown: 'Markdown' },
-	cs: { smiles: 'SMILES', image: '图片' },
+	cs: { smiles: 'SMILES', image: 'Image' },
 };
 
 const formatBytes = (bytes: number): string => {
@@ -125,7 +125,14 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 				.replace(/[\\/]+$/, '')
 				.split(/[\\/]/)
 				.pop();
-			setName(folder ? `${folder} · ${response.data.count} 个 PDF` : '');
+			setName(
+				folder
+					? t('{folder} · {count} PDF files', {
+							folder,
+							count: response.data.count,
+						})
+					: '',
+			);
 		}
 	};
 
@@ -405,7 +412,7 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 										>
 											{values.map((value) => (
 												<option key={value} value={value}>
-													{ELEMENT_LABELS[element]?.[value] ?? value}
+													{t(ELEMENT_LABELS[element]?.[value] ?? value)}
 												</option>
 											))}
 										</select>

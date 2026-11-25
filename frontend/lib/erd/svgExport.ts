@@ -89,8 +89,10 @@ export const buildSvgDiagram = (
 	const height = maxY - minY + padding * 2;
 	const byId = new Map(nodes.map((node) => [node.id, node]));
 	const parts: string[] = [];
-
-	parts.push(`<rect x="0" y="0" width="${width}" height="${height}" fill="#fafafa"/>`);
+	// The sheet is in viewport coordinates, so it must sit outside the
+	// translate group: inside it, negative node coordinates shift the sheet
+	// away from the origin and leave a blank strip.
+	const background = `<rect x="0" y="0" width="${width}" height="${height}" fill="#fafafa"/>`;
 
 	for (const relationship of relationships) {
 		const source = byId.get(relationship.source_node_id);
@@ -125,6 +127,7 @@ export const buildSvgDiagram = (
 		const widthOfNode = nodeWidth(node);
 		parts.push(
 			`<g transform="translate(${node.x}, ${node.y})">`,
+			...(node.note ? [`<title>${escapeXml(node.note)}</title>`] : []),
 			`<rect width="${widthOfNode}" height="${heightOfNode}" rx="8" fill="#ffffff" stroke="#d4d4d8"/>`,
 			`<path d="M0 8 a8 8 0 0 1 8 -8 H${widthOfNode - 8} a8 8 0 0 1 8 8 V${CARD_HEADER_HEIGHT} H0 Z" fill="#f4f4f5"/>`,
 			`<text x="10" y="${CARD_HEADER_HEIGHT / 2 + 4}" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#18181b">${escapeXml(
@@ -134,6 +137,14 @@ export const buildSvgDiagram = (
 		if (node.table_id == null) {
 			parts.push(
 				`<text x="${widthOfNode - 10}" y="${CARD_HEADER_HEIGHT / 2 + 4}" text-anchor="end" font-family="system-ui, sans-serif" font-size="9" fill="#b45309">virtual</text>`,
+			);
+		}
+		if (node.note) {
+			// The canvas shows a grey marker with the note as a tooltip; the
+			// export keeps the same cue and the text as the group's <title>.
+			const noteX = node.table_id == null ? widthOfNode - 46 : widthOfNode - 10;
+			parts.push(
+				`<text x="${noteX}" y="${CARD_HEADER_HEIGHT / 2 + 4}" text-anchor="end" font-family="system-ui, sans-serif" font-size="9" fill="#a1a1aa">▸</text>`,
 			);
 		}
 		if (!node.collapsed) {
@@ -188,6 +199,7 @@ export const buildSvgDiagram = (
 
 	const svg = [
 		`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
+		background,
 		`<g transform="translate(${-minX + padding}, ${-minY + padding})">`,
 		...parts,
 		'</g>',

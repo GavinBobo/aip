@@ -37,13 +37,13 @@ from all_ontology.semantic.constants import (
     SQL_ATTR_SOURCE_TABLE,
 )
 from all_ontology.server.model_interchange import service
-from all_ontology.server.model_interchange.embed import (
+from all_ontology.model_interchange.embed import (
     ImportEmbedBuffer,
     build_column_data_row,
     build_table_data_row,
     flush_import_embeddings,
 )
-from all_ontology.server.model_interchange.schemas import (
+from all_ontology.model_interchange.schemas import (
     ExportRequest,
     AllOntologyModelDocument,
     ModelFormat,
@@ -799,7 +799,7 @@ def test_import_model_skips_flush_when_embed_false(
     assert mock_apply.call_args.kwargs["embed_buffer"] is None
 
 
-@patch("all_ontology.server.model_interchange.embed.resolve", return_value="")
+@patch("all_ontology.model_interchange.embed.resolve", return_value="")
 def test_flush_import_embeddings_skips_without_api_key(
     _mock_resolve: MagicMock,
 ) -> None:

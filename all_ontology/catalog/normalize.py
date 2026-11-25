@@ -63,11 +63,9 @@ def normalize_tables(df: pd.DataFrame) -> pd.DataFrame:
 
     if "created" in df:
         df["created"] = pd.to_datetime(df["created"], utc=True, format="mixed")
-        df["created"] = df["created"].apply(
-            lambda x: (
-                x.tz_convert(timezone.utc).replace(microsecond=0) if pd.notna(x) else x
-            )
-        )
+        # Vectorised: apply() ran a Python lambda per row, which dominated
+        # catalog normalization on large schemas.
+        df["created"] = df["created"].dt.tz_convert(timezone.utc).dt.floor("s")
 
     for extra_col in ("owner",):
         if extra_col in df.columns:

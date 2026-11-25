@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import uvicorn
 from all_ontology.env import load_env
 
@@ -33,6 +34,12 @@ apply_llm_settings()
 
 from all_ontology.dal import close_store  # noqa: E402
 from all_ontology.dal.schema_version import require_current_schema  # noqa: E402
+from all_ontology.server.access import (  # noqa: E402
+    load_request_access,
+    reset_request_access,
+    set_request_access,
+)
+from all_ontology.server.access_router import router as access_router  # noqa: E402
 from all_ontology.server.chat.router import router as chat_router  # noqa: E402
 from all_ontology.server.chat.worker import get_pool, shutdown_pool  # noqa: E402
 from all_ontology.server.connections.router import router as connections_router  # noqa: E402
@@ -58,8 +65,15 @@ from all_ontology.server.model_interchange.router import (  # noqa: E402
     router as model_interchange_router,
 )
 from all_ontology.server.search.router import router as search_router  # noqa: E402
-from all_ontology.parsing.router import router as parsing_router  # noqa: E402
+from all_ontology.server.parsing.router import router as parsing_router  # noqa: E402
 from all_ontology.parsing.worker import start_worker, stop_worker  # noqa: E402
+from starlette.concurrency import run_in_threadpool  # noqa: E402
+
+INTERNAL_USER_HEADER = "x-all-ontology-user-id"
+
+#: Unauthenticated routes on the private backend. The frontend health page is
+#: served by Next.js; this one is the container/probe endpoint.
+_PUBLIC_API_PREFIXES = ("/api/health",)
 
 
 @asynccontextmanager
@@ -108,9 +122,43 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    @app.middleware("http")
+    async def resolve_data_access(request: Request, call_next):
+        """Resolve the gateway identity once, before any router runs.
+
+        Every Python endpoint except health sits behind this. The backend is
+        documented as private, but requiring the header here means a route that
+        forgets a zone argument still cannot be called anonymously as an
+        unscoped administrator.
+        """
+        path = request.url.path
+        if (
+            not path.startswith("/api")
+            or path.startswith(_PUBLIC_API_PREFIXES)
+            or request.method == "OPTIONS"
+        ):
+            return await call_next(request)
+
+        user_id = (request.headers.get(INTERNAL_USER_HEADER) or "").strip()
+        if not user_id:
+            return JSONResponse(
+                {"detail": "Authenticated user required"}, status_code=401
+            )
+        access = await run_in_threadpool(load_request_access, user_id)
+        if access is None:
+            return JSONResponse(
+                {"detail": "Authenticated user required"}, status_code=401
+            )
+        token = set_request_access(access)
+        try:
+            return await call_next(request)
+        finally:
+            reset_request_access(token)
+
     app.include_router(
         datasources_router, prefix="/api", tags=["datasources", "connectors"]
     )
+    app.include_router(access_router, prefix="/api", tags=["access"])
     app.include_router(exploration_router, prefix="/api", tags=["exploration"])
     app.include_router(erd_router, prefix="/api", tags=["erd"])
     app.include_router(erd_import_export_router, prefix="/api", tags=["erd"])

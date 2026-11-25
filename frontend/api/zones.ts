@@ -6,6 +6,7 @@ import { requests } from './requests';
 import type { ApiResponse, ResponseWithError } from './types';
 import type {
 	Zone,
+	ZoneAccessInput,
 	ZoneCreated,
 	ZoneCreateInput,
 	ZoneDetail,
@@ -13,11 +14,10 @@ import type {
 } from '@/types/zones';
 
 export const zonesApi = {
-	getAll: (userId: string): Promise<ApiResponse<Zone[]>> =>
-		requests.get('zones', { uid: userId }),
+	getAll: (serverUserId?: string): Promise<ApiResponse<Zone[]>> =>
+		requests.get('zones', {}, undefined, serverUserId),
 
-	getById: (zoneId: string, userId: string): Promise<ApiResponse<ZoneDetail>> =>
-		requests.get(`zones/${zoneId}`, { uid: userId }),
+	getById: (zoneId: string): Promise<ApiResponse<ZoneDetail>> => requests.get(`zones/${zoneId}`),
 
 	create: (input: ZoneCreateInput): Promise<ResponseWithError<{ data: ZoneCreated }>> =>
 		requests.post('zones', input),
@@ -33,9 +33,15 @@ export const zonesApi = {
 	setEnabled: (
 		zoneId: string,
 		enabled: boolean,
-		adminId: string,
 	): Promise<ResponseWithError<{ data: ZoneDetail }>> =>
-		requests.patch(`zones/${zoneId}/status?admin_uid=${encodeURIComponent(adminId)}`, {
-			enabled,
-		}),
+		requests.patch(`zones/${zoneId}/status`, { enabled }),
+
+	setAccess: (
+		zoneId: string,
+		input: ZoneAccessInput,
+	): Promise<ResponseWithError<{ data: ZoneDetail }>> =>
+		requests.put(`zones/${zoneId}/access`, input),
+
+	grantAudit: (zoneId: string): Promise<ApiResponse<Record<string, unknown>[]>> =>
+		requests.get(`zones/${zoneId}/grant-audit`),
 };

@@ -13,7 +13,7 @@ from all_ontology.dal import terms as terms_dal
 from all_ontology.dal.owners import CATALOG_EDIT, edit_subject
 from all_ontology.server.identity import resolve_internal_user
 from all_ontology.server.owners import enforce_edit, owner_from_body
-from all_ontology.server.sql_attributes import service as dal
+from all_ontology.domain import sql_attributes as dal
 from all_ontology.server.responses import (
     DescriptionSuggestionResponse,
     IdResponse,
@@ -22,6 +22,8 @@ from all_ontology.server.responses import (
     SqlAttributePatchResponse,
     SqlExpressionValidationResponse,
 )
+from all_ontology.server.access import current_zone_ids
+from all_ontology.server.access import require_tables_editable
 
 router = APIRouter()
 
@@ -66,7 +68,7 @@ def list_sql_attributes() -> dict:
 @router.get("/sql-attributes/{attr_id}", response_model=SqlAttributeResponse)
 def get_sql_attribute(attr_id: str) -> dict:
     """One SqlAttribute by id, including its resolved zones."""
-    row = dal.get_full_sql_attribute_by_id(attr_id, zone_ids=None)
+    row = dal.get_full_sql_attribute_by_id(attr_id, zone_ids=current_zone_ids())
     if row is None:
         raise HTTPException(
             status_code=404,
@@ -114,6 +116,7 @@ def validate_sql_attribute(body: SqlAttributeValidate) -> dict:
             term_id=body.term_id,
             attribute_id=body.attribute_id,
         )
+        require_tables_editable(list(result.get("table_ids") or []))
     except (dal.SqlAttributeExpressionConflict, dal.SqlAttributeSqlError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"data": result}
@@ -132,6 +135,14 @@ def create_sql_attribute(request: Request, body: SqlAttributeCreate) -> dict:
     or the SQL can't be parsed.
     """
     try:
+        term_subject = edit_subject(body.term_id)
+        if term_subject is not None:
+            enforce_edit(request, term_subject)
+        validated = dal.validate_sql_attribute(
+            expression=body.expression,
+            term_id=body.term_id,
+        )
+        require_tables_editable(list(validated.get("table_ids") or []))
         row = dal.create_sql_attribute(
             name=body.name,
             description=body.description,
@@ -166,6 +177,12 @@ def update_sql_attribute(
     if subject is not None:
         enforce_edit(request, subject)
     try:
+        validated = dal.validate_sql_attribute(
+            expression=body.expression,
+            term_id=body.term_id,
+            attribute_id=attr_id,
+        )
+        require_tables_editable(list(validated.get("table_ids") or []))
         row = dal.update_sql_attribute(
             attr_id=attr_id,
             name=body.name,

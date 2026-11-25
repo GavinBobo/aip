@@ -7,6 +7,6 @@ import { proxyToBackend } from '@/auth/proxy-backend';
 
 // Creating a SqlAttribute is a catalog edit and requires catalog:edit, the same
 // permission PATCH /api/nodes/{node_id} uses. A viewer does not have it.
-export const POST = withPermission({ catalog: ['edit'] })((req, { user }) =>
+export const POST = withPermission({ catalog: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );

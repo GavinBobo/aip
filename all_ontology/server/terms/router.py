@@ -26,6 +26,7 @@ from all_ontology.server.responses import (
     TermResponse,
     TermsPageResponse,
 )
+from all_ontology.server.access import current_zone_ids
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -78,7 +79,7 @@ def list_terms(
     counts-only so the Terms list never pulls attribute nodes it won't show.
     """
     return term_service.list_terms_page(
-        zone_ids=None, search=query, skip=skip, limit=limit
+        zone_ids=current_zone_ids(), search=query, skip=skip, limit=limit
     )
 
 
@@ -100,13 +101,15 @@ def list_term_column_attributes_by_id(
     (catalog path ids + names) for navigation from the detail page.
     """
     attrs = terms_dal.fetch_column_attributes_by_term_id(
-        term_id, zone_ids=None, skip=skip, limit=limit
+        term_id, zone_ids=current_zone_ids(), skip=skip, limit=limit
     )
     # `len(attrs)` only equals the term's full count when neither paging
     # argument was given — a `skip` alone (no `limit`) still returns a
     # partial read, so it needs the same separate count query.
     total = (
-        terms_dal.count_column_attributes_by_term_id(term_id, zone_ids=None)
+        terms_dal.count_column_attributes_by_term_id(
+            term_id, zone_ids=current_zone_ids()
+        )
         if skip or limit is not None
         else len(attrs)
     )
@@ -189,13 +192,15 @@ def list_term_sql_attributes_by_id(
     the number of attributes the term has in full.
     """
     attrs = sql_attr_dal.fetch_sql_attributes_by_term_id(
-        term_id, zone_ids=None, skip=skip, limit=limit
+        term_id, zone_ids=current_zone_ids(), skip=skip, limit=limit
     )
     # `len(attrs)` only equals the term's full count when neither paging
     # argument was given — a `skip` alone (no `limit`) still returns a
     # partial read, so it needs the same separate count query.
     total = (
-        sql_attr_dal.count_sql_attributes_by_term_id(term_id, zone_ids=None)
+        sql_attr_dal.count_sql_attributes_by_term_id(
+            term_id, zone_ids=current_zone_ids()
+        )
         if skip or limit is not None
         else len(attrs)
     )
@@ -272,8 +277,9 @@ def update_term(request: Request, term_id: str, body: TermUpdate) -> dict:
 @router.get("/terms/{term_id}", response_model=TermDetailResponse)
 def get_term(term_id: str) -> dict:
     """Return a single Term node by id, including zones and related terms."""
-    term = terms_dal.get_full_term_by_id(term_id, zone_ids=None)
+    zone_ids = current_zone_ids()
+    term = terms_dal.get_full_term_by_id(term_id, zone_ids=zone_ids)
     if term is None:
         raise HTTPException(status_code=404, detail="Term not found")
-    term["related_terms"] = terms_dal.fetch_related_terms(term_id, zone_ids=None)
+    term["related_terms"] = terms_dal.fetch_related_terms(term_id, zone_ids=zone_ids)
     return {"data": term}

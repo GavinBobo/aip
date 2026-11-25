@@ -3,14 +3,36 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from all_ontology.knowledge.extractor import (
+    ExtractedAction,
     ExtractedChunk,
     ExtractedConcept,
     ExtractedFact,
+    ExtractedMetric,
     ExtractedRelation,
+    ExtractedRisk,
     concept_key,
     merge_chunks,
 )
 from all_ontology.knowledge.source import SourceBlock, SourceChunk, chunk_blocks
+
+
+def test_merge_gives_colliding_slugs_distinct_keys() -> None:
+    """Two names that slugify identically must not overwrite each other."""
+    chunk = SourceChunk(
+        text="A B and A/B are distinct concepts.", page_start=1, page_end=1
+    )
+    result = ExtractedChunk(
+        concepts=[
+            ExtractedConcept(name="A B", evidence_quote="A B"),
+            ExtractedConcept(name="A/B", evidence_quote="A/B"),
+        ]
+    )
+
+    merged = merge_chunks([(chunk, result)])
+
+    keys = [concept["key"] for concept in merged.concepts]
+    assert len(keys) == len(set(keys)) == 2
+    assert {concept["name"] for concept in merged.concepts} == {"A B", "A/B"}
 
 
 def test_chunking_keeps_page_and_block_locators() -> None:
@@ -23,7 +45,7 @@ def test_chunking_keeps_page_and_block_locators() -> None:
             content="订单由采购员创建，金额为 12,480.00 元。",
         ),
     ]
-    chunks = chunk_blocks(blocks, max_chars=20)
+    chunks = chunk_blocks(blocks, max_chars=30)
 
     assert len(chunks) == 2
     assert chunks[0].page_start == 1
@@ -34,7 +56,7 @@ def test_chunking_keeps_page_and_block_locators() -> None:
 
 def test_merge_deduplicates_and_keeps_evidence() -> None:
     chunk = SourceChunk(
-        text="采购订单由采购员创建。订单包含物料。订单编号为 PO-001。",
+        text="采购订单由采购员创建。订单包含物料。订单编号为 PO-001。采购员提交采购订单。审批前校验角色权限。月采购额 = SUM(amount)，单位为元。",
         page_start=3,
         page_end=3,
         blocks=[
@@ -42,7 +64,7 @@ def test_merge_deduplicates_and_keeps_evidence() -> None:
                 page=3,
                 idx=2,
                 type="Text",
-                content="采购订单由采购员创建。订单包含物料。订单编号为 PO-001。",
+                content="采购订单由采购员创建。订单包含物料。订单编号为 PO-001。采购员提交采购订单。审批前校验角色权限。月采购额 = SUM(amount)，单位为元。",
             )
         ],
         spans=[
@@ -52,7 +74,7 @@ def test_merge_deduplicates_and_keeps_evidence() -> None:
                     page=3,
                     idx=2,
                     type="Text",
-                    content="采购订单由采购员创建。订单包含物料。订单编号为 PO-001。",
+                    content="采购订单由采购员创建。订单包含物料。订单编号为 PO-001。采购员提交采购订单。审批前校验角色权限。月采购额 = SUM(amount)，单位为元。",
                 ),
             )
         ],
@@ -93,6 +115,35 @@ def test_merge_deduplicates_and_keeps_evidence() -> None:
                 evidence_quote="这句不在原文里",
             ),
         ],
+        actions=[
+            ExtractedAction(
+                name="提交采购订单",
+                description="采购员提交采购订单。",
+                action_intent="add",
+                bound_concept="采购订单",
+                evidence_quote="采购员提交采购订单",
+            )
+        ],
+        risks=[
+            ExtractedRisk(
+                name="越权审批风险",
+                description="审批前需要校验角色权限。",
+                severity="high",
+                mitigation="校验角色权限。",
+                related_concept="采购订单",
+                evidence_quote="审批前校验角色权限",
+            )
+        ],
+        metrics=[
+            ExtractedMetric(
+                name="月采购额",
+                description="月度采购金额。",
+                expression="SUM(amount)",
+                unit="元",
+                related_concept="采购订单",
+                evidence_quote="月采购额 = SUM(amount)",
+            )
+        ],
     )
 
     merged = merge_chunks([(chunk, result)])
@@ -107,6 +158,10 @@ def test_merge_deduplicates_and_keeps_evidence() -> None:
     # The unsupported fact is dropped rather than stored as a plausible guess.
     assert [fact["statement"] for fact in merged.facts] == ["采购订单的编号为 PO-001。"]
     assert merged.facts[0]["object_text"] == "PO-001"
+    assert merged.actions[0]["bound_key"] == order["key"]
+    assert merged.risks[0]["severity"] == "high"
+    assert merged.metrics[0]["expression"] == "SUM(amount)"
+    assert merged.metrics[0]["unit"] == "元"
 
 
 def test_concept_key_is_bkn_compatible() -> None:

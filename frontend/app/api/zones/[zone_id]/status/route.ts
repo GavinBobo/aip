@@ -5,5 +5,5 @@
 import { withPermission } from '@/auth/with-auth';
 import { proxyToBackend } from '@/auth/proxy-backend';
 
-// zonesApi.setEnabled — enable/disable a zone (admin only).
-export const PATCH = withPermission({ zone: ['manage'] })((req) => proxyToBackend(req));
+// zonesApi.setEnabled — enable/disable a zone; the backend checks manage.
+export const PATCH = withPermission({ zone: ['contribute'] })((req) => proxyToBackend(req));

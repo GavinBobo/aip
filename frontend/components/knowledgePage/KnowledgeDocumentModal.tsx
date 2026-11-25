@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { knowledgeApi, type KnowledgeDocument } from '@/api/knowledge';
 import { parsingApi, type ParsingRunSummary } from '@/api/parsing';
 import { Button } from '@/common/Button';
+import { formatDateTime } from '@/common/date';
 import { Icon, IconName } from '@/common/icons';
 import { Spinner } from '@/common/Spinner';
 import { ButtonTheme, Size } from '@/enums/button';
@@ -43,13 +44,26 @@ export const KnowledgeDocumentModal = ({
 					return;
 				}
 				setError(null);
-				setRuns(response.data.data);
+				setRuns(response.data);
 			});
 	}, []);
 
 	useEffect(() => {
-		load('');
-	}, [load]);
+		let cancelled = false;
+		parsingApi.runs({ status: 'succeeded', limit: 50 }).then((response) => {
+			if (cancelled) return;
+			setLoading(false);
+			if (response.error || !response.data) {
+				setError(response.message ?? t('Failed to load parsing results.'));
+				return;
+			}
+			setError(null);
+			setRuns(response.data);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
 	const add = async (runId: string) => {
 		if (adding) return;
@@ -61,7 +75,7 @@ export const KnowledgeDocumentModal = ({
 			setError(response.message ?? t('Failed to add the document.'));
 			return;
 		}
-		onAdded(response.data.data);
+		onAdded(response.data);
 	};
 
 	return (
@@ -145,7 +159,9 @@ export const KnowledgeDocumentModal = ({
 													? t('{count} pages', { count: run.page_count })
 													: t('Page count unknown')}
 											</span>
-											{run.finished && <span>{new Date(run.finished).toLocaleString()}</span>}
+											{run.finished && (
+												<span>{formatDateTime(run.finished)}</span>
+											)}
 											{run.reviewed && <span>{t('Reviewed')}</span>}
 										</div>
 									</div>

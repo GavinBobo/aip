@@ -9,24 +9,17 @@ from __future__ import annotations
 import logging
 import os
 import re
+from collections.abc import Iterator, Mapping
+from importlib import import_module
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from all_ontology.catalog.table_filter import TableFilter, from_connection
-from all_ontology.connectors.base import SQLDatabase
 
 from all_ontology.connectors.connection_string_factory import build_connection_string
-from all_ontology.connectors.clickhouse import ClickHouseDatabase
-from all_ontology.connectors.databricks import DatabricksDatabase
-from all_ontology.connectors.duckdb import DuckDBDatabase
-from all_ontology.connectors.fileupload import FileUploadDatabase
-from all_ontology.connectors.heavydb import HeavyDBDatabase
-from all_ontology.connectors.kyuubi import KyuubiDatabase
-from all_ontology.connectors.mssql import MSSQLDatabase
-from all_ontology.connectors.mysql import MySQLDatabase
-from all_ontology.connectors.postgres import PostgresDatabase
-from all_ontology.connectors.snowflake import SnowflakeDatabase
-from all_ontology.connectors.sqlite import SQLiteDatabase
-from all_ontology.connectors.trino import TrinoDatabase
+
+if TYPE_CHECKING:
+    from all_ontology.connectors.base import SQLDatabase
 
 logger = logging.getLogger(__name__)
 
@@ -43,24 +36,53 @@ logger = logging.getLogger(__name__)
 #
 # Note the keys below are connection-string schemes, NOT dialects: ``postgresql``,
 # ``heavydb`` and ``kyuubi`` are valid keys but none is a sqlglot dialect name.
-CONNECTOR_REGISTRY: dict[str, type[SQLDatabase]] = {
-    "postgres": PostgresDatabase,
-    "postgresql": PostgresDatabase,
-    "mssql": MSSQLDatabase,
-    "sqlserver": MSSQLDatabase,
-    "mysql": MySQLDatabase,
-    "databricks": DatabricksDatabase,
-    "duckdb": DuckDBDatabase,
-    "file": FileUploadDatabase,
-    "fileupload": FileUploadDatabase,
-    "dataset": FileUploadDatabase,
-    "snowflake": SnowflakeDatabase,
-    "clickhouse": ClickHouseDatabase,
-    "heavydb": HeavyDBDatabase,
-    "kyuubi": KyuubiDatabase,
-    "sqlite": SQLiteDatabase,
-    "trino": TrinoDatabase,
-}
+#
+# The mapping resolves a class on first lookup instead of importing every
+# driver up front. Starting the API or the ingestion worker used to pay for
+# Snowflake, Databricks and pandas even when the deployment used one database.
+class _LazyConnectorRegistry(Mapping[str, type["SQLDatabase"]]):
+    """Connection-string scheme -> connector class, imported on demand."""
+
+    _TARGETS: dict[str, tuple[str, str]] = {
+        "postgres": ("all_ontology.connectors.postgres", "PostgresDatabase"),
+        "postgresql": ("all_ontology.connectors.postgres", "PostgresDatabase"),
+        "mssql": ("all_ontology.connectors.mssql", "MSSQLDatabase"),
+        "sqlserver": ("all_ontology.connectors.mssql", "MSSQLDatabase"),
+        "mysql": ("all_ontology.connectors.mysql", "MySQLDatabase"),
+        "databricks": ("all_ontology.connectors.databricks", "DatabricksDatabase"),
+        "duckdb": ("all_ontology.connectors.duckdb", "DuckDBDatabase"),
+        "file": ("all_ontology.connectors.fileupload", "FileUploadDatabase"),
+        "fileupload": ("all_ontology.connectors.fileupload", "FileUploadDatabase"),
+        "dataset": ("all_ontology.connectors.fileupload", "FileUploadDatabase"),
+        "snowflake": ("all_ontology.connectors.snowflake", "SnowflakeDatabase"),
+        "clickhouse": ("all_ontology.connectors.clickhouse", "ClickHouseDatabase"),
+        "heavydb": ("all_ontology.connectors.heavydb", "HeavyDBDatabase"),
+        "kyuubi": ("all_ontology.connectors.kyuubi", "KyuubiDatabase"),
+        "sqlite": ("all_ontology.connectors.sqlite", "SQLiteDatabase"),
+        "trino": ("all_ontology.connectors.trino", "TrinoDatabase"),
+    }
+
+    def __getitem__(self, scheme: str) -> type["SQLDatabase"]:
+        try:
+            module_name, class_name = self._TARGETS[scheme]
+        except KeyError:
+            raise KeyError(scheme) from None
+        return getattr(import_module(module_name), class_name)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._TARGETS)
+
+    def __len__(self) -> int:
+        return len(self._TARGETS)
+
+
+CONNECTOR_REGISTRY: Mapping[str, type["SQLDatabase"]] = _LazyConnectorRegistry()
+
+#: Schemes whose connector constructor accepts ``schemas=``. Kept as schemes
+#: rather than classes so choosing the constructor does not import the driver.
+_SCHEMA_FILTER_SCHEMES = frozenset(
+    {"databricks", "snowflake", "kyuubi", "trino", "mssql", "sqlserver"}
+)
 
 _connectors: list[SQLDatabase] | None = None
 
@@ -180,13 +202,7 @@ def create_connector(
                 f"Connection string: {connection_string}"
             )
 
-        if schemas and connector_class in (
-            DatabricksDatabase,
-            SnowflakeDatabase,
-            KyuubiDatabase,
-            TrinoDatabase,
-            MSSQLDatabase,
-        ):
+        if schemas and connector_type in _SCHEMA_FILTER_SCHEMES:
             connector = connector_class(connection_string, schemas=schemas)
         else:
             connector = connector_class(connection_string)

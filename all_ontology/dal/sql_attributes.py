@@ -30,7 +30,7 @@ from all_ontology.dal.session import store, write_transaction
 from all_ontology.dal.sql_fragments import column_description_expr
 from all_ontology.dal.tags import TARGET_SQL_ATTRIBUTE, fetch_tags_map
 from all_ontology.dal.users import resolve_accessible_catalog_ids
-from all_ontology.server.sql_utils import SqlParseError
+from all_ontology.sql.validation import SqlParseError
 
 logger = logging.getLogger(__name__)
 

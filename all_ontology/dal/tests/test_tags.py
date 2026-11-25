@@ -514,7 +514,7 @@ class Tagged:
 
         Inserted rather than created through ``all_ontology.dal.rules``: what a rule
         *searches* does not matter here — the search is replayed a layer up, in
-        ``all_ontology.server.rules.service`` — and only its id reaches this table.
+        ``all_ontology.domain.rules`` — and only its id reaches this table.
 
         *created_by* is worth naming for the delete that keeps the labels: it
         hands them to the rule's author, so a test needs to be able to make one
@@ -1341,7 +1341,7 @@ def test_a_label_left_behind_is_not_adopted_by_the_next_rule(tagged) -> None:
 # ``_sync`` below is one rule's two halves back to back, which is what most of
 # these tests are about: what a single rule does to its own labels. The order
 # the halves run in across *rules* belongs to
-# ``all_ontology.server.rules.service.reapply_rules`` and is tested there --
+# ``all_ontology.domain.rules.reapply_rules`` and is tested there --
 # except for the one case that is a property of these statements rather than of
 # the loop, which has its own section at the end.
 
@@ -1808,7 +1808,7 @@ def test_a_rule_does_not_duplicate_a_tag_a_person_already_applied(tagged) -> Non
 # nothing and the first owns the label. What that costs is only visible across
 # rules -- the owner's removal takes back a label the other rule is still
 # applying -- so the fix lives in
-# `all_ontology.server.rules.service.reapply_rules`, which removes for every
+# `all_ontology.domain.rules.reapply_rules`, which removes for every
 # rule before applying for any. These pin the halves it is built on, so a
 # change down here that quietly made the phases unnecessary, or made them
 # insufficient, shows up as a failure rather than as a passing suite.

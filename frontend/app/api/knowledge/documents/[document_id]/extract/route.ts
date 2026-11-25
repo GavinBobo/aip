@@ -5,4 +5,4 @@
 import { withPermission } from '@/auth/with-auth';
 import { proxyToBackend } from '@/auth/proxy-backend';
 
-export const POST = withPermission({ catalog: ['edit'] })((req) => proxyToBackend(req));
+export const POST = withPermission({ catalog: ['contribute'] })((req) => proxyToBackend(req));

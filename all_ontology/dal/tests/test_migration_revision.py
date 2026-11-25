@@ -26,16 +26,22 @@ VALUES = ROOT / "helm" / "all-ontology" / "values.yaml"
 
 def _head_revisions() -> list[str]:
     """Revisions nothing else lists as its ``down_revision``."""
-    revisions: dict[str, str | None] = {}
+    revisions: dict[str, list[str]] = {}
     for path in VERSIONS.glob("*.py"):
         text = path.read_text(encoding="utf-8")
         rev = re.search(r'^revision: str = ["\']([^"\']+)["\']', text, re.M)
-        down = re.search(
-            r'^down_revision: [^=]+= (?:["\']([^"\']+)["\']|None)', text, re.M
+        down_block = re.search(
+            r"^down_revision:[^=]*=\s*(.+?)(?:\n(?:branch_labels|depends_on):|\Z)",
+            text,
+            re.M | re.S,
         )
         if rev:
-            revisions[rev.group(1)] = down.group(1) if down else None
-    parents = {d for d in revisions.values() if d}
+            revisions[rev.group(1)] = (
+                re.findall(r'["\']([^"\']+)["\']', down_block.group(1))
+                if down_block
+                else []
+            )
+    parents = {parent for parents in revisions.values() for parent in parents}
     return sorted(set(revisions) - parents)
 
 

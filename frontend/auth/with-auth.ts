@@ -18,6 +18,7 @@
 import { NextResponse } from 'next/server';
 import { resolveUser, type ResolvedUser } from '@/auth/resolve-user';
 import { userCan, type PermissionRequest } from '@/auth/permissions';
+import { INTERNAL_USER_HEADER } from '@/lib/internalIdentity';
 
 // The context Next passes to a route handler. Next requires *every* route
 // handler — even non-dynamic ones — to accept a context with `params`; static
@@ -61,6 +62,13 @@ export function withPermission<C extends RouteContext = RouteContext>(
 			const user = await resolveUser();
 			if (!user) return unauthorized();
 			if (!userCan(user, permissions)) return forbidden();
-			return handler(req, { ...ctx, user });
+			// Strip any client-supplied internal identity before re-adding the
+			// one this wrapper just authenticated. proxyBackend copies this
+			// header across the private hop, and without the delete a browser
+			// could choose the user the backend scopes data by.
+			const headers = new Headers(req.headers);
+			headers.delete(INTERNAL_USER_HEADER);
+			headers.set(INTERNAL_USER_HEADER, user.id);
+			return handler(new Request(req, { headers }), { ...ctx, user });
 		};
 }

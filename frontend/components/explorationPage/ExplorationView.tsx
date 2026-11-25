@@ -432,7 +432,7 @@ export const ExplorationView = () => {
 		if (session?.user.id == null) return undefined;
 		let cancelled = false;
 		setZonesLoading(true);
-		zonesApi.getAll(session.user.id).then((response) => {
+		zonesApi.getAll().then((response) => {
 			if (cancelled) return;
 			setZonesLoading(false);
 			setZonesFailed(response.error === true);

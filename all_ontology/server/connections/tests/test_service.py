@@ -6,6 +6,7 @@ import json
 from unittest.mock import patch
 
 from all_ontology.server.connections import service
+from all_ontology.server.connections import router as connections_router
 from all_ontology.server.connections.router import _serialize_connection
 
 
@@ -63,6 +64,27 @@ def test_public_connection_payload_redacts_credentials() -> None:
     assert serialized["database_name"] == "database"
     assert "password" not in serialized["connection"]
     assert "password_env" not in serialized["connection"]
+
+
+def test_connection_list_is_scoped_to_visible_catalog_databases(monkeypatch) -> None:
+    monkeypatch.setattr(connections_router, "current_zone_ids", lambda: ["zone-1"])
+    monkeypatch.setattr(
+        connections_router,
+        "fetch_databases",
+        lambda zone_ids: [{"name": "visible"}],
+    )
+    monkeypatch.setattr(
+        connections_router,
+        "_list_connections",
+        lambda: [
+            {"database": "visible", "type": "postgresql"},
+            {"database": "hidden", "type": "postgresql"},
+        ],
+    )
+
+    payload = connections_router.list_connections()
+
+    assert [row["database_name"] for row in payload["data"]] == ["visible"]
 
 
 def test_public_connection_payload_redacts_the_private_key() -> None:

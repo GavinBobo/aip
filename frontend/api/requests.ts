@@ -2,7 +2,8 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import axios, { AxiosError, AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosResponse, type AxiosRequestConfig } from 'axios';
+import { t } from '@/i18n/translate';
 import { ApiError, PageParams, ResponseWithError } from './types';
 
 // Query params accepted by `requests.get`. Numbers/booleans are serialised by
@@ -31,6 +32,64 @@ const api = axios.create({
 	},
 });
 
+/**
+ * Failures that mean the request never got an answer, rather than an answer
+ * saying no. A GET is safe to send again, and during development the Python
+ * server drops in-flight sockets whenever uvicorn reloads.
+ *
+ * The root layout starts shared reads before the page is streamed and
+ * dehydrates them while they are still pending, so a dropped socket there is
+ * reported as a failed hydration rather than as the ordinary background read
+ * it is. Giving those reads a short window to reconnect keeps a save-and-reload
+ * from turning into a console error; HTTP errors are left untouched, because
+ * repeating a refusal only spends the same answer again.
+ */
+const RETRYABLE_GET_CODES = new Set([
+	'ECONNRESET',
+	'ECONNREFUSED',
+	'EPIPE',
+	'ETIMEDOUT',
+	'EAI_AGAIN',
+]);
+
+const SERVER_GET_RETRY_DELAYS_MS = [500, 1500, 3000];
+
+const wait = (ms: number): Promise<void> =>
+	new Promise((resolve) => {
+		setTimeout(resolve, ms);
+	});
+
+const isTransientTransportError = (error: unknown): boolean =>
+	axios.isAxiosError(error) &&
+	error.response === undefined &&
+	typeof error.code === 'string' &&
+	RETRYABLE_GET_CODES.has(error.code);
+
+const getWithTransportRetry = async <OutputType>(
+	url: string,
+	config: AxiosRequestConfig,
+): Promise<AxiosResponse<OutputType>> => {
+	// The browser's queries already retry through the query client, and its
+	// route handlers are a local hop; this window exists for the Next server
+	// reading the Python server directly.
+	const delays = isServer ? SERVER_GET_RETRY_DELAYS_MS : [];
+	for (let attempt = 0; ; attempt += 1) {
+		try {
+			return await api.get<OutputType>(url, config);
+		} catch (error) {
+			if (
+				!isTransientTransportError(error) ||
+				attempt >= delays.length ||
+				config.signal?.aborted
+			) {
+				throw error;
+			}
+			await wait(delays[attempt]);
+			if (config.signal?.aborted) throw error;
+		}
+	}
+};
+
 const responseBody = <DataType>({ data }: AxiosResponse<DataType>): DataType => data;
 
 const extractServerMessage = (data: unknown): string | undefined => {
@@ -39,8 +98,11 @@ const extractServerMessage = (data: unknown): string | undefined => {
 	// app/api use. Reading only the first meant every message those routes went
 	// out of their way to produce surfaced as "Request failed with status 400".
 	const { detail, error } = data as { detail?: unknown; error?: unknown };
-	if (typeof detail === 'string') return detail;
-	return typeof error === 'string' ? error : undefined;
+	// The API speaks the source language (English); the dictionary owns the
+	// Chinese copy. Translating here means every caller's `message` is already
+	// localized instead of each surface remembering to wrap it.
+	if (typeof detail === 'string') return t(detail);
+	return typeof error === 'string' ? t(error) : undefined;
 };
 
 const errorHandler = (err: AxiosError): ApiError => {
@@ -78,12 +140,21 @@ const normalizeQueryParams = (params: QueryParams): QueryParams => {
 };
 
 export const requests = {
-	get: <OutputType>(url: string, params: QueryParams = {}, abortController?: AbortController) => {
-		return api
-			.get<OutputType>(url, {
-				params: normalizeQueryParams(params),
-				signal: abortController?.signal,
-			})
+	get: <OutputType>(
+		url: string,
+		params: QueryParams = {},
+		abortController?: AbortController,
+		serverUserId?: string,
+	) => {
+		return getWithTransportRetry<OutputType>(url, {
+			params: normalizeQueryParams(params),
+			signal: abortController?.signal,
+			// Server-side prefetches call the backend directly, bypassing the
+			// Next route handler that would normally add this identity. In the
+			// browser the route wrapper deletes and replaces it with the
+			// authenticated caller before proxying.
+			headers: serverUserId ? { 'x-all-ontology-user-id': serverUserId } : undefined,
+		})
 			.then(responseBody)
 			.catch(errorHandler) as Promise<ResponseWithError<OutputType>>;
 	},

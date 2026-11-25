@@ -80,6 +80,11 @@ appUrl: "http://localhost:3010"
 # Public origin of the separately deployed MCP server, without its `/mcp`
 # endpoint suffix. OAuth access tokens are audience-bound to this URL.
 mcpPublicUrl: "http://localhost:3003"
+# Optional shared key for a trusted MCP/agent gateway that names the user on
+# each request (delegated identity). At least 32 characters. Leave empty to
+# disable; when set, the MCP server's ALL_ONTOLOGY_MCP_DELEGATION_KEY must be
+# the same value. Prefer forwarding the caller's own SSO/API token instead.
+delegationKey: ""
 # Bootstrap admin account. REQUIRED — self-service sign-up is disabled, so this
 # is the only way the initial admin is provisioned. The frontend creates this
 # admin on first start (email-verified), or resets its password to this value
@@ -134,7 +139,7 @@ backend:
   # wait-for-catalog-schema init container blocks until public.alembic_version
   # matches it, so new Pods never serve against a schema the migration Job has
   # not finished applying. Bump this with the migration, in the same commit.
-  alembicRevision: 6b1d9f4a2c7e
+  alembicRevision: c2d3e4f5a6b7
   # The images' published paths, not where the release pushes them. Releases
   # are staged in nvcr.io/nvstaging/gsf and NGC Catalog publishing copies this
   # chart to nvidia unmodified, so it has to name the registry customers

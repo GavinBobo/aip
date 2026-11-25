@@ -10,11 +10,7 @@ export const metadata: Metadata = {
 	title: 'Knowledge Network',
 };
 
-const KnowledgeNetworkPage = async ({
-	params,
-}: {
-	params: Promise<{ network_id: string }>;
-}) => {
+const KnowledgeNetworkPage = async ({ params }: { params: Promise<{ network_id: string }> }) => {
 	const { network_id } = await params;
 	return <KnowledgeNetworkView networkId={decodeURIComponent(network_id)} />;
 };

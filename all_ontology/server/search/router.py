@@ -13,8 +13,9 @@ from all_ontology.server.responses import (
     GlobalSearchCountResponse,
     GlobalSearchListResponse,
 )
-from all_ontology.server.search import service as search_service
-from all_ontology.server.search.constants import TEXT_MATCH_CONTAINS
+from all_ontology.domain import search as search_service
+from all_ontology.server.access import current_zone_ids
+from all_ontology.domain.search_constants import TEXT_MATCH_CONTAINS
 
 router = APIRouter()
 
@@ -77,6 +78,7 @@ def _run(
             "include_synonyms": payload.filters.synonyms,
             "tags": payload.filters.tags,
             "data": payload.filters.data,
+            "zone_ids": current_zone_ids(),
         }
         if count:
             return search_service.global_search_count(**kwargs)

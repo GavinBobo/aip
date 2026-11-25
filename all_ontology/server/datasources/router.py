@@ -12,6 +12,9 @@ from pydantic import BaseModel, Field
 from all_ontology.server.custom_analyses import service as custom_analyses_dal
 from all_ontology.server.datasources import service as dal
 from all_ontology.server.pagination import LIMIT_QUERY, SKIP_QUERY
+from all_ontology.server.access import current_zone_ids, require_tables_editable
+from all_ontology.server.access import require_admin, require_zone_permission
+from all_ontology.dal.schema import ZONE_PERMISSION_EDIT
 from all_ontology.server.pql_analyses import service as pql_analyses_dal
 from all_ontology.dal.owners import edit_subject
 from all_ontology.server.models import NodeUpdateResult
@@ -51,6 +54,7 @@ class PqlAnalysisCreate(BaseModel):
     name: str = Field(..., min_length=1)
     description: str
     pql: str = Field(..., min_length=1)
+    zone_id: str | None = None
 
 
 router = APIRouter()
@@ -75,7 +79,7 @@ def _count_payload(data: object) -> dict:
 @router.get("/schemas/{db_id}", response_model=SchemasPayload | None)
 def list_schemas_by_database(db_id: str) -> dict:
     """Schemas for a database."""
-    result = dal.fetch_schemas_for_database(db_id, zone_ids=None)
+    result = dal.fetch_schemas_for_database(db_id, zone_ids=current_zone_ids())
     return result
 
 
@@ -92,7 +96,7 @@ def list_tables_by_schema(
 ) -> dict:
     """Tables under a schema (lazy tree)."""
     rows = dal.fetch_tables_for_schema(
-        schema_id, database_name=database_name, zone_ids=None
+        schema_id, database_name=database_name, zone_ids=current_zone_ids()
     )
     return _count_payload(rows)
 
@@ -115,15 +119,15 @@ def list_columns_by_table(
     # `{data: {columns: [...]}, count: 1}` instead of `data: null`, which
     # crashes callers (e.g. `frontend/api/datasources.ts`) that read
     # `envelope.columns` unconditionally.
-    result = dal.fetch_columns_for_table(table_id, skip=skip, limit=limit) or {
-        "columns": []
-    }
+    result = dal.fetch_columns_for_table(
+        table_id, skip=skip, limit=limit, zone_ids=current_zone_ids()
+    ) or {"columns": []}
     columns = result.get("columns") or []
     # `len(columns)` only equals the table's full count when neither paging
     # argument was given — a `skip` alone (no `limit`) still returns a
     # partial read, so it needs the same separate count query.
     total = (
-        dal.count_columns_for_table(table_id)
+        dal.count_columns_for_table(table_id, current_zone_ids())
         if skip or limit is not None
         else len(columns)
     )
@@ -149,7 +153,7 @@ def list_databases() -> dict:
     """
     from all_ontology.dal.connections import list_connections
 
-    rows = dal.fetch_databases(zone_ids=None)
+    rows = dal.fetch_databases(zone_ids=current_zone_ids())
     try:
         source_types = {
             str(connection.get("database") or ""): str(connection.get("type") or "")
@@ -188,12 +192,14 @@ def list_custom_analyses(
     asking. Omitting *limit* returns every matching analysis.
     """
     rows = custom_analyses_dal.list_custom_analyses(
-        zone_ids=None, search=query, skip=skip, limit=limit
+        zone_ids=current_zone_ids(), search=query, skip=skip, limit=limit
     )
     # The count is a second read, so it is worth skipping for the request that
     # asked for everything: a whole unpaged list already is its own total.
     total = (
-        custom_analyses_dal.count_custom_analyses(zone_ids=None, search=query)
+        custom_analyses_dal.count_custom_analyses(
+            zone_ids=current_zone_ids(), search=query
+        )
         if skip or limit is not None
         else len(rows)
     )
@@ -209,6 +215,7 @@ def validate_custom_analysis_sql(body: CustomAnalysisValidate) -> dict:
     """
     try:
         result = custom_analyses_dal.validate_custom_analysis_sql(body.sql)
+        require_tables_editable(list(result.get("table_ids") or []))
     except custom_analyses_dal.CustomAnalysisSqlError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"data": result}
@@ -230,6 +237,8 @@ def create_custom_analysis(body: CustomAnalysisCreate) -> dict:
     retrieval.
     """
     try:
+        validated = custom_analyses_dal.validate_custom_analysis_sql(body.sql)
+        require_tables_editable(list(validated.get("table_ids") or []))
         row = custom_analyses_dal.create_custom_analysis(
             name=body.name,
             description=body.description,
@@ -256,6 +265,8 @@ def update_custom_analysis(analysis_id: str, body: CustomAnalysisCreate) -> dict
     producing an inconsistent graph.
     """
     try:
+        validated = custom_analyses_dal.validate_custom_analysis_sql(body.sql)
+        require_tables_editable(list(validated.get("table_ids") or []))
         row = custom_analyses_dal.update_custom_analysis(
             analysis_id=analysis_id,
             name=body.name,
@@ -286,6 +297,8 @@ def delete_custom_analysis(analysis_id: str) -> dict:
     On success the deleted ``{"id": ...}`` is echoed so the UI can
     confirm the targeted record was removed.
     """
+    table_ids = custom_analyses_dal.custom_analysis_table_ids(analysis_id)
+    require_tables_editable(table_ids)
     row = custom_analyses_dal.delete_custom_analysis(analysis_id)
     if row is None:
         raise HTTPException(
@@ -315,9 +328,14 @@ def list_pql_analyses(
     a name filter over a page of the name order, with ``total`` counting
     every match rather than the rows on this page.
     """
-    rows = pql_analyses_dal.list_pql_analyses(search=query, skip=skip, limit=limit)
+    rows = pql_analyses_dal.list_pql_analyses(
+        search=query,
+        zone_ids=current_zone_ids(),
+        skip=skip,
+        limit=limit,
+    )
     total = (
-        pql_analyses_dal.count_pql_analyses(search=query)
+        pql_analyses_dal.count_pql_analyses(search=query, zone_ids=current_zone_ids())
         if skip or limit is not None
         else len(rows)
     )
@@ -332,11 +350,16 @@ def create_pql_analysis(body: PqlAnalysisCreate) -> dict:
     The PQL text is stored as-is — it is validated against the prediction graph at
     predict time, not here.
     """
+    if body.zone_id is None:
+        require_admin()
+    else:
+        require_zone_permission(body.zone_id, ZONE_PERMISSION_EDIT)
     try:
         row = pql_analyses_dal.create_pql_analysis(
             name=body.name,
             description=body.description,
             pql=body.pql,
+            zone_id=body.zone_id,
         )
     except (
         pql_analyses_dal.PqlAnalysisNameConflict,
@@ -353,12 +376,17 @@ def update_pql_analysis(analysis_id: str, body: PqlAnalysisCreate) -> dict:
     Returns 404 when no PqlAnalysis with ``analysis_id`` exists, and 409 when
     ``name`` or ``pql`` is already taken by a different PqlAnalysis.
     """
+    if body.zone_id is None:
+        require_admin()
+    else:
+        require_zone_permission(body.zone_id, ZONE_PERMISSION_EDIT)
     try:
         row = pql_analyses_dal.update_pql_analysis(
             analysis_id=analysis_id,
             name=body.name,
             description=body.description,
             pql=body.pql,
+            zone_id=body.zone_id,
         )
     except (
         pql_analyses_dal.PqlAnalysisNameConflict,
@@ -380,6 +408,7 @@ def delete_pql_analysis(analysis_id: str) -> dict:
 
     Returns 404 when no PqlAnalysis with ``analysis_id`` exists.
     """
+    require_admin()
     row = pql_analyses_dal.delete_pql_analysis(analysis_id)
     if row is None:
         raise HTTPException(

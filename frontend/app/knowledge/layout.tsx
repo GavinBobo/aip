@@ -13,11 +13,7 @@ export const metadata: Metadata = {
 	title: 'Knowledge Ontology',
 };
 
-export default async function KnowledgeLayout({
-	children,
-}: {
-	children: React.ReactNode;
-}) {
+export default async function KnowledgeLayout({ children }: { children: React.ReactNode }) {
 	await requireUser();
 	return (
 		<BackPanelLayout

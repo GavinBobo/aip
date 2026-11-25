@@ -14,17 +14,17 @@ export const GET = withPermission({ catalog: ['read'] })(async (req) =>
 
 // Replace a SqlAttribute's SQL. The page shows the term's owner. The account
 // role authorizes the write, the same way a column attribute edit does.
-export const PUT = withPermission({ catalog: ['edit'] })((req, { user }) =>
+export const PUT = withPermission({ catalog: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );
 
 // Patch name, description, or certification. The account role authorizes the
 // write. The term owner shown beside the attribute does not grant it.
-export const PATCH = withPermission({ catalog: ['edit'] })((req, { user }) =>
+export const PATCH = withPermission({ catalog: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );
 
 // Delete a SqlAttribute. The account role authorizes the delete.
-export const DELETE = withPermission({ catalog: ['edit'] })((req, { user }) =>
+export const DELETE = withPermission({ catalog: ['contribute'] })((req, { user }) =>
 	proxyToBackend(req, { userId: user.id }),
 );

@@ -23,7 +23,7 @@ export const KnowledgeSidebar = () => {
 		knowledgeApi.listNetworks().then((response) => {
 			if (cancelled) return;
 			setLoading(false);
-			if (!response.error && response.data) setNetworks(response.data.data);
+			if (!response.error && response.data) setNetworks(response.data);
 		});
 		return () => {
 			cancelled = true;

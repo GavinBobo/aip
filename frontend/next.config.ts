@@ -21,6 +21,9 @@ const nextConfig: NextConfig = {
 	// Next 16 accepts `false` or a position object here; `true` no longer type
 	// checks and fails `next build`.
 	devIndicators: false,
+	// Slow CI/host machines can exceed Next's 60s per-page default while the
+	// settings pages initialize Prisma/auth; this only widens the build timeout.
+	staticPageGenerationTimeout: 180,
 	output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
 	outputFileTracingRoot: path.resolve(__dirname, '..'),
 	transpilePackages: ['@nvidia/foundations-react-core'],

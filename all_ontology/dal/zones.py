@@ -35,9 +35,10 @@ from typing import Any
 from sqlalchemy import distinct, func, or_, select
 
 from all_ontology.dal import schema as s
+from all_ontology.dal.access import empty_grants, zone_grants
 from all_ontology.dal.models import Zone, ZoneTarget
 from all_ontology.dal.session import orm_session, store, write_transaction
-from all_ontology.server.zones.utils import format_zone
+from all_ontology.zones.formatting import format_zone
 
 logger = logging.getLogger(__name__)
 
@@ -183,11 +184,27 @@ def _zone_payload(zone: Zone) -> dict[str, Any]:
     }
 
 
-def list_zones() -> list[dict[str, Any]]:
-    """Every zone, enabled or not, regardless of the caller's role."""
+def list_zones(zone_ids: list[str] | None = None) -> list[dict[str, Any]]:
+    """Zones visible to the caller.
+
+    ``None`` is the administrator's unscoped read and includes disabled zones
+    so they remain manageable. A list narrows to exactly those enabled zones,
+    because that is what access resolution produced.
+    """
     with orm_session() as db:
-        zones = db.scalars(select(Zone).order_by(Zone.name)).all()
-        return [format_zone(_zone_payload(zone)) for zone in zones]
+        statement = select(Zone).order_by(Zone.name)
+        if zone_ids is not None:
+            statement = statement.where(Zone.id.in_(zone_ids))
+        zones = db.scalars(statement).all()
+        payloads = [_zone_payload(zone) for zone in zones]
+    grants = zone_grants(list(zone_ids) if zone_ids is not None else None)
+    return [
+        {
+            **format_zone(payload),
+            "access": grants.get(str(payload["id"]), empty_grants()),
+        }
+        for payload in payloads
+    ]
 
 
 def _zone_items(zone_id: str) -> list[dict[str, Any]]:
@@ -209,13 +226,20 @@ def _zone_items(zone_id: str) -> list[dict[str, Any]]:
     return items
 
 
-def get_zone_by_id(zone_id: str) -> dict[str, Any] | None:
+def get_zone_by_id(
+    zone_id: str, zone_ids: list[str] | None = None
+) -> dict[str, Any] | None:
+    if zone_ids is not None and zone_id not in zone_ids:
+        return None
     with orm_session() as db:
         zone = db.get(Zone, zone_id)
         if zone is None:
             return None
         payload = _zone_payload(zone)
-    return format_zone(payload, items=_zone_items(zone_id))
+    return {
+        **format_zone(payload, items=_zone_items(zone_id)),
+        "access": zone_grants([zone_id]).get(zone_id, empty_grants()),
+    }
 
 
 def _current_item_ids(zone_id: str) -> list[str]:

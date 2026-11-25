@@ -20,6 +20,7 @@ import { Toast } from '@/common/Toast';
 import { t } from '@/i18n';
 import { Icon, IconName } from '@/common/icons';
 import { connectionsApi } from '@/api/connections';
+import { useSession } from '@/auth/auth-client';
 import {
 	connectionQueries,
 	invalidateConnectionList,
@@ -32,6 +33,8 @@ const subscribeToHydration = () => () => {};
 
 export const ConnectionsView = () => {
 	const queryClient = useQueryClient();
+	const { data: session } = useSession();
+	const currentUserId = session?.user.id ?? '';
 
 	// Prefetched by the root layout, so the browser subscribes to a read that
 	// is already in flight instead of starting its own after mount.
@@ -40,12 +43,15 @@ export const ConnectionsView = () => {
 		isPending: loading,
 		error: loadError,
 		refetch,
-	} = useQuery(connectionQueries.list());
+	} = useQuery({
+		...connectionQueries.list(currentUserId),
+		enabled: currentUserId !== '',
+	});
 	const error = loadError?.message ?? null;
 
 	/** Where a write puts what it just changed — the list the page reads from. */
-	const patchConnections = (update: Parameters<typeof patchConnectionList>[1]) =>
-		patchConnectionList(queryClient, update);
+	const patchConnections = (update: Parameters<typeof patchConnectionList>[2]) =>
+		patchConnectionList(queryClient, currentUserId, update);
 
 	const [connectionModalOpen, setConnectionModalOpen] = useState(false);
 	const [editingConnection, setEditingConnection] = useState<Connection | null>(null);
@@ -93,7 +99,7 @@ export const ConnectionsView = () => {
 
 	const handleConnectionModalConfirm = () => {
 		handleConnectionModalClose();
-		void invalidateConnectionList(queryClient);
+		void invalidateConnectionList(queryClient, currentUserId);
 	};
 
 	const handleSsoFederationChange = async (databaseName: string, enabled: boolean) => {
@@ -148,7 +154,7 @@ export const ConnectionsView = () => {
 			variant: ToastVariant.Success,
 			message: t('Fetched the latest data for {0}.', { 0: databaseName }),
 		});
-		await invalidateConnectionList(queryClient);
+		await invalidateConnectionList(queryClient, currentUserId);
 	};
 
 	const handleDeleteClose = () => {

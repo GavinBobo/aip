@@ -3,6 +3,7 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$/mcp">
       <sourceFolder url="file://$MODULE_DIR$/mcp/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/mcp/.venv" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
   </component>

@@ -48,21 +48,25 @@ class PqlAnalysisPqlConflict(Exception):
 # ---------------------------------------------------------------------------
 
 
-def _matching(search: str | None) -> list:
+def _matching(search: str | None, zone_ids: list[str] | None = None) -> list:
     """The WHERE for *search*, or nothing at all when there is none.
 
     One function so :func:`list_pql_analyses` and :func:`count_pql_analyses`
     cannot come to disagree about what matches — a page and a total taken from
     different filters would leave the list asking for rows that are not there.
     """
-    if not search or not search.strip():
-        return []
-    return [name_contains(s.pql_analysis.c.name, search)]
+    conditions = []
+    if zone_ids is not None:
+        conditions.append(s.pql_analysis.c.zone_id.in_(zone_ids))
+    if search and search.strip():
+        conditions.append(name_contains(s.pql_analysis.c.name, search))
+    return conditions
 
 
 def list_pql_analyses(
     *,
     search: str | None = None,
+    zone_ids: list[str] | None = None,
     skip: int = 0,
     limit: int | None = None,
 ) -> list[dict[str, Any]]:
@@ -83,8 +87,9 @@ def list_pql_analyses(
             s.pql_analysis.c.name,
             s.pql_analysis.c.description,
             s.pql_analysis.c.pql,
+            s.pql_analysis.c.zone_id,
         )
-        .where(*_matching(search))
+        .where(*_matching(search, zone_ids))
         .order_by(func.lower(s.pql_analysis.c.name), s.pql_analysis.c.id)
         .offset(skip or None)
     )
@@ -94,10 +99,14 @@ def list_pql_analyses(
     return [dict(r) for r in store().query_read(statement)]
 
 
-def count_pql_analyses(*, search: str | None = None) -> int:
+def count_pql_analyses(
+    *, search: str | None = None, zone_ids: list[str] | None = None
+) -> int:
     """The unpaged size of :func:`list_pql_analyses`, from the same filter."""
     rows = store().query_read(
-        select(func.count(s.pql_analysis.c.id).label("total")).where(*_matching(search))
+        select(func.count(s.pql_analysis.c.id).label("total")).where(
+            *_matching(search, zone_ids)
+        )
     )
     return int(rows[0]["total"]) if rows else 0
 
@@ -185,6 +194,7 @@ def upsert_pql_analysis_node(
     name: str,
     description: str,
     pql: str,
+    zone_id: str | None = None,
 ) -> None:
     """Create or overwrite an analysis by id.
 
@@ -194,7 +204,11 @@ def upsert_pql_analysis_node(
     have already run.
     """
     statement = insert(s.pql_analysis).values(
-        id=analysis_id, name=name, description=description, pql=pql
+        id=analysis_id,
+        name=name,
+        description=description,
+        pql=pql,
+        zone_id=zone_id,
     )
     store().query_write(
         statement.on_conflict_do_update(
@@ -203,6 +217,7 @@ def upsert_pql_analysis_node(
                 "name": statement.excluded.name,
                 "description": statement.excluded.description,
                 "pql": statement.excluded.pql,
+                "zone_id": zone_id,
             },
         )
     )
@@ -268,9 +283,7 @@ def embed_pql_analyses(
         # through `metadata["id"]` -- but changing it leaves rows already
         # written carrying the old value.
         path = (
-            f"all_ontology:{node_id}"
-            if node_id is not None
-            else "all_ontology:unknown"
+            f"all_ontology:{node_id}" if node_id is not None else "all_ontology:unknown"
         )
         tabular_fields = {
             "id": node_id,

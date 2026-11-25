@@ -5,6 +5,6 @@
 import { withPermission } from '@/auth/with-auth';
 import { proxyToBackend } from '@/auth/proxy-backend';
 
-export const PATCH = withPermission({ catalog: ['edit'] })((req) => proxyToBackend(req));
+export const PATCH = withPermission({ catalog: ['contribute'] })((req) => proxyToBackend(req));
 
-export const DELETE = withPermission({ catalog: ['edit'] })((req) => proxyToBackend(req));
+export const DELETE = withPermission({ catalog: ['contribute'] })((req) => proxyToBackend(req));

@@ -15,10 +15,6 @@ import logging
 from typing import Any
 
 from all_ontology.catalog.constants import Labels
-from all_ontology.utils.embedding_rows import (
-    CatalogEmbeddingRowsOp,
-)
-
 from all_ontology.dal.datasources import (
     count_columns_for_table,
     fetch_parent_table_id_for_column,
@@ -33,7 +29,6 @@ from all_ontology.dal.datasources import (
 from all_ontology.dal.terms import (
     fetch_column_attribute_embedding_contexts_by_column_id,
 )
-from all_ontology.semantic.embed import build_semantic_embedder
 from all_ontology.utils.column_types import sample_values_edit_error
 from all_ontology.utils.sample_values import stringify_sample_values
 
@@ -164,6 +159,7 @@ def _get_node_ids_for_embedding_update(
 
 def _refresh_vdb_embeddings(node_ids: list[str]) -> None:
     """Delete stale VDB rows, re-embed, and append Table/Column rows."""
+    from all_ontology.utils.embedding_rows import CatalogEmbeddingRowsOp
     from all_ontology.utils import get_embed_params
     from all_ontology.utils.embedding import embed_rows
     from all_ontology.vdb import get_data_vdb
@@ -208,6 +204,8 @@ def _refresh_vdb_embeddings(node_ids: list[str]) -> None:
 
 def _refresh_semantic_column_attribute_embeddings(column_id: str) -> None:
     """Refresh semantic VDB rows whose text includes this Column's sample values."""
+    from all_ontology.semantic.embed import build_semantic_embedder
+
     contexts = fetch_column_attribute_embedding_contexts_by_column_id(column_id)
     for term, attrs in contexts:
         if not attrs:

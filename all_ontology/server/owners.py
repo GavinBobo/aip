@@ -23,6 +23,7 @@ from all_ontology.dal import groups as groups_dal
 from all_ontology.dal.owners import EditSubject
 from all_ontology.dal.schema import GroupRole
 from all_ontology.server.identity import resolve_internal_user
+from all_ontology.server.access import table_is_editable
 from all_ontology.server.users import postgres_dal
 from all_ontology.server.users.permissions import permissions_for_role
 
@@ -102,6 +103,8 @@ def enforce_edit(request: Request, subject: EditSubject) -> None:
     if not user_id:
         return
     if can_edit_entity(user_id=user_id, subject=subject):
+        return
+    if subject.target_table_ids and table_is_editable(list(subject.target_table_ids)):
         return
     raise HTTPException(
         status_code=403, detail="You do not have permission to edit this"

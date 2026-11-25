@@ -19,7 +19,6 @@ import type {
 } from 'sigma/rendering';
 import { t } from '@/i18n';
 import { ExplorationLayer } from '@/enums/exploration';
-import type { ExplorationGraph } from '@/types/exploration';
 import { NODE_TYPE_ACCENT_COLOR } from './nodeTypeColors';
 import type { NodeType } from './nodeTypeColors';
 
@@ -117,6 +116,10 @@ const NODE_TYPE_COLOR_LIGHT: Record<NodeType, string> = {
 	sqlAttribute: '#c7cef5',
 	sql: '#f8c3c3',
 	customAnalysis: '#c5f3f7',
+	knowledgeConcept: '#eadcff',
+	knowledgeData: '#dcfce7',
+	knowledgeAction: '#fef3c7',
+	knowledgeRisk: '#fee2e2',
 };
 const NODE_TYPE_COLOR_DARK: Record<NodeType, string> = {
 	term: '#293a1d',
@@ -127,6 +130,10 @@ const NODE_TYPE_COLOR_DARK: Record<NodeType, string> = {
 	sqlAttribute: '#1d223a',
 	sql: '#3c1a1a',
 	customAnalysis: '#1c383b',
+	knowledgeConcept: '#33224f',
+	knowledgeData: '#1d3420',
+	knowledgeAction: '#3a2a10',
+	knowledgeRisk: '#3a1d1d',
 };
 const LABEL_COLOR_LIGHT = '#3f3f46';
 const LABEL_COLOR_DARK = '#e4e4e7';
@@ -222,6 +229,26 @@ const NODE_TYPE_COLOR_DIMMED_LIGHT: Record<NodeType, string> = {
 		CANVAS_BACKGROUND_LIGHT,
 		NODE_DIMMED_OPACITY,
 	),
+	knowledgeConcept: mixTowardColor(
+		NODE_TYPE_COLOR_LIGHT.knowledgeConcept,
+		CANVAS_BACKGROUND_LIGHT,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeData: mixTowardColor(
+		NODE_TYPE_COLOR_LIGHT.knowledgeData,
+		CANVAS_BACKGROUND_LIGHT,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeAction: mixTowardColor(
+		NODE_TYPE_COLOR_LIGHT.knowledgeAction,
+		CANVAS_BACKGROUND_LIGHT,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeRisk: mixTowardColor(
+		NODE_TYPE_COLOR_LIGHT.knowledgeRisk,
+		CANVAS_BACKGROUND_LIGHT,
+		NODE_DIMMED_OPACITY,
+	),
 };
 const NODE_TYPE_COLOR_DIMMED_DARK: Record<NodeType, string> = {
 	term: mixTowardColor(NODE_TYPE_COLOR_DARK.term, CANVAS_BACKGROUND_DARK, NODE_DIMMED_OPACITY),
@@ -249,6 +276,26 @@ const NODE_TYPE_COLOR_DIMMED_DARK: Record<NodeType, string> = {
 	sql: mixTowardColor(NODE_TYPE_COLOR_DARK.sql, CANVAS_BACKGROUND_DARK, NODE_DIMMED_OPACITY),
 	customAnalysis: mixTowardColor(
 		NODE_TYPE_COLOR_DARK.customAnalysis,
+		CANVAS_BACKGROUND_DARK,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeConcept: mixTowardColor(
+		NODE_TYPE_COLOR_DARK.knowledgeConcept,
+		CANVAS_BACKGROUND_DARK,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeData: mixTowardColor(
+		NODE_TYPE_COLOR_DARK.knowledgeData,
+		CANVAS_BACKGROUND_DARK,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeAction: mixTowardColor(
+		NODE_TYPE_COLOR_DARK.knowledgeAction,
+		CANVAS_BACKGROUND_DARK,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeRisk: mixTowardColor(
+		NODE_TYPE_COLOR_DARK.knowledgeRisk,
 		CANVAS_BACKGROUND_DARK,
 		NODE_DIMMED_OPACITY,
 	),
@@ -289,6 +336,26 @@ const NODE_TYPE_BORDER_COLOR_DIMMED_LIGHT: Record<NodeType, string> = {
 		CANVAS_BACKGROUND_LIGHT,
 		NODE_DIMMED_OPACITY,
 	),
+	knowledgeConcept: mixTowardColor(
+		NODE_TYPE_BORDER_COLOR.knowledgeConcept,
+		CANVAS_BACKGROUND_LIGHT,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeData: mixTowardColor(
+		NODE_TYPE_BORDER_COLOR.knowledgeData,
+		CANVAS_BACKGROUND_LIGHT,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeAction: mixTowardColor(
+		NODE_TYPE_BORDER_COLOR.knowledgeAction,
+		CANVAS_BACKGROUND_LIGHT,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeRisk: mixTowardColor(
+		NODE_TYPE_BORDER_COLOR.knowledgeRisk,
+		CANVAS_BACKGROUND_LIGHT,
+		NODE_DIMMED_OPACITY,
+	),
 };
 const NODE_TYPE_BORDER_COLOR_DIMMED_DARK: Record<NodeType, string> = {
 	term: mixTowardColor(NODE_TYPE_BORDER_COLOR.term, CANVAS_BACKGROUND_DARK, NODE_DIMMED_OPACITY),
@@ -320,6 +387,26 @@ const NODE_TYPE_BORDER_COLOR_DIMMED_DARK: Record<NodeType, string> = {
 	sql: mixTowardColor(NODE_TYPE_BORDER_COLOR.sql, CANVAS_BACKGROUND_DARK, NODE_DIMMED_OPACITY),
 	customAnalysis: mixTowardColor(
 		NODE_TYPE_BORDER_COLOR.customAnalysis,
+		CANVAS_BACKGROUND_DARK,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeConcept: mixTowardColor(
+		NODE_TYPE_BORDER_COLOR.knowledgeConcept,
+		CANVAS_BACKGROUND_DARK,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeData: mixTowardColor(
+		NODE_TYPE_BORDER_COLOR.knowledgeData,
+		CANVAS_BACKGROUND_DARK,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeAction: mixTowardColor(
+		NODE_TYPE_BORDER_COLOR.knowledgeAction,
+		CANVAS_BACKGROUND_DARK,
+		NODE_DIMMED_OPACITY,
+	),
+	knowledgeRisk: mixTowardColor(
+		NODE_TYPE_BORDER_COLOR.knowledgeRisk,
 		CANVAS_BACKGROUND_DARK,
 		NODE_DIMMED_OPACITY,
 	),
@@ -391,6 +478,9 @@ const NODE_TYPE_FIXED_SIZE: Partial<Record<NodeType, number>> = {
 	sqlAttribute: 14,
 	sql: 14,
 	customAnalysis: 14,
+	knowledgeData: 20,
+	knowledgeAction: 22,
+	knowledgeRisk: 22,
 };
 
 const getNodeSize = (kind: NodeType, relationshipCount: number) =>
@@ -518,8 +608,29 @@ export type GraphController = {
 	removeExpansion: (originNodeId: string) => string[] | null;
 };
 
+export type CanvasGraphNode = {
+	id: string;
+	name: string;
+	layer: ExplorationLayer;
+	relationshipCount: number;
+	/** Knowledge graphs override the layer-derived node kind (concept/data). */
+	nodeKind?: NodeType;
+};
+
+export type CanvasGraphLink = {
+	source: string;
+	target: string;
+	relationshipTypes?: string[];
+	kind?: 'relationship' | 'structural';
+};
+
+export type CanvasGraph = {
+	nodes: CanvasGraphNode[];
+	links: CanvasGraphLink[];
+};
+
 const buildGraphologyGraph = (
-	graph: ExplorationGraph,
+	graph: CanvasGraph,
 	nodeTypeColor: Record<NodeType, string>,
 	edgeColor: string,
 	containerAspectRatio: number,
@@ -527,12 +638,13 @@ const buildGraphologyGraph = (
 	const graphology = new UndirectedGraph<GraphNodeAttributes, GraphEdgeAttributes>();
 
 	graph.nodes.forEach((node) => {
-		const kind: NodeType = node.layer === ExplorationLayer.Data ? 'table' : 'term';
+		const kind: NodeType =
+			node.nodeKind ?? (node.layer === ExplorationLayer.Data ? 'table' : 'term');
 		graphology.addNode(node.id, {
 			x: 0,
 			y: 0,
 			size: getNodeSize(kind, node.relationshipCount),
-			label: node.layer === ExplorationLayer.Data ? node.name.toUpperCase() : node.name,
+			label: kind === 'table' ? node.name.toUpperCase() : node.name,
 			color: nodeTypeColor[kind],
 			type: 'circle',
 			kind,
@@ -549,7 +661,9 @@ const buildGraphologyGraph = (
 		// so hover keeps the canvas `grab` cursor rather than `pointer` (see
 		// `syncCanvasCursor`). A Semantic-layer (Term↔Term) edge still
 		// opens its own `connection` card, so it keeps the `relationship` kind.
-		const isDataLayerEdge = graphology.getNodeAttribute(link.source, 'kind') === 'table';
+		const isDataLayerEdge =
+			link.kind === 'structural' ||
+			graphology.getNodeAttribute(link.source, 'kind') === 'table';
 		graphology.addEdgeWithKey(`${link.source}:${link.target}`, link.source, link.target, {
 			color: edgeColor,
 			size: 1.5,
@@ -597,7 +711,7 @@ export type HighlightedPath = {
 };
 
 type GraphCanvasProps = {
-	graph: ExplorationGraph;
+	graph: CanvasGraph;
 	activeNodeId: string | null;
 	highlightedPath: HighlightedPath | null;
 	/** Clicking empty canvas — deselects whatever node/edge is active. */

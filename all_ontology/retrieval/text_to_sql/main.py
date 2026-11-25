@@ -158,7 +158,11 @@ def _build_state(payload: TextToSQLPayload) -> AgentState:
             "ColumnAttribute, CustomAnalysis, and SqlAttribute searches will be skipped."
         )
 
-    custom_prompts_text = f"{custom_prompts}\n\n" if custom_prompts else ""
+    knowledge_context = str(payload.get("knowledge_context") or "").strip()
+    prompt_parts = [part for part in (custom_prompts, knowledge_context) if part]
+    custom_prompts_text = "\n\n".join(prompt_parts)
+    if custom_prompts_text:
+        custom_prompts_text += "\n\n"
     domain_rules = list(acronyms or [])
 
     calculation_only = bool(payload.get("calculation_only", False))
@@ -243,6 +247,7 @@ def _build_state(payload: TextToSQLPayload) -> AgentState:
         "prediction_override": prediction_override,
         "restore_from": restore_from,
         "full_pipeline_attempt": 1,
+        "allowed_table_ids": payload.get("allowed_table_ids"),
     }
     return state
 

@@ -46,6 +46,7 @@ import RefreshSvg from './svg/refresh.svg';
 import FileSpreadsheetSvg from './svg/file-spreadsheet.svg';
 import EyeSvg from './svg/eye.svg';
 import EyeOffSvg from './svg/eye-off.svg';
+import KnowledgeSvg from './svg/knowledge.svg';
 
 export enum IconName {
 	Close = 'close',
@@ -90,6 +91,7 @@ export enum IconName {
 	Spreadsheet = 'file-spreadsheet',
 	Eye = 'eye',
 	EyeOff = 'eye-off',
+	Knowledge = 'knowledge',
 }
 
 const icons: Record<IconName, FC<SVGProps<SVGSVGElement>>> = {
@@ -135,6 +137,7 @@ const icons: Record<IconName, FC<SVGProps<SVGSVGElement>>> = {
 	[IconName.Spreadsheet]: FileSpreadsheetSvg,
 	[IconName.Eye]: EyeSvg,
 	[IconName.EyeOff]: EyeOffSvg,
+	[IconName.Knowledge]: KnowledgeSvg,
 };
 
 export type IconProps = SVGProps<SVGSVGElement> & {

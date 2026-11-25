@@ -25,6 +25,7 @@ const navItems: NavItem[] = [
 	{ icon: IconName.Terms, href: '/terms', label: 'Terms' },
 	{ icon: IconName.ChartBar, href: '/analysis', label: 'Analysis' },
 	{ icon: IconName.Exploration, href: '/exploration', label: 'Exploration' },
+	{ icon: IconName.Knowledge, href: '/knowledge', label: 'Knowledge Ontology' },
 	{ icon: IconName.Schema, href: '/erd', label: 'ER Model' },
 	{ icon: IconName.Database, href: '/data', label: 'Data' },
 	{ icon: IconName.ChartLine, href: '/analytics', label: 'Analytics', adminOnly: true },

@@ -85,7 +85,7 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 				setPathDraft(rootListing.data.path ?? '');
 				setSelectedPath(rootListing.data.path);
 			} else if (rootListing.error) {
-				setBrowseError(rootListing.message ?? t('Could not list the shared folders.'));
+				setBrowseError(rootListing.message ?? t('Could not list the server folders.'));
 			}
 		});
 		return () => {
@@ -99,7 +99,7 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 		const response = await parsingApi.browseSources(path);
 		setBrowsing(false);
 		if (response.error || !response.data) {
-			setBrowseError(response.message ?? t('Could not list the shared folders.'));
+			setBrowseError(response.message ?? t('Could not list the server folders.'));
 			return;
 		}
 		setListing(response.data);
@@ -162,17 +162,17 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 			open={open}
 			onClose={onClose}
 			align="top"
-			ariaLabel={t('Create a parsing task from a shared folder')}
+			ariaLabel={t('Create a parsing task from a server folder')}
 			className="flex max-h-[90vh] w-[min(940px,calc(100vw-2rem))] flex-col overflow-hidden"
 		>
 			<header className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 dark:border-zinc-700">
 				<div>
 					<h2 className="text-sm font-semibold text-heading dark:text-zinc-100">
-						{t('Create a parsing task from a shared folder')}
+						{t('Create a parsing task from a server folder')}
 					</h2>
 					<p className="mt-1 text-xs text-secondary dark:text-zinc-400">
 						{t(
-							'Choose a Windows/server shared folder. Every PDF in it and its subfolders becomes one parsing document in the task.',
+							'Choose any folder the deployment server can read. Every PDF in it and its subfolders becomes one parsing document in the task.',
 						)}
 					</p>
 				</div>
@@ -190,7 +190,7 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 				<section className="min-h-[360px] border-b border-zinc-200 p-5 md:border-b-0 md:border-r dark:border-zinc-700">
 					<div className="mb-2 flex items-center justify-between gap-2">
 						<h3 className="text-xs font-semibold text-heading dark:text-zinc-100">
-							{t('Shared folder')}
+							{t('Server folder')}
 						</h3>
 						<div className="flex gap-2">
 							<button
@@ -207,7 +207,7 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 								onClick={() => void browse(null)}
 								className="text-[11px] text-secondary underline disabled:opacity-40 dark:text-zinc-400"
 							>
-								{t('Shared roots')}
+								{t('Roots')}
 							</button>
 						</div>
 					</div>
@@ -218,7 +218,7 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 							onKeyDown={(event) => {
 								if (event.key === 'Enter') void browse(pathDraft);
 							}}
-							placeholder={t('Shared folder path')}
+							placeholder={t('Server folder path')}
 							className={`${textField} font-mono`}
 						/>
 						<Button
@@ -234,7 +234,7 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 					{browsing ? (
 						<div className="flex items-center gap-2 py-8 text-xs text-secondary">
 							<Spinner />
-							{t('Listing shared folders…')}
+							{t('Listing server folders…')}
 						</div>
 					) : browseError != null ? (
 						<p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
@@ -242,9 +242,7 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 						</p>
 					) : listing != null && listing.roots.length === 0 ? (
 						<p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-							{t(
-								'No shared folders are configured. Set FILE_SOURCE_ROOTS on the backend.',
-							)}
+							{t('No server folders are visible to the backend process.')}
 						</p>
 					) : (
 						<>
@@ -270,7 +268,7 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 												</span>
 												{entry.is_root && (
 													<span className="rounded-full border border-zinc-300 px-1.5 text-[10px] uppercase text-secondary">
-														{t('Shared')}
+														{t('Server')}
 													</span>
 												)}
 											</button>

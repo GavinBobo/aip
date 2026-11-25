@@ -927,6 +927,133 @@ class ParsingBlockEdit(Base):
     edited_at: Mapped[datetime]
 
 
+class KnowledgeNetwork(Base):
+    """A governed knowledge network built from parsed documents."""
+
+    __table__ = s.knowledge_network
+
+    id: Mapped[str]
+    name: Mapped[str]
+    description: Mapped[str | None]
+    domain: Mapped[str | None]
+    status: Mapped[str]
+    version: Mapped[str]
+    created: Mapped[datetime | None]
+    modified: Mapped[datetime | None]
+    created_by: Mapped[str | None]
+    modified_by: Mapped[str | None]
+
+
+class KnowledgeDocument(Base):
+    """One parsed source document bound to a knowledge network."""
+
+    __table__ = s.knowledge_document
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    run_id: Mapped[str | None]
+    title: Mapped[str]
+    source_name: Mapped[str | None]
+    status: Mapped[str]
+    summary: Mapped[str | None]
+    error_message: Mapped[str | None]
+    chunk_count: Mapped[int]
+    created: Mapped[datetime | None]
+    created_by: Mapped[str | None]
+    extracted_at: Mapped[datetime | None]
+
+
+class KnowledgeConcept(Base):
+    """A concept/class extracted from documents, with provenance and status."""
+
+    __table__ = s.knowledge_concept
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    key: Mapped[str]
+    name: Mapped[str]
+    description: Mapped[str | None]
+    kind: Mapped[str]
+    aliases: Mapped[list[Any]]
+    attributes: Mapped[list[Any]]
+    status: Mapped[str]
+    confidence: Mapped[float]
+    source_document_id: Mapped[str | None]
+    created: Mapped[datetime | None]
+    modified: Mapped[datetime | None]
+
+
+class KnowledgeRelation(Base):
+    """A directed relationship between two knowledge concepts."""
+
+    __table__ = s.knowledge_relation
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    key: Mapped[str]
+    source_concept_id: Mapped[str]
+    target_concept_id: Mapped[str]
+    name: Mapped[str]
+    description: Mapped[str | None]
+    kind: Mapped[str]
+    status: Mapped[str]
+    confidence: Mapped[float]
+    source_document_id: Mapped[str | None]
+    created: Mapped[datetime | None]
+    modified: Mapped[datetime | None]
+
+
+class KnowledgeFact(Base):
+    """One statement extracted from a document about a concept."""
+
+    __table__ = s.knowledge_fact
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    subject_concept_id: Mapped[str]
+    relation_id: Mapped[str | None]
+    object_concept_id: Mapped[str | None]
+    object_text: Mapped[str | None]
+    predicate: Mapped[str]
+    statement: Mapped[str]
+    status: Mapped[str]
+    confidence: Mapped[float]
+    source_document_id: Mapped[str | None]
+    created: Mapped[datetime | None]
+    modified: Mapped[datetime | None]
+
+
+class KnowledgeEvidence(Base):
+    """A page/block citation supporting one concept, relation or fact."""
+
+    __table__ = s.knowledge_evidence
+
+    id: Mapped[str]
+    network_id: Mapped[str]
+    document_id: Mapped[str]
+    concept_id: Mapped[str | None]
+    relation_id: Mapped[str | None]
+    fact_id: Mapped[str | None]
+    page: Mapped[int | None]
+    block_index: Mapped[int | None]
+    quote: Mapped[str]
+    created: Mapped[datetime | None]
+
+
+class KnowledgeConceptData(Base):
+    """A concept's mapping into the data ontology: a term or a catalog table."""
+
+    __table__ = s.knowledge_concept__data
+
+    id: Mapped[str]
+    concept_id: Mapped[str]
+    term_id: Mapped[str | None]
+    table_id: Mapped[str | None]
+    confidence: Mapped[float]
+    note: Mapped[str | None]
+    created: Mapped[datetime | None]
+
+
 __all__ = [
     "Analysis",
     "Base",
@@ -949,6 +1076,13 @@ __all__ = [
     "ErdNode",
     "ErdNote",
     "ErdRelationship",
+    "KnowledgeConcept",
+    "KnowledgeConceptData",
+    "KnowledgeDocument",
+    "KnowledgeEvidence",
+    "KnowledgeFact",
+    "KnowledgeNetwork",
+    "KnowledgeRelation",
     "PqlAnalysis",
     "ParsingBlockEdit",
     "ParsingDocument",

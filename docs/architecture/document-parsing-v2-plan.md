@@ -363,8 +363,9 @@ parsing/{task_id}/{document_id}/{run_id}/
 
 “新建解析任务”支持直接选择服务器/Windows 共享文件夹：
 
-- 目录浏览复用 `FILE_SOURCE_ROOTS` 白名单（未配置时默认为仓库下的 `shared/`），
-  不另外暴露任意磁盘路径；不跟随符号链接/目录联接。
+- 目录浏览覆盖部署服务器进程可读的所有文件夹（Windows 盘符、UNC 路径、Linux 根目录），
+  默认不再限制在 `shared/`；可用 `PARSING_SOURCE_ROOTS` 设置可选的服务器侧白名单。
+  不跟随符号链接/目录联接。
 - 选择文件夹后递归扫描 `.pdf`（大小写不敏感），默认单任务上限 1000 个，
   可用 `PARSING_MAX_SCAN_FILES` 调整。
 - 每份 PDF 复制到解析上传目录后再入队，因此共享目录改名或断连不影响已建任务。
@@ -476,12 +477,12 @@ parsing/{task_id}/{document_id}/{run_id}/
 
 本次验证：
 
-- `pytest all_ontology/parsing`：32 passed；
+- `pytest all_ontology/parsing`：34 passed；
 - `pytest all_ontology dev_tools`：2790+ passed、147 skipped、4 failed；失败为既有的
   VDB halfvec 环境（3 个）和全仓 SPDX 头（1 个），与解析改动无关；
 - `alembic check`：无待生成迁移；
 - `pnpm build`：通过；
 - BFF 烟测：登录后创建任务 → 失败记录 `BACKEND_UNAVAILABLE` → 删除任务；
   页图与 zip 导出均可通过 Next 代理下载。
-- 共享文件夹烟测：递归扫描到 `a.pdf`、`nested/b.PDF`，一次创建 2 个文档的任务，
+- 服务器文件夹烟测：递归扫描到 `a.pdf`、`nested/b.PDF`，一次创建 2 个文档的任务，
   每份文档有独立状态与进度字段；任务删除后源文件清理。

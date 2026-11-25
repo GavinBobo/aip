@@ -30,9 +30,9 @@ from pydantic import BaseModel, Field
 
 from all_ontology.parsing import service
 from all_ontology.parsing import settings as parsing_settings
+from all_ontology.parsing import sources as parsing_sources
 from all_ontology.parsing import store
 from all_ontology.parsing.tasks import INSTANCE_ID, task_store
-from all_ontology.server.connections import files as connection_files
 from all_ontology.server.identity import resolve_internal_user
 from all_ontology.server.responses import (
     ParsingBackendStatusResponse,
@@ -324,7 +324,7 @@ async def parsing_profiles() -> dict:
 def browse_parsing_sources(path: str | None = None) -> dict:
     """Browse the same allowlisted shared folders as the connection wizard."""
     try:
-        return {"data": connection_files.browse_source_path(path)}
+        return {"data": parsing_sources.browse_server_path(path)}
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
 
@@ -333,7 +333,7 @@ def browse_parsing_sources(path: str | None = None) -> dict:
 def scan_parsing_sources(body: ParsingSourceScanBody) -> dict:
     """Recursively list PDFs below a selected shared folder."""
     try:
-        found = connection_files.scan_shared_files(
+        found = parsing_sources.scan_server_files(
             body.path,
             suffixes={".pdf"},
             max_files=MAX_SCAN_FILES,
@@ -386,7 +386,7 @@ async def create_parsing_task_from_folder(
         raise HTTPException(status_code=422, detail="结束页不能小于起始页。")
 
     try:
-        found = connection_files.scan_shared_files(
+        found = parsing_sources.scan_server_files(
             body.path,
             suffixes={".pdf"},
             max_files=MAX_SCAN_FILES,
@@ -403,7 +403,7 @@ async def create_parsing_task_from_folder(
     try:
         for item in found:
             try:
-                source, payload = connection_files.read_shared_bytes(
+                source, payload = parsing_sources.read_server_bytes(
                     item["path"], max_bytes=MAX_UPLOAD_BYTES
                 )
             except ValueError as error:

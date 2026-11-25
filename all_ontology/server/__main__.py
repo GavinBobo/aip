@@ -43,6 +43,7 @@ from all_ontology.server.erd.import_export import (  # noqa: E402
 )
 from all_ontology.server.erd.router import router as erd_router  # noqa: E402
 from all_ontology.server.health.router import router as health_router  # noqa: E402
+from all_ontology.server.knowledge.router import router as knowledge_router  # noqa: E402
 from all_ontology.server.metadata.router import router as metadata_router  # noqa: E402
 from all_ontology.server.rules.router import router as rules_router  # noqa: E402
 from all_ontology.server.semantic_compilation.router import (  # noqa: E402
@@ -131,6 +132,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(search_router, prefix="/api", tags=["search"])
     app.include_router(parsing_router, prefix="/api", tags=["parsing"])
+    app.include_router(knowledge_router, prefix="/api", tags=["knowledge"])
 
     return app
 

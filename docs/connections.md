@@ -121,10 +121,11 @@ path-separator- or comma-separated allowlist); when that variable is unset, the
 local `./shared` directory is the only root. Symlinks are resolved and rejected
 when they point outside an allowlisted root.
 
-The document parser's **New parsing task → shared folder** picker uses the same
-`FILE_SOURCE_ROOTS` allowlist. It scans recursively for `.pdf` files and copies
-each into the parsing upload directory before queueing it, so a later share
-rename does not break the stored task.
+The document parser's **New parsing task → server folder** picker is separate:
+it can browse every directory the API process can read (optionally narrowed by
+`PARSING_SOURCE_ROOTS`). It scans recursively for `.pdf` files and copies each
+into the parsing upload directory before queueing it, so a later share rename
+does not break the stored task.
 
 - Accepted formats: `.csv`, `.tsv`, `.txt`, `.pcl`, `.xlsx`, `.xls`, `.xlsm`,
   `.parquet`, `.pq`. Delimited files are read as UTF-8 (BOM tolerated) with a

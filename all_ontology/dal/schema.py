@@ -1879,6 +1879,301 @@ Index("ix_parsing_run_document", parsing_run.c.document_id, parsing_run.c.create
 Index("ix_parsing_run_task", parsing_run.c.task_id, parsing_run.c.created)
 
 # ---------------------------------------------------------------------------
+# Knowledge ontology — documents -> concepts/relations/facts -> evidence
+# ---------------------------------------------------------------------------
+#
+# The data ontology above describes what is in a warehouse. This tier describes
+# what an organisation *knows*: concepts, how they relate, and the statements
+# made about them in parsed documents. The two meet through
+# `knowledge_concept__data`, so a knowledge concept can point at a glossary term
+# or a catalog table without either model owning the other.
+#
+# Evidence is a first-class row rather than a JSON blob on the fact: a reviewer
+# certifies a claim by looking at its page and quoted text, and several claims
+# can cite the same passage. `ON DELETE CASCADE` is deliberate throughout — a
+# concept with no surviving document is not knowledge, it is an orphan.
+
+knowledge_network = Table(
+    "knowledge_network",
+    METADATA,
+    _id(),
+    Column("name", Text, nullable=False),
+    Column("description", Text, nullable=True),
+    Column("domain", Text, nullable=True),
+    Column(
+        "status",
+        Text,
+        nullable=False,
+        server_default=text("'draft'"),
+    ),
+    Column("version", Text, nullable=False, server_default=text("'1.0'")),
+    *_edited(),
+    CheckConstraint(
+        "status IN ('draft', 'published', 'archived')",
+        name="known_status",
+    ),
+)
+
+knowledge_document = Table(
+    "knowledge_document",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    # The parse run this knowledge came from. Kept nullable and `SET NULL` so
+    # deleting a parse result does not delete the reviewed knowledge built from
+    # it; the evidence rows still carry the quotes.
+    Column(
+        "run_id",
+        Text,
+        ForeignKey(parsing_run.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column("title", Text, nullable=False),
+    Column("source_name", Text, nullable=True),
+    Column(
+        "status",
+        Text,
+        nullable=False,
+        server_default=text("'queued'"),
+    ),
+    Column("summary", Text, nullable=True),
+    Column("error_message", Text, nullable=True),
+    Column("chunk_count", Integer, nullable=False, server_default=text("0")),
+    Column("created", DateTime(timezone=True), nullable=True, server_default=func.now()),
+    Column("created_by", Text, nullable=True),
+    Column("extracted_at", DateTime(timezone=True), nullable=True),
+    UniqueConstraint("network_id", "run_id", name="uq_knowledge_document_network_run"),
+    CheckConstraint(
+        "status IN ('queued', 'extracting', 'extracted', 'failed')",
+        name="known_status",
+    ),
+)
+
+knowledge_concept = Table(
+    "knowledge_concept",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    # Stable, BKN-compatible id within the network (`^[a-z0-9][a-z0-9_-]{0,127}$`).
+    Column("key", Text, nullable=False),
+    Column("name", Text, nullable=False),
+    Column("description", Text, nullable=True),
+    Column("kind", Text, nullable=False, server_default=text("'entity'")),
+    Column("aliases", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    Column("attributes", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    Column("status", Text, nullable=False, server_default=text("'draft'")),
+    Column("confidence", Double, nullable=False, server_default=text("0.6")),
+    Column(
+        "source_document_id",
+        Text,
+        ForeignKey(knowledge_document.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column("created", DateTime(timezone=True), nullable=True, server_default=func.now()),
+    Column("modified", DateTime(timezone=True), nullable=True),
+    UniqueConstraint("network_id", "key", name="uq_knowledge_concept_network_key"),
+    CheckConstraint(
+        "kind IN ('entity', 'event', 'process', 'rule', 'metric', 'role', 'document')",
+        name="known_kind",
+    ),
+    CheckConstraint(
+        "status IN ('draft', 'reviewed', 'certified')",
+        name="known_status",
+    ),
+)
+
+knowledge_relation = Table(
+    "knowledge_relation",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("key", Text, nullable=False),
+    Column(
+        "source_concept_id",
+        Text,
+        ForeignKey(knowledge_concept.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "target_concept_id",
+        Text,
+        ForeignKey(knowledge_concept.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("name", Text, nullable=False),
+    Column("description", Text, nullable=True),
+    Column("kind", Text, nullable=False, server_default=text("'association'")),
+    Column("status", Text, nullable=False, server_default=text("'draft'")),
+    Column("confidence", Double, nullable=False, server_default=text("0.6")),
+    Column(
+        "source_document_id",
+        Text,
+        ForeignKey(knowledge_document.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column("created", DateTime(timezone=True), nullable=True, server_default=func.now()),
+    Column("modified", DateTime(timezone=True), nullable=True),
+    UniqueConstraint("network_id", "key", name="uq_knowledge_relation_network_key"),
+    CheckConstraint(
+        "kind IN ('association', 'part_of', 'causal', 'depends_on', 'controls', 'flows_to', 'related')",
+        name="known_kind",
+    ),
+    CheckConstraint(
+        "status IN ('draft', 'reviewed', 'certified')",
+        name="known_status",
+    ),
+)
+
+knowledge_fact = Table(
+    "knowledge_fact",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "subject_concept_id",
+        Text,
+        ForeignKey(knowledge_concept.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "relation_id",
+        Text,
+        ForeignKey(knowledge_relation.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column(
+        "object_concept_id",
+        Text,
+        ForeignKey(knowledge_concept.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    # Facts whose object is a literal (a date, amount, policy id) keep it here.
+    Column("object_text", Text, nullable=True),
+    Column("predicate", Text, nullable=False),
+    Column("statement", Text, nullable=False),
+    Column("status", Text, nullable=False, server_default=text("'draft'")),
+    Column("confidence", Double, nullable=False, server_default=text("0.6")),
+    Column(
+        "source_document_id",
+        Text,
+        ForeignKey(knowledge_document.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column("created", DateTime(timezone=True), nullable=True, server_default=func.now()),
+    Column("modified", DateTime(timezone=True), nullable=True),
+    CheckConstraint(
+        "status IN ('draft', 'reviewed', 'certified')",
+        name="known_status",
+    ),
+)
+
+knowledge_evidence = Table(
+    "knowledge_evidence",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "document_id",
+        Text,
+        ForeignKey(knowledge_document.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "concept_id",
+        Text,
+        ForeignKey(knowledge_concept.c.id, ondelete="CASCADE"),
+        nullable=True,
+    ),
+    Column(
+        "relation_id",
+        Text,
+        ForeignKey(knowledge_relation.c.id, ondelete="CASCADE"),
+        nullable=True,
+    ),
+    Column(
+        "fact_id",
+        Text,
+        ForeignKey(knowledge_fact.c.id, ondelete="CASCADE"),
+        nullable=True,
+    ),
+    Column("page", Integer, nullable=True),
+    Column("block_index", Integer, nullable=True),
+    Column("quote", Text, nullable=False),
+    Column("created", DateTime(timezone=True), nullable=True, server_default=func.now()),
+    CheckConstraint(
+        "num_nonnulls(concept_id, relation_id, fact_id) = 1",
+        name="exactly_one_target",
+    ),
+)
+
+# MAPPED_TO: one knowledge concept -> one data-ontology object (term or table).
+# Same nullable-FK-plus-CHECK shape as `zone_target`; term is the semantic
+# handle, table is the physical one, and a concept may map to both.
+knowledge_concept__data = Table(
+    "knowledge_concept__data",
+    METADATA,
+    _id(),
+    Column(
+        "concept_id",
+        Text,
+        ForeignKey(knowledge_concept.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("term_id", Text, ForeignKey(term.c.id, ondelete="CASCADE"), nullable=True),
+    Column(
+        "table_id",
+        Text,
+        ForeignKey(catalog_table.c.id, ondelete="CASCADE"),
+        nullable=True,
+    ),
+    Column("confidence", Double, nullable=False, server_default=text("0.8")),
+    Column("note", Text, nullable=True),
+    Column("created", DateTime(timezone=True), nullable=True, server_default=func.now()),
+    CheckConstraint(
+        "num_nonnulls(term_id, table_id) = 1",
+        name="exactly_one_target",
+    ),
+)
+
+Index("ix_knowledge_document_network", knowledge_document.c.network_id, knowledge_document.c.created)
+Index("ix_knowledge_concept_network", knowledge_concept.c.network_id, knowledge_concept.c.name)
+Index(
+    "ix_knowledge_relation_network",
+    knowledge_relation.c.network_id,
+    knowledge_relation.c.source_concept_id,
+)
+Index("ix_knowledge_fact_network", knowledge_fact.c.network_id, knowledge_fact.c.created)
+Index("ix_knowledge_evidence_document", knowledge_evidence.c.document_id)
+Index("ix_knowledge_evidence_concept", knowledge_evidence.c.concept_id)
+Index("ix_knowledge_evidence_fact", knowledge_evidence.c.fact_id)
+Index("ix_knowledge_concept__data_concept", knowledge_concept__data.c.concept_id)
+
+# ---------------------------------------------------------------------------
 # 表的中文说明
 # ---------------------------------------------------------------------------
 
@@ -1942,6 +2237,14 @@ TABLE_COMMENTS: dict[str, str] = {
     "parsing_document": "解析文件：任务里的单个文件，记录源文件、页数与页级进度",
     "parsing_run": "解析运行：一次实际解析，记录模型快照、结果路径、质量与校对状态",
     "parsing_block_edit": "解析块修订：人工改过的块内容，按 run/page/idx 覆盖原始结果",
+    # 知识本体
+    "knowledge_network": "知识网络：一组从文档中抽取、审核并可发布的概念与关系",
+    "knowledge_document": "知识文档：一条绑定解析结果的抽取记录，保存状态、摘要与错误",
+    "knowledge_concept": "知识概念：业务对象/事件/规则等，带别名、属性与认证状态",
+    "knowledge_relation": "知识关系：两个概念之间的有向关系及其类型与可信度",
+    "knowledge_fact": "知识事实：从原文抽取的一条陈述，可指向概念或字面值",
+    "knowledge_evidence": "知识证据：事实/关系/概念在解析文档中的页码、块号与原文引文",
+    "knowledge_concept__data": "概念与数据本体的映射：指向术语或目录表，二者取其一",
     # 运行期
     "uploaded_dataset": "上传的数据集：Excel/CSV 连接上传的字节，以 Parquet 存在库里",
     "user_group": "用户组：一组账号与组级角色（admin/viewer）",
@@ -2012,6 +2315,13 @@ __all__ = [
     "parsing_document",
     "parsing_run",
     "parsing_block_edit",
+    "knowledge_network",
+    "knowledge_document",
+    "knowledge_concept",
+    "knowledge_relation",
+    "knowledge_fact",
+    "knowledge_evidence",
+    "knowledge_concept__data",
     "term_family",
     "term__term_family",
 ]

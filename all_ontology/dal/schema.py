@@ -1663,6 +1663,9 @@ erd_node = Table(
     # Display name. Catalog nodes store ``schema.table``; virtual nodes store
     # whatever the imported document called them.
     Column("name", Text, nullable=False),
+    # Modeller's own classification for the card (fact, dimension, staging...).
+    # It is canvas metadata, not part of the source table.
+    Column("category", Text, nullable=True),
     Column("x", Double, nullable=False, server_default=text("0")),
     Column("y", Double, nullable=False, server_default=text("0")),
     Column("collapsed", Boolean, nullable=False, server_default=text("false")),
@@ -1905,6 +1908,8 @@ parsing_document = Table(
     Column("instance_id", Text, nullable=True),
     Column("sha256", Text, nullable=True),
     Column("source_md5", Text, nullable=True),
+    Column("mime_type", Text, nullable=True),
+    Column("file_type", Text, nullable=True),
     Column("parsed_md_path", Text, nullable=True),
     Column(
         "learned_to_knowledge",
@@ -1921,8 +1926,11 @@ parsing_document = Table(
     ),
     Column("size_bytes", BigInteger, nullable=True),
     Column("page_count", Integer, nullable=True),
+    Column("page_width", Integer, nullable=True),
+    Column("page_height", Integer, nullable=True),
     Column("page_start", Integer, nullable=True),
     Column("page_end", Integer, nullable=True),
+    Column("source_mtime", DateTime(timezone=True), nullable=True),
     Column("processing_time_ms", Double, nullable=True),
     Column("status", Text, nullable=False, server_default=text("'queued'")),
     Column("stage", Text, nullable=True),
@@ -2253,6 +2261,41 @@ knowledge_document = Table(
         name="known_status",
     ),
 )
+
+# One extraction chunk. The chunk is retained independently of the graph so a
+# retrieval service can search document prose, not only the claims that were
+# extracted from it. Re-extraction replaces the document's chunks in the same
+# transaction as its claims.
+knowledge_chunk = Table(
+    "knowledge_chunk",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column(
+        "document_id",
+        Text,
+        ForeignKey(knowledge_document.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("chunk_index", Integer, nullable=False),
+    Column("text", Text, nullable=False),
+    Column("page_start", Integer, nullable=True),
+    Column("page_end", Integer, nullable=True),
+    Column("block_start", Integer, nullable=True),
+    Column("block_end", Integer, nullable=True),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
+    UniqueConstraint(
+        "document_id", "chunk_index", name="uq_knowledge_chunk_document_index"
+    ),
+)
+
 
 knowledge_concept = Table(
     "knowledge_concept",
@@ -2851,6 +2894,11 @@ Index(
     knowledge_document.c.network_id,
     knowledge_document.c.created,
 )
+Index(
+    "ix_knowledge_chunk_network",
+    knowledge_chunk.c.network_id,
+    knowledge_chunk.c.document_id,
+)
 Index("ix_knowledge_network_zone", knowledge_network.c.zone_id)
 Index(
     "ix_knowledge_network_grant_network",
@@ -2894,6 +2942,8 @@ Index(
 # every chat turn. A btree cannot serve an unanchored ILIKE; these get the same
 # pg_trgm GIN treatment as global search (see TRIGRAM_SEARCH_TABLES above).
 for _knowledge_table, _knowledge_columns in (
+    (knowledge_document, ("title", "summary")),
+    (knowledge_chunk, ("text",)),
     (knowledge_concept, ("name", "description")),
     (knowledge_fact, ("statement",)),
     (knowledge_action, ("name", "description")),

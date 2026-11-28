@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut, useSession } from '@/auth/auth-client';
 import { userCan } from '@/auth/permissions';
@@ -15,12 +15,25 @@ import { Text } from '@/common/Text';
 import { SelectButtonTheme } from '@/enums/button';
 import { TextVariant } from '@/enums/text';
 
+/** There is nothing to subscribe to; the snapshot changes once, at hydration. */
+const subscribeToHydration = () => () => {};
+
 export const UserMenu = ({ version }: { version?: string }) => {
 	const { data } = useSession();
 	const router = useRouter();
 	const [signingOut, setSigningOut] = useState(false);
+	// The server renders this client component before Better Auth has a
+	// session. If the fetch resolves quickly, the first client render would
+	// otherwise add the menu during hydration and React would discard the
+	// server tree. Keep both sides empty until the hydration pass is over;
+	// the menu then appears as an ordinary post-hydration update.
+	const hasMounted = useSyncExternalStore(
+		subscribeToHydration,
+		() => true,
+		() => false,
+	);
 
-	if (!data) return null;
+	if (!hasMounted || !data) return null;
 
 	const { user } = data;
 	const initial = (user.name || user.email || '?').charAt(0).toUpperCase();

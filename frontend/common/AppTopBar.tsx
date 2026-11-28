@@ -9,6 +9,7 @@ import { Icon, IconName } from '@/common/icons';
 import { Breadcrumbs } from '@/common/Breadcrumbs';
 import { GlobalSearch } from '@/common/GlobalSearch';
 import { UserMenu } from '@/common/UserMenu';
+import { ThemeToggle } from '@/common/ThemeToggle';
 import { useBreadcrumbs } from '@/contexts/BreadcrumbContext';
 import { LanguageToggle } from '@/i18n/LanguageToggle';
 
@@ -30,6 +31,7 @@ export const AppTopBar = ({ version }: { version?: string }) => {
 			<div className="ml-auto flex items-center gap-3">
 				{rightSlot ? <div className="flex items-center gap-2">{rightSlot}</div> : null}
 				<GlobalSearch />
+				<ThemeToggle />
 				<LanguageToggle />
 				<UserMenu version={version} />
 			</div>

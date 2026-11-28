@@ -381,6 +381,87 @@ export type KnowledgeImportResult = {
 type Single<T> = Promise<ResponseWithError<{ data: T }>>;
 type List<T> = Promise<ResponseWithError<{ data: T[]; count: number }>>;
 
+export type KnowledgeSearchKind =
+	| 'chunk'
+	| 'document'
+	| 'concept'
+	| 'relation'
+	| 'fact'
+	| 'action'
+	| 'risk'
+	| 'metric'
+	| 'evidence';
+
+export type KnowledgeSearchCitation = {
+	page?: number | null;
+	page_end?: number | null;
+	block_index?: number | null;
+	block_start?: number | null;
+	block_end?: number | null;
+	quote?: string | null;
+	source_path?: string | null;
+	image_path?: string | null;
+};
+
+export type KnowledgeSearchItem = {
+	kind: KnowledgeSearchKind;
+	id: string;
+	score: number;
+	title: string | null;
+	snippet: string | null;
+	network_id: string | null;
+	network_name: string | null;
+	document_id: string | null;
+	document_title: string | null;
+	source_name: string | null;
+	source_path: string | null;
+	status: string | null;
+	page: number | null;
+	page_end: number | null;
+	block_index: number | null;
+	citation: KnowledgeSearchCitation;
+	metadata: Record<string, unknown>;
+	evidence: Array<{
+		id: string;
+		page: number | null;
+		block_index: number | null;
+		quote: string;
+		source_path: string | null;
+		image_path: string | null;
+	}>;
+};
+
+export type KnowledgeSearchFacet = {
+	id: string | null;
+	name: string;
+	count: number;
+};
+
+export type KnowledgeSearchResult = {
+	query: string;
+	mode: 'human' | 'agent';
+	total: number;
+	returned: number;
+	generated_at: string;
+	results: KnowledgeSearchItem[];
+	facets: {
+		kinds: Partial<Record<KnowledgeSearchKind, number>>;
+		networks: KnowledgeSearchFacet[];
+		documents: KnowledgeSearchFacet[];
+	};
+	context: string;
+};
+
+export type KnowledgeSearchInput = {
+	query: string;
+	network_id?: string;
+	document_id?: string;
+	mode?: 'human' | 'agent';
+	kinds?: KnowledgeSearchKind[];
+	limit?: number;
+	include_evidence?: boolean;
+};
+
 export const knowledgeApi = {
 	listNetworks: (): List<KnowledgeNetwork> =>
 		requests.get<{ data: KnowledgeNetwork[]; count: number }>(`knowledge/networks`),
@@ -758,4 +839,7 @@ export const knowledgeApi = {
 			form,
 		);
 	},
+
+	search: (input: KnowledgeSearchInput): Single<KnowledgeSearchResult> =>
+		requests.post<{ data: KnowledgeSearchResult }>('knowledge/search', input),
 };

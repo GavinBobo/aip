@@ -230,9 +230,7 @@ def _parse_feature_config(
     if "image_max_tokens" in config:
         value = config["image_max_tokens"]
         if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-            errors.append(
-                "feature_config.image_max_tokens must be a positive integer."
-            )
+            errors.append("feature_config.image_max_tokens must be a positive integer.")
         else:
             image["max_tokens"] = value
 
@@ -374,17 +372,13 @@ def build_options(
                 image_config.get("enabled", settings.pipeline.image_vlm_enabled)
             ),
             image_vlm_min_area_px=int(
-                image_config.get(
-                    "min_area_px", settings.pipeline.image_vlm_min_area_px
-                )
+                image_config.get("min_area_px", settings.pipeline.image_vlm_min_area_px)
             ),
             image_vlm_prompt=str(
                 image_config.get("prompt", settings.pipeline.image_vlm_prompt)
             ),
             image_vlm_max_tokens=int(
-                image_config.get(
-                    "max_tokens", settings.pipeline.image_vlm_max_tokens
-                )
+                image_config.get("max_tokens", settings.pipeline.image_vlm_max_tokens)
             ),
             warnings=feature_warnings,
         ),

@@ -10,7 +10,8 @@ import { Button } from '@/common/Button';
 import { Modal } from '@/common/modal/Modal';
 import { ButtonTheme, Size } from '@/enums/button';
 import { t } from '@/i18n';
-import type { ErdColumn, ErdNode } from '@/types/erd';
+import { COLUMN_STYLE_OPTIONS } from '@/lib/erd/columnAppearance';
+import type { ErdColumn, ErdColumnStyle, ErdNode } from '@/types/erd';
 
 type DraftRow = {
 	key: string;
@@ -20,6 +21,8 @@ type DraftRow = {
 	is_unique: boolean;
 	is_nullable: boolean;
 	note: string;
+	color: string | null;
+	style: ErdColumnStyle | null;
 };
 
 const toRows = (columns: ErdColumn[]): DraftRow[] =>
@@ -31,6 +34,8 @@ const toRows = (columns: ErdColumn[]): DraftRow[] =>
 		is_unique: column.is_unique === true,
 		is_nullable: column.is_nullable !== false,
 		note: column.note ?? '',
+		color: column.color ?? null,
+		style: column.style ?? null,
 	}));
 
 type TableEditorDialogProps = {
@@ -39,6 +44,7 @@ type TableEditorDialogProps = {
 	onClose: () => void;
 	onSave: (patch: {
 		name: string;
+		category: string;
 		note: string | null;
 		indexes: { name: string | null; columns: string[]; unique: boolean }[];
 		columns: {
@@ -48,8 +54,11 @@ type TableEditorDialogProps = {
 			is_unique: boolean;
 			is_nullable: boolean;
 			note: string | null;
+			color: string | null;
+			style: ErdColumnStyle | null;
 		}[];
 		column_notes: Record<string, string>;
+		column_appearance: Record<string, { color: string | null; style: ErdColumnStyle | null }>;
 	}) => void;
 };
 
@@ -57,6 +66,7 @@ let rowSeed = 0;
 
 export const TableEditorDialog = ({ node, busy, onClose, onSave }: TableEditorDialogProps) => {
 	const [name, setName] = useState(node.name);
+	const [category, setCategory] = useState(node.category ?? '');
 	const [note, setNote] = useState(node.note ?? '');
 	const [rows, setRows] = useState<DraftRow[]>(() => toRows(node.columns));
 	const [indexes, setIndexes] = useState(() =>
@@ -68,7 +78,7 @@ export const TableEditorDialog = ({ node, busy, onClose, onSave }: TableEditorDi
 		})),
 	);
 	// Catalog tables mirror the source database: their name and columns are
-	// read-only here, but the note is the modeller's own annotation.
+	// read-only here, but category, notes, aliases and appearance are ours.
 	const schemaLocked = node.table_id != null;
 
 	const updateRow = (key: string, patch: Partial<DraftRow>) => {
@@ -87,6 +97,8 @@ export const TableEditorDialog = ({ node, busy, onClose, onSave }: TableEditorDi
 				is_unique: false,
 				is_nullable: true,
 				note: '',
+				color: null,
+				style: null,
 			},
 		]);
 	};
@@ -94,7 +106,7 @@ export const TableEditorDialog = ({ node, busy, onClose, onSave }: TableEditorDi
 	const validRows = rows.filter((row) => row.name.trim() !== '');
 
 	return (
-		<Modal open onClose={onClose} className="w-full max-w-3xl">
+		<Modal open onClose={onClose} className="max-h-[90vh] w-full max-w-5xl overflow-y-auto">
 			<header className="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-700">
 				<div>
 					<h2 className="text-base font-semibold text-heading dark:text-zinc-100">
@@ -103,7 +115,7 @@ export const TableEditorDialog = ({ node, busy, onClose, onSave }: TableEditorDi
 					<p className="mt-1 text-xs text-secondary dark:text-zinc-400">
 						{schemaLocked
 							? t(
-									'Columns come from the catalog. Their aliases and the table note are yours to edit.',
+									'Columns come from the catalog. Category, aliases and appearance are yours to edit.',
 								)
 							: t('This table lives only on the canvas; the catalog is not changed.')}
 					</p>
@@ -131,6 +143,17 @@ export const TableEditorDialog = ({ node, busy, onClose, onSave }: TableEditorDi
 				</label>
 
 				<label className="block text-xs font-medium text-body dark:text-zinc-300">
+					{t('Category')}
+					<input
+						value={category}
+						onChange={(event) => setCategory(event.target.value)}
+						maxLength={64}
+						placeholder={t('e.g. fact, dimension, staging')}
+						className="mt-1 h-9 w-full rounded-lg border border-zinc-300 bg-white px-2 text-sm text-body outline-none focus:border-[#76b900] dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200"
+					/>
+				</label>
+
+				<label className="block text-xs font-medium text-body dark:text-zinc-300">
 					{t('Note')}
 					<textarea
 						value={note}
@@ -141,17 +164,18 @@ export const TableEditorDialog = ({ node, busy, onClose, onSave }: TableEditorDi
 				</label>
 
 				<div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
-					<div className="grid grid-cols-[1fr_0.9fr_1fr_auto] gap-2 border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] font-medium text-secondary dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
+					<div className="grid grid-cols-[1.1fr_0.9fr_1fr_auto_auto] gap-2 border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] font-medium text-secondary dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
 						<span>{t('Column')}</span>
 						<span>{t('Type')}</span>
 						<span>{t('Alias')}</span>
+						<span>{t('Appearance')}</span>
 						<span className="text-right">{t('Constraints')}</span>
 					</div>
 					<div className="max-h-72 overflow-y-auto">
 						{rows.map((row) => (
 							<div
 								key={row.key}
-								className="grid grid-cols-[1fr_0.9fr_1fr_auto] items-center gap-2 border-b border-zinc-100 px-3 py-2 last:border-b-0 dark:border-zinc-800"
+								className="grid grid-cols-[1.1fr_0.9fr_1fr_auto_auto] items-center gap-2 border-b border-zinc-100 px-3 py-2 last:border-b-0 dark:border-zinc-800"
 							>
 								<input
 									value={row.name}
@@ -180,6 +204,47 @@ export const TableEditorDialog = ({ node, busy, onClose, onSave }: TableEditorDi
 									title={t('Shown in grey under the column name on the canvas')}
 									className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-xs text-body outline-none focus:border-[#76b900] dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200"
 								/>
+								<div className="flex items-center gap-1">
+									<input
+										type="color"
+										value={row.color ?? '#71717a'}
+										onChange={(event) =>
+											updateRow(row.key, { color: event.target.value })
+										}
+										aria-label={t('Column color')}
+										title={t('Column color')}
+										className="h-7 w-7 cursor-pointer rounded border border-zinc-300 bg-white p-0.5 dark:border-zinc-600 dark:bg-zinc-900"
+									/>
+									<button
+										type="button"
+										onClick={() => updateRow(row.key, { color: null })}
+										className="h-7 w-6 rounded text-[11px] text-secondary hover:bg-zinc-100 dark:hover:bg-zinc-800"
+										aria-label={t('Clear column color')}
+										title={t('Clear column color')}
+									>
+										×
+									</button>
+									<select
+										value={row.style ?? 'normal'}
+										onChange={(event) =>
+											updateRow(row.key, {
+												style:
+													event.target.value === 'normal'
+														? null
+														: (event.target.value as ErdColumnStyle),
+											})
+										}
+										aria-label={t('Column style')}
+										title={t('Column style')}
+										className="h-7 min-w-0 rounded-md border border-zinc-300 bg-white px-1 text-[11px] text-body outline-none focus:border-[#76b900] dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200"
+									>
+										{COLUMN_STYLE_OPTIONS.map((option) => (
+											<option key={option.value} value={option.value}>
+												{t(option.label)}
+											</option>
+										))}
+									</select>
+								</div>
 								<div className="flex items-center gap-2 text-[11px] text-body dark:text-zinc-300">
 									<label className="flex items-center gap-1">
 										<input
@@ -363,6 +428,7 @@ export const TableEditorDialog = ({ node, busy, onClose, onSave }: TableEditorDi
 						onClick={() =>
 							onSave({
 								name: name.trim(),
+								category: category.trim(),
 								note: note.trim() === '' ? null : note.trim(),
 								indexes: indexes
 									.map((index) => ({
@@ -381,11 +447,22 @@ export const TableEditorDialog = ({ node, busy, onClose, onSave }: TableEditorDi
 									is_unique: row.is_unique,
 									is_nullable: row.is_nullable,
 									note: row.note.trim() === '' ? null : row.note.trim(),
+									color: row.color,
+									style: row.style === 'normal' ? null : row.style,
 								})),
 								// An empty alias is sent as an empty string so clearing a
 								// note removes it instead of being ignored.
 								column_notes: Object.fromEntries(
 									validRows.map((row) => [row.name.trim(), row.note.trim()]),
+								),
+								column_appearance: Object.fromEntries(
+									validRows.map((row) => [
+										row.name.trim(),
+										{
+											color: row.color,
+											style: row.style === 'normal' ? null : row.style,
+										},
+									]),
 								),
 							})
 						}

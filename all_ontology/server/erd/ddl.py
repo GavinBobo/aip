@@ -15,7 +15,7 @@ import re
 import hashlib
 from typing import Any
 
-DIALECTS = ("postgres", "mysql", "sqlite")
+DIALECTS = ("sqlserver", "postgres", "mysql", "mariadb", "oracle", "sqlite")
 _CONSTRAINT_KEYWORDS = (
     "NOT",
     "NULL",
@@ -32,6 +32,7 @@ _CONSTRAINT_KEYWORDS = (
 #: double quotes, backticks or brackets, which is the only way a table name can
 #: contain a space.
 _NAME = r'(?:"(?:[^"]|"")*"|`[^`]*`|\[[^\]]*\]|[^\s(])+'
+_TOKEN_RE = re.compile(r'"(?:[^"]|"")*"|`[^`]*`|\[[^\]]*\]|\S+')
 _CREATE_RE = re.compile(
     rf"^\s*CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?P<name>{_NAME})\s*\(",
     re.IGNORECASE,
@@ -51,7 +52,9 @@ _CREATE_INDEX_RE = re.compile(
 
 
 def _quote(name: str, dialect: str) -> str:
-    if dialect == "mysql":
+    if dialect == "sqlserver":
+        return "[" + name.replace("]", "]]") + "]"
+    if dialect in ("mysql", "mariadb"):
         return "`" + name.replace("`", "``") + "`"
     return '"' + name.replace('"', '""') + '"'
 
@@ -83,10 +86,26 @@ def _fk_endpoints(relationship: dict[str, Any]) -> tuple[str, str, bool] | None:
     return None
 
 
+def _sqlserver_table_comment(table: str, note: str) -> str:
+    """Emit the extended property SQL Server uses for table descriptions."""
+    parts = table.split(".")
+    schema = parts[-2] if len(parts) > 1 else "dbo"
+    name = parts[-1]
+    value = note.replace("'", "''")
+    schema_sql = schema.replace("'", "''")
+    name_sql = name.replace("'", "''")
+    return (
+        "EXEC sp_addextendedproperty\n"
+        f"    @name = N'MS_Description', @value = N'{value}',\n"
+        f"    @level0type = N'SCHEMA', @level0name = N'{schema_sql}',\n"
+        f"    @level1type = N'TABLE', @level1name = N'{name_sql}';"
+    )
+
+
 def export_sql(
     nodes: list[dict[str, Any]],
     relationships: list[dict[str, Any]],
-    dialect: str = "postgres",
+    dialect: str = "sqlserver",
 ) -> str:
     """Render the diagram as ``CREATE TABLE`` statements plus foreign keys."""
     if dialect not in DIALECTS:
@@ -191,17 +210,19 @@ def export_sql(
         lines.append(f"CREATE TABLE {_quote_qualified(node['name'], dialect)} (")
         lines.append(",\n".join(body))
         lines.append(");")
-        if note and dialect == "postgres":
+        if note and dialect in ("postgres", "oracle"):
             escaped = note.replace("'", "''")
             lines.append(
                 f"COMMENT ON TABLE {_quote_qualified(node['name'], dialect)} IS '{escaped}';"
             )
-        elif note and dialect == "mysql":
+        elif note and dialect in ("mysql", "mariadb"):
             escaped = note.replace("'", "''")
             lines.append(
                 f"ALTER TABLE {_quote_qualified(node['name'], dialect)} "
                 f"COMMENT = '{escaped}';"
             )
+        elif note and dialect == "sqlserver":
+            lines.append(_sqlserver_table_comment(node["name"], note))
         lines.append("")
 
         for index in node.get("indexes") or []:
@@ -261,6 +282,11 @@ def _strip_comments(text: str) -> str:
             out.append(char)
             index += 1
             continue
+        if char == "[":
+            in_quote = "]"
+            out.append(char)
+            index += 1
+            continue
         if text[index : index + 2] == "--":
             end = text.find("\n", index)
             index = len(text) if end == -1 else end
@@ -287,6 +313,10 @@ def _split_statements(text: str) -> list[str]:
             continue
         if char in ("'", '"', "`"):
             quote = char
+            current.append(char)
+            continue
+        if char == "[":
+            quote = "]"
             current.append(char)
             continue
         if char == "(":
@@ -319,6 +349,10 @@ def _split_top_level(body: str) -> list[str]:
             quote = char
             current.append(char)
             continue
+        if char == "[":
+            quote = "]"
+            current.append(char)
+            continue
         if char == "(":
             depth += 1
         elif char == ")":
@@ -336,9 +370,18 @@ def _split_top_level(body: str) -> list[str]:
 
 def _unquote(value: str) -> str:
     value = value.strip()
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "`", "'", "["):
-        return value[1:-1]
-    return value
+    if len(value) < 2:
+        return value
+    opening = value[0]
+    closing = {'"': '"', "`": "`", "'": "'", "[": "]"}.get(opening)
+    if closing is None or value[-1] != closing:
+        return value
+    inner = value[1:-1]
+    if opening == "[":
+        return inner.replace("]]", "]")
+    if opening in ('"', "`"):
+        return inner.replace(opening * 2, opening)
+    return inner
 
 
 def _normalize_name(value: str) -> str:
@@ -350,7 +393,7 @@ def _parse_column_list(raw: str) -> list[str]:
 
 
 def _parse_column(part: str) -> dict[str, Any]:
-    tokens = part.strip().split()
+    tokens = _TOKEN_RE.findall(part.strip())
     if len(tokens) < 2:
         raise ValueError(f"column definition {part!r} needs a name and a type")
     name = _unquote(tokens[0])
@@ -442,6 +485,9 @@ def parse_sql(
                 continue
             if char in ("'", '"', "`"):
                 quote = char
+                continue
+            if char == "[":
+                quote = "]"
                 continue
             if char == "(":
                 depth += 1

@@ -69,6 +69,17 @@ export const KnowledgeSidebar = () => {
 							<Icon name={IconName.Knowledge} className="h-4 w-4 shrink-0" />
 							{t('All knowledge networks')}
 						</Link>
+						<Link
+							href="/knowledge/search"
+							className={`flex min-h-9 items-center gap-2 rounded-lg px-3 text-sm no-underline transition-colors ${
+								pathname === '/knowledge/search'
+									? 'bg-[#76b900]/15 font-medium text-heading ring-1 ring-[#76b900]/30'
+									: 'text-heading hover:bg-zinc-100/90 dark:text-zinc-200 dark:hover:bg-zinc-800/70'
+							}`}
+						>
+							<Icon name={IconName.Discovery} className="h-4 w-4 shrink-0" />
+							{t('Knowledge search')}
+						</Link>
 						<div className="mt-3 px-3 text-[11px] font-semibold tracking-wide text-secondary uppercase">
 							{t('Knowledge networks')}
 						</div>

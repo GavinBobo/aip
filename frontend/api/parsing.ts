@@ -134,7 +134,16 @@ export type ParsingTaskDocument = {
 	id: string;
 	file_name: string;
 	source_name: string | null;
+	source_path: string | null;
 	instance_id: string | null;
+	sha256: string | null;
+	source_md5: string | null;
+	mime_type: string | null;
+	file_type: string | null;
+	size_bytes: number | null;
+	page_width: number | null;
+	page_height: number | null;
+	source_mtime: string | null;
 	status: string;
 	stage: string | null;
 	progress_done: number;
@@ -260,12 +269,15 @@ export type ParsingSourceListing = {
 export type ParsingSourceScan = {
 	path: string;
 	count: number;
+	pdf_count: number;
+	image_count: number;
 	limit: number;
 	files: {
 		name: string;
 		path: string;
 		relative: string;
 		size: number;
+		file_type: string;
 	}[];
 };
 

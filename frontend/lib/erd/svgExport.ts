@@ -13,7 +13,7 @@ import {
 	nodeHeight,
 	nodeWidth,
 } from './geometry';
-import type { ErdCardinality, ErdNode, ErdNote, ErdRelationship } from '@/types/erd';
+import type { ErdCardinality, ErdColumn, ErdNode, ErdNote, ErdRelationship } from '@/types/erd';
 
 const CARDINALITY_LABEL: Record<ErdCardinality, string> = {
 	'one-to-one': '1 : 1',
@@ -47,6 +47,14 @@ const escapeXml = (value: string) =>
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;')
 		.replace(/"/g, '&quot;');
+
+const columnFontAttrs = (column: ErdColumn): string => {
+	const family =
+		column.style === 'monospace' ? 'ui-monospace, monospace' : 'system-ui, sans-serif';
+	const weight = column.style === 'bold' ? ' font-weight="700"' : '';
+	const italic = column.style === 'italic' ? ' font-style="italic"' : '';
+	return `font-family="${family}"${weight}${italic}`;
+};
 
 export type SvgDiagram = {
 	svg: string;
@@ -150,21 +158,22 @@ export const buildSvgDiagram = (
 		if (!node.collapsed) {
 			node.columns.forEach((column, index) => {
 				const rowY = columnTop(node, index);
+				const color = escapeXml(column.color ?? '#3f3f46');
 				parts.push(
-					`<text x="10" y="${rowY + CARD_ROW_HEIGHT / 2 + 4}" font-family="system-ui, sans-serif" font-size="10" fill="#3f3f46">${
+					`<text x="10" y="${rowY + CARD_ROW_HEIGHT / 2 + 4}" ${columnFontAttrs(column)} font-size="10" fill="${color}">${
 						column.is_primary_key ? '◆ ' : ''
 					}${escapeXml(column.name)}</text>`,
 				);
 				parts.push(
-					`<text x="${widthOfNode - 10}" y="${rowY + CARD_ROW_HEIGHT / 2 + 4}" text-anchor="end" font-family="system-ui, sans-serif" font-size="9" fill="#71717a">${escapeXml(
-						column.data_type ?? '',
-					)}</text>`,
+					`<text x="${widthOfNode - 10}" y="${rowY + CARD_ROW_HEIGHT / 2 + 4}" text-anchor="end" ${columnFontAttrs(column)} font-size="9" fill="${
+						column.color ? color : '#71717a'
+					}">${escapeXml(column.data_type ?? '')}</text>`,
 				);
 				if (column.note) {
 					parts.push(
-						`<text x="10" y="${rowY + CARD_ROW_HEIGHT + CARD_COLUMN_NOTE_HEIGHT - 4}" font-family="system-ui, sans-serif" font-size="9" fill="#a1a1aa">${escapeXml(
-							column.note,
-						)}</text>`,
+						`<text x="10" y="${rowY + CARD_ROW_HEIGHT + CARD_COLUMN_NOTE_HEIGHT - 4}" ${columnFontAttrs(column)} font-size="9" fill="${
+							column.color ? color : '#a1a1aa'
+						}">${escapeXml(column.note)}</text>`,
 					);
 				}
 			});

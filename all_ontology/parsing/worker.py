@@ -287,6 +287,23 @@ class ParsingWorker:
                 },
             )
             metadata = result.get("metadata") or {}
+            json_output = (result.get("outputs") or {}).get("json") or {}
+            pages = json_output.get("pages") if isinstance(json_output, dict) else None
+            first_size = (
+                (pages[0] or {}).get("page_size")
+                if isinstance(pages, list) and pages
+                else None
+            )
+            page_width = (
+                int(first_size.get("w"))
+                if isinstance(first_size, dict) and first_size.get("w")
+                else None
+            )
+            page_height = (
+                int(first_size.get("h"))
+                if isinstance(first_size, dict) and first_size.get("h")
+                else None
+            )
             await asyncio.to_thread(
                 store.replace_images,
                 run_id,
@@ -302,6 +319,8 @@ class ParsingWorker:
                 quality=metadata.get("quality") or {},
                 processing_time_ms=metadata.get("processing_time_ms"),
                 parsed_md_path=metadata.get("parsed_md_path"),
+                page_width=page_width,
+                page_height=page_height,
             )
         except (ParsingCancelledError, asyncio.CancelledError):
             await asyncio.to_thread(

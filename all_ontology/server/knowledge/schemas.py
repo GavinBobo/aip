@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -203,6 +203,78 @@ class KnowledgeMetricItem(ApiModel):
     status: str | None = None
     confidence: float | None = None
     source_document_id: str | None = None
+
+
+class KnowledgeSearchRequest(BaseModel):
+    """A document-knowledge retrieval request.
+
+    ``human`` searches all extracted knowledge, including drafts, so an editor
+    can find work in progress. ``agent`` is conservative: graph items must be
+    reviewed/certified, and chunks are limited to documents with at least one
+    reviewed/certified item.
+    """
+
+    query: str = Field(min_length=1, max_length=500)
+    network_id: str | None = None
+    document_id: str | None = None
+    mode: Literal["human", "agent"] = "human"
+    kinds: list[
+        Literal[
+            "chunk",
+            "document",
+            "concept",
+            "relation",
+            "fact",
+            "action",
+            "risk",
+            "metric",
+            "evidence",
+        ]
+    ] | None = None
+    limit: int = Field(default=20, ge=1, le=50)
+    include_evidence: bool = True
+
+
+class KnowledgeSearchItem(ApiModel):
+    kind: str
+    id: str
+    score: float
+    title: str | None = None
+    snippet: str | None = None
+    network_id: str | None = None
+    network_name: str | None = None
+    document_id: str | None = None
+    document_title: str | None = None
+    source_name: str | None = None
+    source_path: str | None = None
+    status: str | None = None
+    page: int | None = None
+    page_end: int | None = None
+    block_index: int | None = None
+    citation: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class KnowledgeSearchFacet(ApiModel):
+    id: str | None = None
+    name: str
+    count: int
+
+
+class KnowledgeSearchResult(ApiModel):
+    query: str
+    mode: str
+    total: int
+    returned: int
+    generated_at: str
+    results: list[KnowledgeSearchItem] = Field(default_factory=list)
+    facets: dict[str, Any] = Field(default_factory=dict)
+    context: str = ""
+
+
+class KnowledgeSearchResponse(ApiModel):
+    data: KnowledgeSearchResult
 
 
 class KnowledgeConceptGroupItem(ApiModel):

@@ -17,10 +17,12 @@ import hashlib
 import io
 import json
 import logging
+import mimetypes
 import os
 import re
 import uuid
 import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -71,6 +73,7 @@ def _task_feature_config(options: dict[str, Any]) -> str:
             config[key] = options[key]
     return json.dumps(config)
 
+
 #: Upload cap. A 200-page scan is ~40 MB; beyond this the pipeline's memory use
 #: is the caller's problem, so it is refused up front with a readable message
 #: rather than an OOM halfway through page 180.
@@ -79,6 +82,28 @@ MAX_UPLOAD_BYTES = int(
 )
 MAX_FILES_PER_TASK = int(os.environ.get("PARSING_MAX_FILES_PER_TASK", "50"))
 MAX_SCAN_FILES = int(os.environ.get("PARSING_MAX_SCAN_FILES", "1000"))
+
+PARSING_SOURCE_SUFFIXES = {
+    ".pdf",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".webp",
+    ".bmp",
+    ".tif",
+    ".tiff",
+}
+IMAGE_SUFFIXES = PARSING_SOURCE_SUFFIXES - {".pdf"}
+_MIME_BY_SUFFIX = {
+    ".pdf": "application/pdf",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".bmp": "image/bmp",
+    ".tif": "image/tiff",
+    ".tiff": "image/tiff",
+}
 
 
 class ParsingSourceScanBody(BaseModel):
@@ -122,6 +147,41 @@ def _validate_payload(payload: bytes, name: str) -> None:
             status_code=415,
             detail=f"{name} 不是支持的 PDF 或图片文件。",
         )
+
+
+def _image_dimensions(payload: bytes) -> tuple[int | None, int | None]:
+    try:
+        import cv2
+        import numpy as np
+
+        image = cv2.imdecode(np.frombuffer(payload, np.uint8), cv2.IMREAD_UNCHANGED)
+        if image is None:
+            return None, None
+        return int(image.shape[1]), int(image.shape[0])
+    except Exception:
+        return None, None
+
+
+def _source_metadata(
+    payload: bytes,
+    file_name: str,
+    *,
+    source_mtime: datetime | None = None,
+) -> dict[str, Any]:
+    suffix = Path(file_name).suffix.lower()
+    width, height = (
+        _image_dimensions(payload) if suffix in IMAGE_SUFFIXES else (None, None)
+    )
+    return {
+        "sha256": hashlib.sha256(payload).hexdigest(),
+        "source_md5": hashlib.md5(payload, usedforsecurity=False).hexdigest(),
+        "mime_type": mimetypes.guess_type(file_name)[0] or _MIME_BY_SUFFIX.get(suffix),
+        "file_type": suffix.lstrip(".") or "unknown",
+        "size_bytes": len(payload),
+        "page_width": width,
+        "page_height": height,
+        "source_mtime": source_mtime,
+    }
 
 
 def _safe_json(raw: str | None, field: str) -> dict[str, Any]:
@@ -347,19 +407,25 @@ def browse_parsing_sources(path: str | None = None) -> dict:
 
 @router.post("/parsing/sources/scan", response_model=ParsingSourceScanResponse)
 def scan_parsing_sources(body: ParsingSourceScanBody) -> dict:
-    """Recursively list PDFs below a selected shared folder."""
+    """Recursively list supported PDFs and images below a server folder."""
     try:
         found = parsing_sources.scan_server_files(
             body.path,
-            suffixes={".pdf"},
+            suffixes=PARSING_SOURCE_SUFFIXES,
             max_files=MAX_SCAN_FILES,
         )
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
+    for item in found:
+        suffix = Path(item["name"]).suffix.lower()
+        item["file_type"] = suffix.lstrip(".")
+    pdf_count = sum(1 for item in found if Path(item["name"]).suffix.lower() == ".pdf")
     return {
         "data": {
             "path": body.path,
             "count": len(found),
+            "pdf_count": pdf_count,
+            "image_count": len(found) - pdf_count,
             "files": found,
             "limit": MAX_SCAN_FILES,
         }
@@ -374,12 +440,13 @@ def scan_parsing_sources(body: ParsingSourceScanBody) -> dict:
 async def create_parsing_task_from_folder(
     request: Request, body: ParsingFolderTaskBody
 ) -> dict:
-    """Create one durable task from every PDF below a shared folder.
+    """Create one durable task from every supported document below a folder.
 
     The source files are copied into the parsing upload directory, so the
     result survives the shared folder being renamed or disconnected. Each file
     still gets its own document row and run, which is what makes per-PDF
-    progress and later comparison possible.
+    progress and later comparison possible. PDFs and images share the same
+    per-document metadata row.
     """
     options_data = body.options or {}
     parsed_options, errors = service.build_options(
@@ -402,13 +469,15 @@ async def create_parsing_task_from_folder(
     try:
         found = parsing_sources.scan_server_files(
             body.path,
-            suffixes={".pdf"},
+            suffixes=PARSING_SOURCE_SUFFIXES,
             max_files=MAX_SCAN_FILES,
         )
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     if not found:
-        raise HTTPException(status_code=422, detail="该文件夹下没有找到 PDF 文件。")
+        raise HTTPException(
+            status_code=422, detail="该文件夹下没有找到 PDF 或图片文件。"
+        )
 
     await parsing_settings.ensure_current()
     store.resolve_profile(body.profile)
@@ -431,6 +500,12 @@ async def create_parsing_task_from_folder(
                     detail="无法保存共享文件夹中的文件，请检查解析存储目录是否可写。",
                 )
             stored_instances.append(instance)
+            try:
+                source_mtime = datetime.fromtimestamp(
+                    source.stat().st_mtime, tz=timezone.utc
+                )
+            except OSError:
+                source_mtime = None
             documents.append(
                 {
                     "id": str(uuid.uuid4()),
@@ -438,11 +513,7 @@ async def create_parsing_task_from_folder(
                     "source_name": source.name,
                     "source_path": str(source),
                     "instance_id": instance.id,
-                    "sha256": hashlib.sha256(payload).hexdigest(),
-                    "source_md5": hashlib.md5(
-                        payload, usedforsecurity=False
-                    ).hexdigest(),
-                    "size_bytes": len(payload),
+                    **_source_metadata(payload, source.name, source_mtime=source_mtime),
                     "page_start": body.page_start,
                     "page_end": body.page_end,
                 }
@@ -450,7 +521,7 @@ async def create_parsing_task_from_folder(
         folder_name = Path(body.path).name or body.path
         task = store.create_task(
             name=(body.name or "").strip()
-            or f"{folder_name} · {len(documents)} 个 PDF",
+            or f"{folder_name} · {len(documents)} 个文件",
             created_by=resolve_internal_user(request, required=False),
             profile=body.profile,
             options=options_data,
@@ -526,11 +597,7 @@ async def create_parsing_task(
                     "source_name": instance.source.name,
                     "source_path": str(instance.source),
                     "instance_id": instance.id,
-                    "sha256": hashlib.sha256(payload).hexdigest(),
-                    "source_md5": hashlib.md5(
-                        payload, usedforsecurity=False
-                    ).hexdigest(),
-                    "size_bytes": len(payload),
+                    **_source_metadata(payload, file_name),
                     "page_start": page_start,
                     "page_end": page_end,
                 }

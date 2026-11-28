@@ -77,6 +77,33 @@ def test_mysql_uses_backticks() -> None:
     assert "`customer_id`" in sql
 
 
+def test_sqlserver_is_the_default_and_uses_brackets() -> None:
+    sql = export_sql(NODES, RELATIONSHIPS)
+    assert sql == export_sql(NODES, RELATIONSHIPS, "sqlserver")
+    assert "CREATE TABLE [public].[customers] (" in sql
+    assert "[customer_id] bigint NOT NULL" in sql
+    assert "ALTER TABLE [public].[orders] ADD CONSTRAINT [" in sql
+    assert "FOREIGN KEY ([customer_id]) REFERENCES [public].[customers] ([id]);" in sql
+
+
+def test_mariadb_uses_mysql_quoting() -> None:
+    sql = export_sql(NODES, RELATIONSHIPS, "mariadb")
+    assert "CREATE TABLE `public`.`customers` (" in sql
+    assert "`customer_id`" in sql
+
+
+def test_oracle_uses_standard_quoting_and_comments() -> None:
+    nodes = [
+        {
+            **NODES[0],
+            "note": "customer master",
+        }
+    ]
+    sql = export_sql(nodes, [], "oracle")
+    assert 'CREATE TABLE "public"."customers" (' in sql
+    assert 'COMMENT ON TABLE "public"."customers" IS \'customer master\';' in sql
+
+
 def test_sqlite_inlines_the_foreign_key() -> None:
     sql = export_sql(NODES, RELATIONSHIPS, "sqlite")
     assert "ALTER TABLE" not in sql
@@ -110,6 +137,26 @@ def test_export_then_import_round_trips_tables_and_keys() -> None:
     assert relationships[0]["source_columns"] == ["customer_id"]
     assert relationships[0]["target"] == "public.customers"
     assert relationships[0]["target_columns"] == ["id"]
+
+
+def test_sqlserver_bracket_identifiers_with_spaces_are_parsed() -> None:
+    sql = """
+CREATE TABLE [dbo].[CC_Allocation] (
+  [Id] int NOT NULL,
+  [Allocation type] varchar(200) COLLATE Chinese_PRC_CI_AS,
+  PRIMARY KEY ([Id])
+);
+CREATE TABLE [dbo].[Target Table] ([Id] int PRIMARY KEY);
+ALTER TABLE [dbo].[CC_Allocation]
+  ADD CONSTRAINT [fk_alloc_target] FOREIGN KEY ([Id])
+  REFERENCES [dbo].[Target Table] ([Id]);
+"""
+    nodes, relationships, warnings = parse_sql(sql)
+    assert warnings == []
+    assert nodes[0]["name"] == "dbo.CC_Allocation"
+    assert nodes[0]["columns"][1]["name"] == "Allocation type"
+    assert nodes[0]["columns"][1]["data_type"] == "varchar(200)"
+    assert relationships[0]["target"] == "dbo.Target Table"
 
 
 def test_alter_table_foreign_key_is_parsed() -> None:
@@ -160,7 +207,7 @@ CREATE TABLE "public"."order lines" (
 
 def test_unknown_dialect_is_rejected() -> None:
     with pytest.raises(ValueError):
-        export_sql(NODES, RELATIONSHIPS, "oracle")
+        export_sql(NODES, RELATIONSHIPS, "db2")
 
 
 def test_table_notes_become_comments() -> None:
@@ -187,6 +234,9 @@ def test_table_notes_become_comments() -> None:
     )
     mysql = export_sql(nodes, [], "mysql")
     assert "COMMENT = 'one row per customer''s account';" in mysql
+    sqlserver = export_sql(nodes, [], "sqlserver")
+    assert "EXEC sp_addextendedproperty" in sqlserver
+    assert "@value = N'one row per customer''s account'" in sqlserver
     sqlite = export_sql(nodes, [], "sqlite")
     assert "-- note: one row per customer's account" in sqlite
 

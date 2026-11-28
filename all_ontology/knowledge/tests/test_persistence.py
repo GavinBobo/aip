@@ -418,6 +418,14 @@ def test_extract_document_reads_a_parse_run(tmp_path, monkeypatch) -> None:
         facts = dal.list_facts(network_id)
         assert facts[0]["evidence"][0]["page"] == 1
         assert facts[0]["evidence"][0]["block_index"] == 1
+        chunks = store().query_read(
+            select(s.knowledge_chunk.c.text, s.knowledge_chunk.c.page_start).where(
+                s.knowledge_chunk.c.document_id == knowledge_document_id
+            )
+        )
+        assert chunks
+        assert chunks[0]["page_start"] == 1
+        assert chunks[0]["text"]
     finally:
         _cleanup(network_id, task_id)
 

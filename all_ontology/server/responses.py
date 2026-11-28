@@ -39,6 +39,7 @@ from all_ontology.server.models import (
     GlobalSearchItem,
     EntityCoverageResult,
     ErdCanvas,
+    ErdDdlParseResult,
     ErdArea,
     ErdCanvasVersion,
     ErdExport,
@@ -87,6 +88,8 @@ from all_ontology.server.models import (
     TermListItem,
     Zone,
     ZoneChip,
+    OntologyApplyResult,
+    OntologyCandidateReport,
 )
 
 T = TypeVar("T")
@@ -114,6 +117,9 @@ __all__ = [
     "ErdAreaResponse",
     "ErdCanvasVersionResponse",
     "ErdCanvasVersionListResponse",
+    "ErdDdlParseResponse",
+    "ErdOntologyApplyResponse",
+    "ErdOntologyCandidateResponse",
     "ErdExportResponse",
     "ErdImportResponse",
     "ErdNodeResponse",
@@ -364,12 +370,15 @@ ErdCanvasResponse = DataResponse[ErdCanvas]
 ErdExportResponse = DataResponse[ErdExport]
 ErdImportResponse = DataResponse[ErdImportResult]
 ErdNodeResponse = DataResponse[ErdNode]
+ErdDdlParseResponse = DataResponse[ErdDdlParseResult]
 ErdRelationshipResponse = DataResponse[ErdRelationship]
 ErdNoteResponse = DataResponse[ErdNote]
 ErdAreaResponse = DataResponse[ErdArea]
 ErdCanvasVersionResponse = DataResponse[ErdCanvasVersion]
 ErdCanvasVersionListResponse = ListResponse[ErdCanvasVersion]
 ErdAssistantResponse = DataResponse[ErdAssistantReply]
+ErdOntologyCandidateResponse = DataResponse[OntologyCandidateReport]
+ErdOntologyApplyResponse = DataResponse[OntologyApplyResult]
 
 # Document parsing
 ParsingDocumentResponse = DataResponse[ParsingDocument]

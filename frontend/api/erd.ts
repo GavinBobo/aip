@@ -6,6 +6,7 @@ import { requests } from './requests';
 import type {
 	ErdAssistantReply,
 	ErdCanvas,
+	ErdDdlParseResult,
 	ErdArea,
 	ErdExport,
 	ErdExportFormat,
@@ -13,6 +14,8 @@ import type {
 	ErdImportResult,
 	ErdNode,
 	ErdNote,
+	ErdOntologyApplyResult,
+	ErdOntologyReport,
 	ErdRelationship,
 	ErdViewport,
 	ErdVersion,
@@ -24,6 +27,7 @@ export type NodePatch = {
 	y?: number;
 	collapsed?: boolean;
 	width?: number;
+	category?: string | null;
 	name?: string;
 	columns?:
 		| {
@@ -33,12 +37,16 @@ export type NodePatch = {
 				is_unique?: boolean;
 				is_nullable?: boolean;
 				note?: string | null;
+				color?: string | null;
+				style?: string | null;
 		  }[]
 		| null;
 	/** Canvas display order by column name. Works for catalog tables too. */
 	column_order?: string[] | null;
 	/** `column name -> alias`. Accepted for catalog tables as well. */
 	column_notes?: Record<string, string> | null;
+	/** Canvas-only colour/style, accepted for catalog tables too. */
+	column_appearance?: Record<string, { color?: string | null; style?: string | null }> | null;
 	indexes?: ErdIndex[] | null;
 	note?: string | null;
 };
@@ -47,7 +55,19 @@ export type NodeCreateInput = {
 	canvas_id: string;
 	name: string;
 	table_id?: string | null;
-	columns?: { name: string; data_type?: string | null }[] | null;
+	category?: string | null;
+	columns?:
+		| {
+				name: string;
+				data_type?: string | null;
+				is_primary_key?: boolean;
+				is_unique?: boolean | null;
+				is_nullable?: boolean | null;
+				note?: string | null;
+				color?: string | null;
+				style?: string | null;
+		  }[]
+		| null;
 	column_order?: string[] | null;
 	indexes?: ErdIndex[] | null;
 	note?: string | null;
@@ -105,6 +125,9 @@ export const erdApi = {
 
 	createNode: (input: NodeCreateInput) => requests.post<{ data: ErdNode }>('erd/nodes', input),
 
+	parseDdl: (input: { zone_id: string; dialect: SqlDialect; content: string }) =>
+		requests.post<{ data: ErdDdlParseResult }>('erd/parse-ddl', input),
+
 	deleteNode: (nodeId: string) =>
 		requests.delete<{ data: { id: string } }>(`erd/nodes/${encodeURIComponent(nodeId)}`),
 
@@ -132,7 +155,7 @@ export const erdApi = {
 			body,
 		),
 
-	exportCanvas: (zoneId: string, format: ErdExportFormat, dialect: SqlDialect = 'postgres') =>
+	exportCanvas: (zoneId: string, format: ErdExportFormat, dialect: SqlDialect = 'sqlserver') =>
 		requests.get<{ data: ErdExport }>(
 			`erd/canvases/${encodeURIComponent(zoneId)}/export`,
 			format === 'sql' ? { format, dialect } : { format },
@@ -206,4 +229,25 @@ export const erdApi = {
 		canvas: AssistantCanvasInput;
 		history: { role: 'user' | 'assistant'; content: string }[];
 	}) => requests.post<{ data: ErdAssistantReply }>('erd/assistant', input),
+
+	/** Build a data-ontology proposal from the canvas and the catalog. */
+	getOntologyCandidates: (zoneId: string) =>
+		requests.get<{ data: ErdOntologyReport }>(
+			`erd/canvases/${encodeURIComponent(zoneId)}/ontology-candidates`,
+		),
+
+	/** Apply selected candidates to the semantic layer. */
+	applyOntologyCandidates: (
+		zoneId: string,
+		input: {
+			entity_node_ids: string[];
+			relationship_ids: string[];
+			create_terms: boolean;
+			create_semantic_fks: boolean;
+		},
+	) =>
+		requests.post<{ data: ErdOntologyApplyResult }>(
+			`erd/canvases/${encodeURIComponent(zoneId)}/ontology-candidates/apply`,
+			input,
+		),
 };

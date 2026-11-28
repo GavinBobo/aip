@@ -24,6 +24,7 @@ carry names, and the service layer checks that the two lists line up.
 from __future__ import annotations
 
 import math
+import re
 from typing import Any
 
 from sqlalchemy import select
@@ -41,6 +42,9 @@ GRID_Y = 300.0
 DEFAULT_NODE_WIDTH = 248.0
 MIN_NODE_WIDTH = 200.0
 MAX_NODE_WIDTH = 720.0
+MAX_CATEGORY_LENGTH = 64
+ERD_COLUMN_STYLES = frozenset({"normal", "bold", "italic", "monospace"})
+_COLOR_RE = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
 
 def _normalize_node_width(raw: Any) -> float:
@@ -207,6 +211,7 @@ def _node_rows(canvas_id: str) -> list[dict[str, Any]]:
             s.erd_node.c.id,
             s.erd_node.c.table_id,
             s.erd_node.c.name,
+            s.erd_node.c.category,
             s.erd_node.c.x,
             s.erd_node.c.y,
             s.erd_node.c.collapsed,
@@ -271,6 +276,8 @@ def _normalize_virtual_columns(raw: Any) -> list[dict[str, Any]]:
                 "is_unique": item.get("is_unique"),
                 "is_nullable": item.get("is_nullable"),
                 "note": _clean_note(item.get("note")),
+                "color": _clean_color(item.get("color")),
+                "style": _clean_column_style(item.get("style")),
             }
         )
     return columns
@@ -282,6 +289,78 @@ def _clean_note(raw: Any) -> str | None:
         return None
     text = str(raw).strip()
     return text or None
+
+
+def _clean_category(raw: Any) -> str | None:
+    """A table classification, trimmed to the column's display limit."""
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    return text[:MAX_CATEGORY_LENGTH] or None
+
+
+def _clean_color(raw: Any) -> str | None:
+    """A safe CSS hex colour, or ``None`` for the default text colour."""
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    return text.lower() if _COLOR_RE.fullmatch(text) else None
+
+
+def _clean_column_style(raw: Any) -> str | None:
+    if raw is None:
+        return None
+    text = str(raw).strip().lower()
+    return text if text in ERD_COLUMN_STYLES else None
+
+
+def _column_appearance_map(raw: Any) -> dict[str, dict[str, str | None]]:
+    """``column name -> {color, style}`` from a node's stored column blob."""
+    if not isinstance(raw, list):
+        return {}
+    appearance: dict[str, dict[str, str | None]] = {}
+    for item in raw:
+        if not isinstance(item, dict) or not item.get("name"):
+            continue
+        color = _clean_color(item.get("color"))
+        style = _clean_column_style(item.get("style"))
+        if color or style:
+            appearance[str(item["name"])] = {"color": color, "style": style}
+    return appearance
+
+
+def _apply_column_appearance(
+    raw: Any, appearance: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Merge per-column colour/style into a stored column list."""
+    columns = [
+        dict(item)
+        for item in (raw if isinstance(raw, list) else [])
+        if isinstance(item, dict) and item.get("name")
+    ]
+    by_name = {str(column["name"]): column for column in columns}
+    for name, value in appearance.items():
+        key = str(name).strip()
+        if not key or not isinstance(value, dict):
+            continue
+        color = _clean_color(value.get("color"))
+        style = _clean_column_style(value.get("style"))
+        column = by_name.get(key)
+        if column is None:
+            if color is None and style is None:
+                continue
+            column = {"name": key}
+            columns.append(column)
+            by_name[key] = column
+        if color is None:
+            column.pop("color", None)
+        else:
+            column["color"] = color
+        if style is None:
+            column.pop("style", None)
+        else:
+            column["style"] = style
+    return columns
 
 
 def _normalize_column_order(raw: Any) -> list[str] | None:
@@ -325,8 +404,8 @@ def _column_note_map(raw: Any) -> dict[str, str]:
 
     Catalog-backed nodes keep only the modeller's per-column annotations in
     that blob: the column list itself comes from ``catalog_column``, so
-    anything except ``note`` here is decoration left over from an import or a
-    restore and is ignored on read.
+    anything except display metadata here is decoration left over from an
+    import or a restore and is ignored on read.
     """
     if not isinstance(raw, list):
         return {}
@@ -378,15 +457,20 @@ def _catalog_columns(
     primary_keys: dict[str, list[str]],
     notes: dict[str, str],
     order: list[str] | None = None,
+    appearance: dict[str, dict[str, str | None]] | None = None,
 ) -> list[dict[str, Any]]:
-    """The catalog's columns for one table, with the modeller's aliases on top."""
+    """The catalog's columns for one table, with the modeller's display metadata."""
     pk = primary_keys.get(table_id, [])
+    appearance = appearance or {}
     columns: list[dict[str, Any]] = []
     for column in catalog.get(table_id, []):
+        look = appearance.get(column["name"], {})
         item = {
             **column,
             "is_primary_key": column["name"] in pk,
             "note": notes.get(column["name"]) or None,
+            "color": look.get("color"),
+            "style": look.get("style"),
         }
         columns.append(item)
     return _ordered_columns(columns, order)
@@ -439,6 +523,7 @@ def _node_payload(
             primary_keys,
             _column_note_map(row.get("columns")),
             column_order,
+            _column_appearance_map(row.get("columns")),
         )
     else:
         columns = _ordered_columns(
@@ -448,6 +533,7 @@ def _node_payload(
         "id": row["id"],
         "table_id": table_id,
         "name": row["name"],
+        "category": row.get("category"),
         "x": float(row["x"]),
         "y": float(row["y"]),
         "collapsed": bool(row["collapsed"]),
@@ -603,9 +689,11 @@ def update_node(
     collapsed: bool | None,
     width: float | None = None,
     name: str | None = None,
+    category: str | None = None,
     columns: list[dict[str, Any]] | None = None,
     column_order: list[str] | None = None,
     column_notes: dict[str, Any] | None = None,
+    column_appearance: dict[str, Any] | None = None,
     indexes: list[dict[str, Any]] | None = None,
     note: str | None = None,
 ) -> dict[str, Any] | None:
@@ -620,9 +708,10 @@ def update_node(
     rather than schema, so it is accepted on either kind of node. On a
     catalog-backed node it is the only way to attach a note to a column.
 
-    ``column_order`` is also presentation-only and accepted on either kind of
-    node: a catalog table keeps its real schema while the card draws columns in
-    the order the modeller chose.
+    ``column_order`` and ``column_appearance`` are presentation-only and
+    accepted on either kind of node: a catalog table keeps its real schema
+    while the card draws columns in the order, colour and style the modeller
+    chose.
     """
     values: dict[str, Any] = {}
     if x is not None:
@@ -633,6 +722,8 @@ def update_node(
         values["collapsed"] = collapsed
     if width is not None:
         values["width"] = _normalize_node_width(width)
+    if category is not None:
+        values["category"] = _clean_category(category)
     # A note is documentation, not schema, so it is allowed on either kind of
     # node — unlike a rename or a column rewrite.
     if note is not None:
@@ -642,6 +733,7 @@ def update_node(
         or columns is not None
         or column_order is not None
         or column_notes is not None
+        or column_appearance is not None
         or indexes is not None
     ):
         owner = store().query_read(
@@ -673,11 +765,15 @@ def update_node(
                 values["column_order"] = None
         if column_order is not None:
             values["column_order"] = _normalize_column_order(column_order)
+        base_columns = columns if columns is not None else owner[0].get("columns")
         if column_notes is not None:
             # Aliases land in the same JSONB blob the virtual columns use; on a
-            # catalog node only the `note` key of each entry is ever read.
-            base = columns if columns is not None else owner[0].get("columns")
-            values["columns"] = _apply_column_notes(base, column_notes)
+            # catalog node only the display metadata of each entry is read.
+            base_columns = _apply_column_notes(base_columns, column_notes)
+        if column_appearance is not None:
+            base_columns = _apply_column_appearance(base_columns, column_appearance)
+        if column_notes is not None or column_appearance is not None:
+            values["columns"] = base_columns
         if indexes is not None:
             values["indexes"] = _normalize_indexes(indexes)
 
@@ -685,6 +781,7 @@ def update_node(
         s.erd_node.c.id,
         s.erd_node.c.table_id,
         s.erd_node.c.name,
+        s.erd_node.c.category,
         s.erd_node.c.x,
         s.erd_node.c.y,
         s.erd_node.c.collapsed,
@@ -715,6 +812,7 @@ def create_node(
     x: float,
     y: float,
     width: float | None = None,
+    category: str | None = None,
     indexes: list[dict[str, Any]] | None = None,
     note: str | None = None,
     column_order: list[str] | None = None,
@@ -726,6 +824,7 @@ def create_node(
             canvas_id=canvas_id,
             table_id=table_id,
             name=name,
+            category=_clean_category(category),
             x=float(x),
             y=float(y),
             width=_normalize_node_width(width),
@@ -738,6 +837,7 @@ def create_node(
             s.erd_node.c.id,
             s.erd_node.c.table_id,
             s.erd_node.c.name,
+            s.erd_node.c.category,
             s.erd_node.c.x,
             s.erd_node.c.y,
             s.erd_node.c.collapsed,
@@ -782,6 +882,7 @@ def restore_node(node_id: str) -> dict[str, Any] | None:
             s.erd_node.c.id,
             s.erd_node.c.table_id,
             s.erd_node.c.name,
+            s.erd_node.c.category,
             s.erd_node.c.x,
             s.erd_node.c.y,
             s.erd_node.c.collapsed,
@@ -1271,6 +1372,7 @@ def replace_canvas_contents(
                     canvas_id=canvas_id,
                     table_id=node.get("table_id"),
                     name=node["name"],
+                    category=_clean_category(node.get("category")),
                     x=float(node.get("x", 0)),
                     y=float(node.get("y", 0)),
                     collapsed=bool(node.get("collapsed", False)),
@@ -1336,6 +1438,7 @@ def restore_canvas_state(
             s.erd_node.c.id,
             s.erd_node.c.table_id,
             s.erd_node.c.name,
+            s.erd_node.c.category,
             s.erd_node.c.x,
             s.erd_node.c.y,
             s.erd_node.c.collapsed,
@@ -1367,6 +1470,7 @@ def restore_canvas_state(
                 "canvas_id": canvas_id,
                 "table_id": node.get("table_id"),
                 "name": node["name"],
+                "category": _clean_category(node.get("category")),
                 "x": float(node.get("x", 0)),
                 "y": float(node.get("y", 0)),
                 "collapsed": bool(node.get("collapsed", False)),
@@ -1409,6 +1513,7 @@ def restore_canvas_state(
                     canvas_id=canvas_id,
                     table_id=row["table_id"],
                     name=row["name"],
+                    category=row["category"],
                     x=row["x"],
                     y=row["y"],
                     collapsed=row["collapsed"],

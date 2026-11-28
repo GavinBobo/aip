@@ -50,9 +50,7 @@ def test_small_or_disabled_pictures_are_recorded_without_vlm(
 ) -> None:
     image_dir = _write_picture(tmp_path)
     monkeypatch.setattr(settings.pipeline, "image_output_dir", str(image_dir))
-    monkeypatch.setattr(
-        settings.pipeline, "image_url_prefix", "/api/parsing/assets"
-    )
+    monkeypatch.setattr(settings.pipeline, "image_url_prefix", "/api/parsing/assets")
 
     disabled = asyncio.run(
         understand_result_images(
@@ -82,9 +80,7 @@ def test_small_or_disabled_pictures_are_recorded_without_vlm(
 def test_vlm_content_is_written_back_to_the_block(monkeypatch, tmp_path) -> None:
     image_dir = _write_picture(tmp_path)
     monkeypatch.setattr(settings.pipeline, "image_output_dir", str(image_dir))
-    monkeypatch.setattr(
-        settings.pipeline, "image_url_prefix", "/api/parsing/assets"
-    )
+    monkeypatch.setattr(settings.pipeline, "image_url_prefix", "/api/parsing/assets")
     monkeypatch.setattr(settings.pipeline, "image_vlm_concurrency", 1)
 
     async def fake_describe(prompt, image, *, model_options=None, max_tokens=None):

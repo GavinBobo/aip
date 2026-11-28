@@ -216,6 +216,74 @@ def test_a_table_width_is_persisted_and_clamped(catalog) -> None:
     assert _node_by_name(restored, "public.customers")["width"] == MAX_NODE_WIDTH
 
 
+def test_a_table_category_is_canvas_metadata(catalog) -> None:
+    canvas = get_or_create_canvas(catalog["zone"])
+    customers = _node_by_name(canvas, "public.customers")
+
+    updated = update_node(
+        customers["id"], x=None, y=None, collapsed=None, category="  dimension  "
+    )
+    assert updated is not None and updated["category"] == "dimension"
+    reread = _node_by_name(get_canvas(catalog["zone"]), "public.customers")
+    assert reread["category"] == "dimension"
+    snapshot = get_canvas(catalog["zone"])
+    restored = restore_canvas_state(
+        canvas["id"], snapshot["nodes"], snapshot["relationships"]
+    )
+    assert restored is not None
+    assert _node_by_name(restored, "public.customers")["category"] == "dimension"
+
+    cleared = update_node(customers["id"], x=None, y=None, collapsed=None, category="")
+    assert cleared is not None and cleared["category"] is None
+
+
+def test_catalog_column_appearance_is_canvas_only(catalog) -> None:
+    canvas = get_or_create_canvas(catalog["zone"])
+    customers = _node_by_name(canvas, "public.customers")
+
+    updated = update_node(
+        customers["id"],
+        x=None,
+        y=None,
+        collapsed=None,
+        column_appearance={
+            "id": {"color": "#12AB34", "style": "bold"},
+            "missing": {"color": "not-a-color", "style": "sparkles"},
+        },
+    )
+    assert updated is not None
+    assert len(updated["columns"]) == 1
+    assert updated["columns"][0]["color"] == "#12ab34"
+    assert updated["columns"][0]["style"] == "bold"
+    # The catalog still supplies the schema itself.
+    assert updated["columns"][0]["data_type"] == "bigint"
+
+    reread = _node_by_name(get_canvas(catalog["zone"]), "public.customers")
+    assert reread["columns"][0]["color"] == "#12ab34"
+    assert reread["columns"][0]["style"] == "bold"
+
+
+def test_virtual_columns_keep_color_and_style(catalog) -> None:
+    canvas = get_or_create_canvas(catalog["zone"])
+    created = create_node(
+        canvas_id=canvas["id"],
+        name="draft.styled",
+        table_id=None,
+        columns=[
+            {
+                "name": "id",
+                "data_type": "uuid",
+                "color": "#FF8800",
+                "style": "monospace",
+            }
+        ],
+        x=0,
+        y=0,
+    )
+    assert created["columns"][0]["color"] == "#ff8800"
+    assert created["columns"][0]["style"] == "monospace"
+
+
 def test_a_canvas_only_table_can_be_edited_in_place(catalog) -> None:
     """drawDB-style table editing: rename and rewrite the columns."""
     canvas = get_or_create_canvas(catalog["zone"])

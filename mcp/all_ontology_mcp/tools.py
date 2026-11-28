@@ -153,6 +153,18 @@ CURATED: tuple[ToolSpec, ...] = (
     ),
     ToolSpec(
         method="POST",
+        path="/api/knowledge/search",
+        name="search_knowledge",
+        description=(
+            "Retrieve document passages, concepts, facts and cited evidence "
+            "across the knowledge ontology. Use this when a question depends "
+            "on a policy, procedure, role or document definition. Ask for "
+            "agent mode to receive only reviewed/certified knowledge and "
+            "documents that contain it."
+        ),
+    ),
+    ToolSpec(
+        method="POST",
         path="/api/question-entity-coverage",
         name="check_answerable",
         description=(

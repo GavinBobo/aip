@@ -174,9 +174,7 @@ def test_build_connection_string_keeps_named_instances_portless() -> None:
         }
     )
 
-    assert connection_string == (
-        "mssql://sa:pw@db/master?instance=SQLEXPRESS"
-    )
+    assert connection_string == ("mssql://sa:pw@db/master?instance=SQLEXPRESS")
 
 
 def test_build_connection_string_reconciles_a_port_in_the_host() -> None:
@@ -328,6 +326,32 @@ def test_connection_errors_name_the_likely_fix() -> None:
     assert "host/port is unreachable" in network
     assert "db.example.com,1433" in certificate
     assert "hunter2" not in redacted
+
+
+def test_connection_error_separates_login_from_database_access() -> None:
+    fields = {
+        "host": "ws009412",
+        "port": 1433,
+        "instance": "SCA_PBI",
+        "database": "SCA_PBI",
+    }
+
+    message = _connection_error_message(
+        pyodbc.OperationalError(
+            "28000",
+            "[28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]"
+            "Login failed for user 'SCA_IE_Dig_R'. (18456); "
+            "[28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]"
+            'Cannot open database "SCA_PBI" requested by the login. '
+            "The login failed. (4060)",
+        ),
+        fields,
+    )
+
+    assert "SCA_PBI" in message
+    assert "master" in message
+    assert "ONLINE" in message
+    assert "CONNECT" in message
 
 
 def test_connect_failure_is_raised_as_a_connection_error(

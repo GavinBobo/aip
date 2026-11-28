@@ -26,7 +26,7 @@
 
 | Schema | 归属 | 迁移工具 | 内容 |
 | --- | --- | --- | --- |
-| `public` | 后端 | Alembic（`alembic/versions/`，当前 head `c4d81a7f2e35`） | 目录元数据、语义层、ER 画布、zone、规则等 |
+| `public` | 后端 | Alembic（`alembic/versions/`，当前 head `d4a8f1c6e932`） | 目录元数据、语义层、ER 画布、zone、规则等 |
 | `frontend` | 前端 | Prisma `db push`（`frontend/prisma/schema.prisma`，`schemas = ["frontend"]`） | 用户、会话、对话、邀请、API token |
 
 两边**互不越界**，Prisma 只声明 `frontend`，Alembic 的 autogenerate 也过滤掉对方的表。任何结构调整都不能打破这条线，否则一方的 `db push` 会尝试删除另一方的表（历史上 `alembic_version` 就差点被 Prisma 删掉）。

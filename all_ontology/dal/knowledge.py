@@ -2415,6 +2415,7 @@ def save_extraction(
     concepts: list[dict[str, Any]],
     relations: list[dict[str, Any]],
     facts: list[dict[str, Any]],
+    chunks: list[dict[str, Any]] | None = None,
     actions: list[dict[str, Any]] | None = None,
     risks: list[dict[str, Any]] | None = None,
     metrics: list[dict[str, Any]] | None = None,
@@ -2448,6 +2449,11 @@ def save_extraction(
         store().query_write(
             delete(s.knowledge_action).where(
                 s.knowledge_action.c.source_document_id == document_id
+            )
+        )
+        store().query_write(
+            delete(s.knowledge_chunk).where(
+                s.knowledge_chunk.c.document_id == document_id
             )
         )
         store().query_write(
@@ -2806,6 +2812,23 @@ def save_extraction(
                 )
                 if image_id:
                     learned_images.add(image_id)
+
+        for chunk in chunks or []:
+            text = str(chunk.get("text") or "")
+            if not text.strip():
+                continue
+            store().query_write(
+                s.knowledge_chunk.insert().values(
+                    network_id=network_id,
+                    document_id=document_id,
+                    chunk_index=int(chunk.get("chunk_index") or 0),
+                    text=text,
+                    page_start=chunk.get("page_start"),
+                    page_end=chunk.get("page_end"),
+                    block_start=chunk.get("block_start"),
+                    block_end=chunk.get("block_end"),
+                )
+            )
 
         store().query_write(
             update(s.knowledge_document)

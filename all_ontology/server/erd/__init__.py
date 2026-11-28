@@ -5,6 +5,7 @@
 """Entity-relationship canvas API."""
 
 from all_ontology.server.erd.import_export import router as import_export_router
+from all_ontology.server.erd.ontology import router as ontology_router
 from all_ontology.server.erd.router import router
 
-__all__ = ["import_export_router", "router"]
+__all__ = ["import_export_router", "ontology_router", "router"]

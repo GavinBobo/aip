@@ -687,6 +687,7 @@ class ErdNode(Base):
     列定义，对目录表只存建模者写的列别名（``[{"name": ..., "note": ...}]``）。
     ``column_order`` 是画布上目录表字段的显示顺序（按列名），不改变源库列定义。
     ``width`` 是卡片在画布上的宽度，同样只影响展示。
+    ``category`` 是建模者给表打的类别标签，也只存在于画布上。
     ``hidden`` 是删除目录表时留下的墓碑，避免下一次对账把它又加回来。
     """
 
@@ -696,6 +697,7 @@ class ErdNode(Base):
     canvas_id: Mapped[str]
     table_id: Mapped[str | None]
     name: Mapped[str]
+    category: Mapped[str | None]
     x: Mapped[float]
     y: Mapped[float]
     collapsed: Mapped[bool]
@@ -911,14 +913,19 @@ class ParsingDocument(Base):
     instance_id: Mapped[str | None]
     sha256: Mapped[str | None]
     source_md5: Mapped[str | None]
+    mime_type: Mapped[str | None]
+    file_type: Mapped[str | None]
     parsed_md_path: Mapped[str | None]
     learned_to_knowledge: Mapped[bool]
     learned_at: Mapped[datetime | None]
     knowledge_document_id: Mapped[str | None]
     size_bytes: Mapped[int | None]
     page_count: Mapped[int | None]
+    page_width: Mapped[int | None]
+    page_height: Mapped[int | None]
     page_start: Mapped[int | None]
     page_end: Mapped[int | None]
+    source_mtime: Mapped[datetime | None]
     processing_time_ms: Mapped[float | None]
     status: Mapped[str]
     stage: Mapped[str | None]

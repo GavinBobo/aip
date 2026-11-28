@@ -33,6 +33,33 @@ const PYTHON_API_URL = process.env.PYTHON_API_URL ?? 'http://127.0.0.1:3001';
 export const PROXY_CACHE_CONTROL = 'private, no-store';
 
 /**
+ * How long the backend may take to start answering before the proxy gives up.
+ *
+ * This bounds the wait for response headers, not the body: a slow export or a
+ * streamed answer can keep transferring after the timer is cleared. Without
+ * it, a backend that accepts the TCP connection but never answers leaves the
+ * browser on its loading state until undici's five-minute headers timeout.
+ */
+const READ_HEADERS_TIMEOUT_MS = 30_000;
+const WRITE_HEADERS_TIMEOUT_MS = 120_000;
+
+const upstreamFailure = (timedOut: boolean): Response =>
+	new Response(
+		JSON.stringify({
+			error: timedOut
+				? 'The backend did not answer in time.'
+				: 'The backend is unavailable right now.',
+		}),
+		{
+			status: timedOut ? 504 : 502,
+			headers: {
+				'Content-Type': 'application/json',
+				'Cache-Control': PROXY_CACHE_CONTROL,
+			},
+		},
+	);
+
+/**
  * `userId` names the caller to the backend, for routes that record who did
  * something (a tag's `created_by`, for instance). Opt-in rather than always
  * forwarded, so a route that has no use for an identity does not imply one.
@@ -62,11 +89,37 @@ export async function proxyToBackend(
 	// byte and corrupts the upload.
 	const body = hasBody ? await req.arrayBuffer() : undefined;
 
-	const upstream = await fetch(target, { method: req.method, headers, body });
+	const controller = new AbortController();
+	const timer = setTimeout(
+		() => controller.abort(),
+		req.method === 'GET' || req.method === 'HEAD'
+			? READ_HEADERS_TIMEOUT_MS
+			: WRITE_HEADERS_TIMEOUT_MS,
+	);
+	let upstream: Response;
+	try {
+		upstream = await fetch(target, {
+			method: req.method,
+			headers,
+			body,
+			signal: AbortSignal.any([req.signal, controller.signal]),
+		});
+	} catch {
+		// A failed connect and a backend that never sent headers both belong
+		// here; the browser is told which one happened where it can be told.
+		return upstreamFailure(controller.signal.aborted && !req.signal.aborted);
+	} finally {
+		clearTimeout(timer);
+	}
 
 	// Relayed as bytes: decoding as text would replace every byte of a binary
 	// answer, such as the Ossie export's zip, that is not valid UTF-8.
-	const respBody = await upstream.arrayBuffer();
+	let respBody: ArrayBuffer;
+	try {
+		respBody = await upstream.arrayBuffer();
+	} catch {
+		return upstreamFailure(false);
+	}
 	return new Response(respBody, {
 		status: upstream.status,
 		headers: {

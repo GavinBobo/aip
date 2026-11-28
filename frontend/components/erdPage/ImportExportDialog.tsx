@@ -10,6 +10,7 @@ import { Button } from '@/common/Button';
 import { Modal } from '@/common/modal/Modal';
 import { ButtonTheme, Size } from '@/enums/button';
 import { t } from '@/i18n';
+import { SQL_DIALECTS } from '@/lib/erd/dialects';
 import type { ErdExportFormat, SqlDialect } from '@/types/erd';
 
 type ImportExportDialogProps = {
@@ -34,7 +35,7 @@ export const ImportExportDialog = ({
 	onExportImage,
 }: ImportExportDialogProps) => {
 	const [format, setFormat] = useState<ErdExportFormat>('dbml');
-	const [dialect, setDialect] = useState<SqlDialect>('postgres');
+	const [dialect, setDialect] = useState<SqlDialect>('sqlserver');
 	const [content, setContent] = useState('');
 	// Merge into the current canvas unless the operator explicitly asks to
 	// replace it; an import should not wipe the existing diagram by default.
@@ -114,9 +115,11 @@ export const ImportExportDialog = ({
 							onChange={(event) => setDialect(event.target.value as SqlDialect)}
 							className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-xs text-body dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200"
 						>
-							<option value="postgres">PostgreSQL</option>
-							<option value="mysql">MySQL</option>
-							<option value="sqlite">SQLite</option>
+							{SQL_DIALECTS.map((option) => (
+								<option key={option.value} value={option.value}>
+									{option.label}
+								</option>
+							))}
 						</select>
 					</label>
 					<div className="flex gap-2">

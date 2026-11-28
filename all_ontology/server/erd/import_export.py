@@ -119,6 +119,7 @@ def _normalise_import_nodes(
             {
                 "name": name,
                 "table_id": table_id,
+                "category": raw.get("category"),
                 "x": _number(raw.get("x"), 0.0, "x", name, warnings),
                 "y": _number(raw.get("y"), 0.0, "y", name, warnings),
                 "width": _number(
@@ -291,6 +292,7 @@ def _merge_into_canvas(
             canvas_id=canvas["id"],
             name=node["name"],
             table_id=node["table_id"],
+            category=node.get("category"),
             columns=node["columns"],
             column_order=node.get("column_order"),
             x=node["x"],
@@ -375,7 +377,9 @@ def _slug(value: str) -> str:
 def export_canvas(
     zone_id: str,
     format: str = Query("json", pattern="^(json|dbml|sql)$"),
-    dialect: str = Query("postgres", pattern="^(postgres|mysql|sqlite)$"),
+    dialect: str = Query(
+        "sqlserver", pattern="^(sqlserver|postgres|mysql|mariadb|oracle|sqlite)$"
+    ),
 ) -> dict:
     """Serialise the canvas as JSON (lossless), DBML, or SQL DDL.
     JSON keeps positions, virtual tables and cardinalities. DBML is the
@@ -416,6 +420,7 @@ def export_canvas(
                     {
                         "name": node["name"],
                         "table_id": node["table_id"],
+                        "category": node["category"],
                         "x": node["x"],
                         "y": node["y"],
                         "width": node["width"],

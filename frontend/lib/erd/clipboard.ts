@@ -17,6 +17,7 @@ export const ERD_CLIPBOARD_KEY = 'all-ontology-erd-clipboard';
 
 export type ClipboardNode = {
 	name: string;
+	category?: string | null;
 	columns: ErdColumn[];
 	indexes: ErdIndex[];
 	note: string | null;

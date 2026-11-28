@@ -15,6 +15,7 @@ export type PopoverMenuItem = {
 	onClick: () => void;
 	danger?: boolean;
 	disabled?: boolean;
+	selected?: boolean;
 };
 
 type PopoverMenuProps = {
@@ -51,6 +52,7 @@ export const PopoverMenu = ({ items, trigger, header, className = '' }: PopoverM
 						theme={SelectButtonTheme.ListItem}
 						danger={item.danger}
 						disabled={item.disabled}
+						selected={item.selected}
 						key={item.label}
 						onClick={() => {
 							close();

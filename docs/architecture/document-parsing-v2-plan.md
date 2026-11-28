@@ -186,7 +186,7 @@ Markdown/JSON/元数据预览、原始文件对照、磁盘实例列表、模型
 
 | ID | 功能 | 验收 |
 | --- | --- | --- |
-| P1-1 | 批量任务中心 | 一次提交多份；支持从共享文件夹递归扫描 PDF 建任务；任务级/文件级百分比进度；取消、重试失败项、汇总统计 |
+| P1-1 | 批量任务中心 | 一次提交多份；支持从服务器文件夹递归扫描 PDF/图片建任务；任务级/文件级百分比进度；取消、重试失败项、汇总统计 |
 | P1-2 | 结果库 | 游标分页、搜索、状态/日期/档位筛选、批量操作 |
 | P1-3 | 原文版面查看器 | 页码/缩略图/缩放；bbox 叠加；块列表；悬停联动；点击定位 |
 | P1-4 | 块级校对 | Markdown/表格单元格可编辑；保存后重渲染；标记“已校对”；保留修订历史 |
@@ -366,11 +366,15 @@ parsing/{task_id}/{document_id}/{run_id}/
 - 目录浏览覆盖部署服务器进程可读的所有文件夹（Windows 盘符、UNC 路径、Linux 根目录），
   默认不再限制在 `shared/`；可用 `PARSING_SOURCE_ROOTS` 设置可选的服务器侧白名单。
   不跟随符号链接/目录联接。
-- 选择文件夹后递归扫描 `.pdf`（大小写不敏感），默认单任务上限 1000 个，
+- 选择文件夹后递归扫描 `.pdf` 与图片（`.png/.jpg/.jpeg/.webp/.bmp/.tif/.tiff`，
+  大小写不敏感），默认单任务上限 1000 个，
   可用 `PARSING_MAX_SCAN_FILES` 调整。
-- 每份 PDF 复制到解析上传目录后再入队，因此共享目录改名或断连不影响已建任务。
-- 任务里每个 PDF 有独立的 `parsing_document`/`parsing_run`，页级进度折算成
+- 每份文件复制到解析上传目录后再入队，因此服务器目录改名或断连不影响已建任务。
+- 任务里每个文件有独立的 `parsing_document`/`parsing_run`，页级进度折算成
   0–100% 的百分比显示；完成后自动出现在结果库，可按文件哈希对比上一版。
+- `parsing_document` 记录文件元数据：`source_md5`、`sha256`、`mime_type`、
+  `file_type`、`size_bytes`、`source_path`、`source_mtime`、`page_width`、
+  `page_height`，图片在入队时就能填出宽高，PDF 在解析完成后回填首页尺寸。
 
 ## 7. 质量评测
 
@@ -465,7 +469,7 @@ parsing/{task_id}/{document_id}/{run_id}/
 | P0-8 输入校验 | 已完成（基础） | 文件头、空文件、页数/像素上限；加密/损坏 PDF 仍由解码错误兜底 |
 | P0-9 现有缺陷修复 | 已完成 | 测试连接假成功、capabilities 暴露不可用格式、readiness 误报 |
 | P0-10 工程卫生 | 已完成 | 删除未使用的解析视图；已清理 `auto_ontology` 重复包，并把其独有的导入校验测试迁入 `all_ontology` |
-| P1-1 任务中心 | 已完成 | 任务列表、详情、文件级百分比进度、取消、重试；支持共享文件夹递归扫描 PDF |
+| P1-1 任务中心 | 已完成 | 任务列表、详情、文件级百分比进度、取消、重试；支持服务器文件夹递归扫描 PDF/图片 |
 | P1-2 结果库 | 已完成 | 搜索、状态/校对筛选、分页、删除 |
 | P1-3 原文版面查看器 | 已完成 | 页图 + bbox 叠加 + 块列表 + 点击定位 |
 | P1-4 块级校对 | 部分完成 | 可改单块并重渲染/导出；暂无完整修订历史与表格单元格编辑器 |
@@ -477,7 +481,7 @@ parsing/{task_id}/{document_id}/{run_id}/
 
 本次验证：
 
-- `pytest all_ontology/parsing`：34 passed；
+- `pytest all_ontology/parsing`：38 passed；
 - `pytest all_ontology dev_tools`：2790+ passed、147 skipped、4 failed；失败为既有的
   VDB halfvec 环境（3 个）和全仓 SPDX 头（1 个），与解析改动无关；
 - `alembic check`：无待生成迁移；
@@ -486,3 +490,5 @@ parsing/{task_id}/{document_id}/{run_id}/
   页图与 zip 导出均可通过 Next 代理下载。
 - 服务器文件夹烟测：递归扫描到 `a.pdf`、`nested/b.PDF`，一次创建 2 个文档的任务，
   每份文档有独立状态与进度字段；任务删除后源文件清理。
+- PDF/图片混合烟测：扫描到 `fake.pdf` 与 `nested/scan.png`，创建的图片文档记录了
+  `image/png`、`554×519`、MD5、SHA-256 和源路径。

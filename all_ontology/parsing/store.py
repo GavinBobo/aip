@@ -182,12 +182,14 @@ def create_task(
                     """
                     INSERT INTO parsing_document
                         (id, task_id, file_name, source_name, source_path,
-                         instance_id, sha256, source_md5, size_bytes,
-                         page_start, page_end)
+                         instance_id, sha256, source_md5, mime_type, file_type,
+                         size_bytes, page_width, page_height, page_start,
+                         page_end, source_mtime)
                     VALUES
                         (:id, :task_id, :file_name, :source_name, :source_path,
-                         :instance_id, :sha256, :source_md5, :size_bytes,
-                         :page_start, :page_end)
+                         :instance_id, :sha256, :source_md5, :mime_type, :file_type,
+                         :size_bytes, :page_width, :page_height, :page_start,
+                         :page_end, :source_mtime)
                     """
                 ),
                 {
@@ -199,9 +201,14 @@ def create_task(
                     "instance_id": document.get("instance_id"),
                     "sha256": document.get("sha256"),
                     "source_md5": document.get("source_md5"),
+                    "mime_type": document.get("mime_type"),
+                    "file_type": document.get("file_type"),
                     "size_bytes": document.get("size_bytes"),
+                    "page_width": document.get("page_width"),
+                    "page_height": document.get("page_height"),
                     "page_start": document.get("page_start"),
                     "page_end": document.get("page_end"),
+                    "source_mtime": document.get("source_mtime"),
                 },
             )
     return get_task(task_id) or {"id": task_id}
@@ -227,10 +234,7 @@ def get_task(task_id: str) -> dict[str, Any] | None:
         ),
         {"id": task_id},
     )
-    task["documents"] = [
-        {key: value for key, value in document.items() if key != "source_path"}
-        for document in documents
-    ]
+    task["documents"] = documents
     runs = store().query_read(
         text(
             "SELECT id, document_id, attempt, status, progress_done, progress_total, "
@@ -497,6 +501,8 @@ def finish_run_success(
     quality: dict[str, Any],
     processing_time_ms: int | None = None,
     parsed_md_path: str | None = None,
+    page_width: int | None = None,
+    page_height: int | None = None,
 ) -> None:
     with write_transaction():
         store().query_write(
@@ -517,7 +523,10 @@ def finish_run_success(
         store().query_write(
             text(
                 "UPDATE parsing_document SET status = 'succeeded', "
-                "page_count = :pages, processing_time_ms = :elapsed, "
+                "page_count = :pages, "
+                "page_width = COALESCE(:page_width, page_width), "
+                "page_height = COALESCE(:page_height, page_height), "
+                "processing_time_ms = :elapsed, "
                 "parsed_md_path = COALESCE(:parsed_md_path, parsed_md_path), "
                 "progress_done = :pages, progress_total = :pages, "
                 "progress_percent = 100, stage = 'done', "
@@ -528,6 +537,8 @@ def finish_run_success(
                 "pages": page_count,
                 "elapsed": processing_time_ms,
                 "parsed_md_path": parsed_md_path,
+                "page_width": page_width,
+                "page_height": page_height,
                 "now": _now(),
                 "document_id": document_id,
             },

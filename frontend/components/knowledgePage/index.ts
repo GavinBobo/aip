@@ -4,5 +4,6 @@
 
 export { KnowledgeGraph } from './KnowledgeGraph';
 export { KnowledgeNetworkView } from './KnowledgeNetworkView';
+export { KnowledgeSearchView } from './KnowledgeSearchView';
 export { KnowledgeSidebar } from './KnowledgeSidebar';
 export { KnowledgeWorkspace } from './KnowledgeWorkspace';

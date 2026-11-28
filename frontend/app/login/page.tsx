@@ -76,7 +76,7 @@ const LoginForm = () => {
 	// it if invalid). Used to send an already-authenticated user to their
 	// destination — the middleware no longer bounces cookie-bearing requests off
 	// /login, since a stale cookie there would loop against requireUser().
-	const { data: session, isPending: sessionPending } = useSession();
+	const { data: session } = useSession();
 
 	useEffect(() => {
 		authApi
@@ -118,16 +118,18 @@ const LoginForm = () => {
 	// below) so the local admin can still sign in if SSO is down.
 	const passwordMode = showPasswordLogin || params.has('password');
 
-	// Avoid flashing the form before we know whether SSO is configured, and while
-	// an already-authenticated user is being redirected to their destination.
-	if (!providersLoaded || sessionPending || session) {
-		return <LoginLoading />;
-	}
+	// Render the password form immediately so the page is usable before the
+	// provider probe and session check finish (and so SSR carries real inputs,
+	// not only a skeleton). Once the probe says SSO is configured, the SSO view
+	// takes over only while the user has not started typing - a late provider
+	// response must not replace credentials already being entered.
+	const hasTyped = email.trim() !== '' || password !== '';
+	const showSso = providersLoaded && ssoEnabled && !passwordMode && !hasTyped;
 
 	// SSO configured: show a "Sign In with SSO" button (no auto-login) so the
 	// user explicitly starts the flow, plus the password backdoor for the local
 	// bootstrap admin.
-	if (ssoEnabled && !passwordMode) {
+	if (showSso) {
 		return (
 			<div className="flex w-full max-w-sm flex-col gap-4">
 				{providers.map((provider) => (
@@ -158,7 +160,9 @@ const LoginForm = () => {
 
 	// No SSO configured, or the admin chose the password fallback.
 	return (
-		<form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4">
+		// `method="post"` keeps a pre-hydration submit from putting the password
+		// in the URL. It is not a working no-JS login path; the handler above is.
+		<form method="post" onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4">
 			<div className="flex flex-col gap-1.5">
 				<label htmlFor="email" className="text-xs font-medium text-body dark:text-zinc-400">
 					{t('Email')}{' '}
@@ -201,13 +205,15 @@ const LoginForm = () => {
 				{submitting ? t('Signing in…') : t('Sign in')}
 			</Button>
 
-			{ssoEnabled ? (
+			{ssoEnabled && !params.has('password') ? (
 				<Button
 					theme={ButtonTheme.Minimal}
 					size={Size.SMALL}
 					type="button"
 					onClick={() => {
 						setError(null);
+						setEmail('');
+						setPassword('');
 						setShowPasswordLogin(false);
 					}}
 				>

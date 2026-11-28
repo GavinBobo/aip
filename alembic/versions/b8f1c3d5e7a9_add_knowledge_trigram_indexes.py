@@ -11,10 +11,10 @@ Create Date: 2026-11-25
 
 from alembic import op
 
-revision = "b8f1c3d5e7a9"
-down_revision = "f3a5c7e9b102"
-branch_labels = None
-depends_on = None
+revision: str = "b8f1c3d5e7a9"
+down_revision: str | None = "f3a5c7e9b102"
+branch_labels: str | None = None
+depends_on: str | None = None
 
 _INDEXES = (
     ("ix_knowledge_concept_name_trgm", "knowledge_concept", "name"),

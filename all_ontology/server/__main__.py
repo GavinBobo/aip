@@ -48,6 +48,7 @@ from all_ontology.server.exploration.router import router as exploration_router 
 from all_ontology.server.erd.import_export import (  # noqa: E402
     router as erd_import_export_router,
 )
+from all_ontology.server.erd.ontology import router as erd_ontology_router  # noqa: E402
 from all_ontology.server.erd.router import router as erd_router  # noqa: E402
 from all_ontology.server.health.router import router as health_router  # noqa: E402
 from all_ontology.server.knowledge.router import router as knowledge_router  # noqa: E402
@@ -162,6 +163,7 @@ def create_app() -> FastAPI:
     app.include_router(exploration_router, prefix="/api", tags=["exploration"])
     app.include_router(erd_router, prefix="/api", tags=["erd"])
     app.include_router(erd_import_export_router, prefix="/api", tags=["erd"])
+    app.include_router(erd_ontology_router, prefix="/api", tags=["erd"])
     app.include_router(connections_router, prefix="/api", tags=["connections"])
     app.include_router(chat_router, prefix="/api", tags=["chat"])
     app.include_router(metadata_router, prefix="/api", tags=["metadata"])

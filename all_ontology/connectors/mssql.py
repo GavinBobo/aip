@@ -318,9 +318,7 @@ def _connection_error_message(exc: pyodbc.Error, fields: dict[str, Any]) -> str:
     message is kept at the end, but the hint names the setting most likely to
     fix the failure so the connection test is actionable.
     """
-    detail = _redact_driver_detail(
-        " ".join(str(part) for part in exc.args if part)
-    )
+    detail = _redact_driver_detail(" ".join(str(part) for part in exc.args if part))
     text = detail.casefold()
     sqlstate = str(exc.args[0]).strip().upper() if exc.args else ""
     target = _connection_target(fields)
@@ -355,15 +353,32 @@ def _connection_error_message(exc: pyodbc.Error, fields: dict[str, Any]) -> str:
             "the listener has no TLS at all, set Encryption to 'no'."
         )
     elif "cannot open database" in text or "4060" in text:
-        hint = (
-            "The login reached SQL Server but cannot open the named database. "
-            "Check the database name and that the login has CONNECT permission."
-        )
-    elif (
-        "login failed for user" in text
-        or "18456" in text
-        or sqlstate == "28000"
-    ):
+        database = str(fields.get("database") or "the requested database")
+        if "18456" in text or "login failed for user" in text:
+            # SQL Server reports 4060 together with 18456 when the login
+            # exists but its default database (or the one named in the
+            # connection string) cannot be opened. A wrong password produces
+            # the same pair often enough that the operator needs a way to
+            # separate the two before changing permissions.
+            hint = (
+                f"SQL Server rejected the login and could not open {database!r}. "
+                "First test the same credentials against the master database: "
+                "if master also rejects them, fix the login/password or enable "
+                "mixed-mode authentication. If master accepts them, check that "
+                f"{database!r} is ONLINE (not RESTORING, RECOVERY_PENDING or "
+                "SINGLE_USER) and that the login is mapped to it with CONNECT "
+                "(plus SELECT for ingestion). A login whose default database "
+                "is inaccessible produces the same pair; setting "
+                "DEFAULT_DATABASE=master is a useful first step."
+            )
+        else:
+            hint = (
+                f"The login reached SQL Server but cannot open {database!r}. "
+                "Check the database name, that it is ONLINE (not RESTORING or "
+                "SINGLE_USER), and that the login is mapped to it with CONNECT "
+                "permission."
+            )
+    elif "login failed for user" in text or "18456" in text or sqlstate == "28000":
         hint = (
             "SQL authentication was rejected. Confirm the login exists, mixed "
             "mode authentication is enabled, and the user/password are correct."

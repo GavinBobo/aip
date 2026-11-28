@@ -73,9 +73,14 @@ const getWithTransportRetry = async <OutputType>(
 	// route handlers are a local hop; this window exists for the Next server
 	// reading the Python server directly.
 	const delays = isServer ? SERVER_GET_RETRY_DELAYS_MS : [];
+	// A backend that accepts the socket but never answers would otherwise keep
+	// a server prefetch pending indefinitely. The proxy has its own bound for
+	// browser calls; this is the direct server-to-server equivalent.
+	const requestConfig: AxiosRequestConfig =
+		isServer && config.timeout == null ? { ...config, timeout: 30_000 } : config;
 	for (let attempt = 0; ; attempt += 1) {
 		try {
-			return await api.get<OutputType>(url, config);
+			return await api.get<OutputType>(url, requestConfig);
 		} catch (error) {
 			if (
 				!isTransientTransportError(error) ||

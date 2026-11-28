@@ -69,6 +69,20 @@ export function withPermission<C extends RouteContext = RouteContext>(
 			const headers = new Headers(req.headers);
 			headers.delete(INTERNAL_USER_HEADER);
 			headers.set(INTERNAL_USER_HEADER, user.id);
-			return handler(new Request(req, { headers }), { ...ctx, user });
+			// Rebuild the request instead of wrapping it with `new Request(req, ...)`:
+			// under Turbopack the handler's NextRequest can come from a second copy
+			// of the Request class, whose constructor then fails reading private
+			// fields. Copy the parts handlers use, and stream the body where there
+			// is one so multipart uploads still reach the backend intact.
+			const init: RequestInit & { duplex?: 'half' } = {
+				method: req.method,
+				headers,
+				signal: req.signal,
+			};
+			if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
+				init.body = req.body;
+				init.duplex = 'half';
+			}
+			return handler(new Request(req.url, init), { ...ctx, user });
 		};
 }

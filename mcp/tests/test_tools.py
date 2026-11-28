@@ -27,7 +27,7 @@ _WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 # The one exception: coverage grading is a POST because it takes a question in
 # the body, but it only reads the semantic layer.
-_READ_ONLY_POSTS = {"/api/question-entity-coverage"}
+_READ_ONLY_POSTS = {"/api/question-entity-coverage", "/api/knowledge/search"}
 
 
 def test_every_curated_operation_exists_in_the_spec() -> None:

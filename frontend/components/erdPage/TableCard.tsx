@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { t } from '@/i18n';
 import { Button } from '@/common/Button';
 import { ButtonTheme, Size } from '@/enums/button';
+import { columnStyleClass } from '@/lib/erd/columnAppearance';
 import {
 	CARD_COLUMN_NOTE_HEIGHT,
 	CARD_HEADER_HEIGHT,
@@ -177,6 +178,14 @@ export const TableCard = ({
 				>
 					{node.name}
 				</span>
+				{node.category && (
+					<span
+						className="max-w-[88px] shrink-0 truncate rounded bg-indigo-100 px-1 text-[10px] font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
+						title={node.category}
+					>
+						{node.category}
+					</span>
+				)}
 				{node.table_id == null && (
 					<span className="shrink-0 rounded bg-amber-100 px-1 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
 						{t('virtual')}
@@ -279,8 +288,11 @@ export const TableCard = ({
 							style={{ height: columnRowHeight(column) }}
 						>
 							<div
-								className="flex items-center gap-1.5"
-								style={{ height: CARD_ROW_HEIGHT }}
+								className={`flex items-center gap-1.5 ${columnStyleClass(column.style)}`}
+								style={{
+									height: CARD_ROW_HEIGHT,
+									color: column.color ?? undefined,
+								}}
 							>
 								{!readOnly && node.columns.length > 1 && (
 									<button
@@ -333,10 +345,17 @@ export const TableCard = ({
 										◆
 									</span>
 								)}
-								<span className="min-w-0 flex-1 truncate" title={column.name}>
+								<span
+									className="min-w-0 flex-1 truncate"
+									style={{ color: column.color ?? undefined }}
+									title={column.name}
+								>
 									{column.name}
 								</span>
-								<span className="max-w-[45%] shrink-0 truncate text-[10px] text-secondary dark:text-zinc-400">
+								<span
+									className="max-w-[45%] shrink-0 truncate text-[10px] text-secondary dark:text-zinc-400"
+									style={{ color: column.color ?? undefined }}
+								>
 									{column.data_type ?? ''}
 								</span>
 							</div>
@@ -345,7 +364,10 @@ export const TableCard = ({
 									className={`truncate text-[10px] leading-none text-zinc-400 dark:text-zinc-500 ${
 										column.is_primary_key ? 'pl-[16px]' : ''
 									}`}
-									style={{ height: CARD_COLUMN_NOTE_HEIGHT }}
+									style={{
+										height: CARD_COLUMN_NOTE_HEIGHT,
+										color: column.color ?? undefined,
+									}}
 									title={column.note}
 								>
 									{column.note}

@@ -611,6 +611,17 @@ def extract_document(
             concepts=normalized.concepts,
             relations=normalized.relations,
             facts=normalized.facts,
+            chunks=[
+                {
+                    "chunk_index": index,
+                    "text": chunk.text,
+                    "page_start": chunk.page_start,
+                    "page_end": chunk.page_end,
+                    "block_start": chunk.blocks[0].idx if chunk.blocks else None,
+                    "block_end": chunk.blocks[-1].idx if chunk.blocks else None,
+                }
+                for index, chunk in enumerate(chunks, start=1)
+            ],
             actions=normalized.actions,
             risks=normalized.risks,
             metrics=normalized.metrics,

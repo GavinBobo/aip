@@ -7,6 +7,9 @@
 /* Load Tailwind. @nvidia/foundations-react-core ships no standalone base.css. */
 @import 'tailwindcss';
 
+/* The top bar's sun/moon switch toggles `.dark` on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
 	--color-foreground: #09090b;
 
@@ -50,6 +53,11 @@
 	:root {
 		--color-foreground: #fafafa;
 	}
+}
+
+html.dark {
+	color-scheme: dark;
+	--color-foreground: #fafafa;
 }
 
 /* Spinner layout tweaks (@nvidia/foundations-react-core Spinner). */
@@ -188,6 +196,18 @@
 	}
 }
 
+.dark .nv-pagination-root {
+	color: #a1a1aa;
+}
+.dark .nv-pagination-arrow-button,
+.dark .nv-pagination-page-list .nv-tabs-trigger {
+	color: #d4d4d8;
+}
+.dark .nv-pagination-arrow-button:hover:not(:disabled),
+.dark .nv-pagination-page-list .nv-tabs-trigger:hover {
+	background-color: #27272a;
+}
+
 /*
  * Explicit box-sizing so content never sits flush to the viewport.
  */
@@ -237,6 +257,15 @@ body {
 		--result-chart-tooltip-bg: #fafafa;
 		--result-chart-tooltip-fg: #18181b;
 	}
+}
+
+.dark {
+	--result-chart-fg: #fafafa;
+	--result-chart-muted: #a1a1aa;
+	--result-chart-border: #3f3f46;
+	--result-chart-surface: #18181b;
+	--result-chart-tooltip-bg: #fafafa;
+	--result-chart-tooltip-fg: #18181b;
 }
 
 .result-chart {

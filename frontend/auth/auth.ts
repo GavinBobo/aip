@@ -59,6 +59,48 @@ const mcpResource = (): string => {
 	return 'http://localhost:3003/mcp';
 };
 
+/**
+ * Extra browser origins named by the deployment, as complete origins
+ * (`scheme://host:port`). Better Auth compares the `Origin` header exactly
+ * for http(s), so a bare `host:port` never matches.
+ */
+const configuredWebOrigins = (): string[] =>
+	(process.env.AUTH_TRUSTED_ORIGINS ?? '')
+		.split(',')
+		.map((origin) => origin.trim().replace(/\/+$/, ''))
+		.filter(Boolean);
+
+/**
+ * The same app reached through a loopback address. `APP_URL` normally names
+ * `localhost`, but a browser opened at `127.0.0.1` or `[::1]` sends that
+ * host in `Origin`, and Better Auth treats every distinct origin as separate.
+ * The dev server is HTTP even when the canonical deployment is HTTPS.
+ */
+const loopbackOrigins = (appUrl: string | undefined): string[] => {
+	if (!appUrl) return [];
+	try {
+		const { port } = new URL(appUrl);
+		const suffix = port ? `:${port}` : '';
+		return [`http://127.0.0.1${suffix}`, `http://[::1]${suffix}`];
+	} catch {
+		return [];
+	}
+};
+
+const appUrl = process.env.APP_URL?.replace(/\/+$/, '');
+
+const trustedOrigins = [
+	appUrl,
+	...loopbackOrigins(appUrl),
+	...configuredWebOrigins(),
+	// Cursor's desktop callback is a custom-scheme URI. Without this, the
+	// authorize/consent hop can fail origin checks after DCR succeeds.
+	'cursor://',
+	'http://localhost:8787',
+	'http://127.0.0.1:8787',
+	'https://www.cursor.com',
+].filter((origin): origin is string => Boolean(origin));
+
 /** True once at least one SSO provider has been registered. */
 export const isSsoConfigured = async (): Promise<boolean> => (await prisma.ssoProvider.count()) > 0;
 
@@ -66,16 +108,8 @@ export const auth = betterAuth({
 	// Project-scoped env var names, wired explicitly so they aren't tied to
 	// Better Auth's BETTER_AUTH_* defaults.
 	secret: process.env.AUTH_SECRET ?? (isBuildPhase ? 'next-build-time-placeholder' : undefined),
-	baseURL: process.env.APP_URL,
-	// Cursor's desktop callback is a custom-scheme URI. Without this, the
-	// authorize/consent hop can fail origin checks after DCR succeeds.
-	trustedOrigins: [
-		process.env.APP_URL,
-		'cursor://',
-		'http://localhost:8787',
-		'http://127.0.0.1:8787',
-		'https://www.cursor.com',
-	].filter((origin): origin is string => Boolean(origin)),
+	baseURL: appUrl,
+	trustedOrigins,
 	database: prismaAdapter(prisma, { provider: 'postgresql' }),
 	// Better Auth caps any /sign-in* path at 3 requests per 10s by default, which
 	// rejects legitimate bursts: several parallel sessions for one account, or many

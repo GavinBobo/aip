@@ -933,6 +933,35 @@
         "title": "ChatRequest",
         "type": "object"
       },
+      "ColumnAppearance": {
+        "description": "Canvas-only colour and text style for one column.",
+        "properties": {
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "style": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style"
+          }
+        },
+        "title": "ColumnAppearance",
+        "type": "object"
+      },
       "ColumnAttribute": {
         "additionalProperties": true,
         "description": "A ColumnAttribute of a Term.\n\n``primary_column`` is the HAS_ATTRIBUTE owner and ``referenced_columns``\nthe SEMANTIC_FK sources; both are absent from the patch response, which\nechoes only the fields it wrote.",
@@ -2164,6 +2193,19 @@
         "title": "DataResponse[ErdCanvas]",
         "type": "object"
       },
+      "DataResponse_ErdDdlParseResult_": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ErdDdlParseResult"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DataResponse[ErdDdlParseResult]",
+        "type": "object"
+      },
       "DataResponse_ErdExport_": {
         "additionalProperties": true,
         "properties": {
@@ -2279,6 +2321,32 @@
           "data"
         ],
         "title": "DataResponse[IdRef]",
+        "type": "object"
+      },
+      "DataResponse_OntologyApplyResult_": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OntologyApplyResult"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DataResponse[OntologyApplyResult]",
+        "type": "object"
+      },
+      "DataResponse_OntologyCandidateReport_": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OntologyCandidateReport"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "DataResponse[OntologyCandidateReport]",
         "type": "object"
       },
       "DataResponse_PairModeAnalysis_": {
@@ -2758,6 +2826,32 @@
           "id"
         ],
         "title": "DatabaseSummary",
+        "type": "object"
+      },
+      "DdlParseRequest": {
+        "description": "Parse CREATE TABLE SQL into canvas table drafts, without writing.",
+        "properties": {
+          "content": {
+            "maxLength": 200000,
+            "minLength": 1,
+            "title": "Content",
+            "type": "string"
+          },
+          "dialect": {
+            "default": "sqlserver",
+            "title": "Dialect",
+            "type": "string"
+          },
+          "zone_id": {
+            "title": "Zone Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "zone_id",
+          "content"
+        ],
+        "title": "DdlParseRequest",
         "type": "object"
       },
       "DepartmentCreate": {
@@ -3404,8 +3498,19 @@
       },
       "ErdColumn": {
         "additionalProperties": true,
-        "description": "One column row on a table card.\n\nCatalog-backed nodes fill every field from ``catalog_column``; a diagram-only\n(virtual) node keeps whatever the imported document declared.",
+        "description": "One column row on a table card.\n\nCatalog-backed nodes fill every schema field from ``catalog_column``; a\ndiagram-only (virtual) node keeps whatever the imported document declared.\n``color`` and ``style`` are canvas annotations for either kind of node.",
         "properties": {
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
           "data_type": {
             "anyOf": [
               {
@@ -3458,12 +3563,52 @@
               }
             ],
             "title": "Note"
+          },
+          "style": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style"
           }
         },
         "required": [
           "name"
         ],
         "title": "ErdColumn",
+        "type": "object"
+      },
+      "ErdDdlParseResult": {
+        "additionalProperties": true,
+        "description": "Tables and references parsed from a CREATE TABLE snippet.",
+        "properties": {
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/ErdParsedRelationship"
+            },
+            "title": "Relationships",
+            "type": "array"
+          },
+          "tables": {
+            "items": {
+              "$ref": "#/components/schemas/ErdParsedTable"
+            },
+            "title": "Tables",
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "title": "ErdDdlParseResult",
         "type": "object"
       },
       "ErdExport": {
@@ -3588,6 +3733,17 @@
         "additionalProperties": true,
         "description": "A table placed on the canvas.",
         "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
           "collapsed": {
             "default": false,
             "title": "Collapsed",
@@ -3723,6 +3879,85 @@
           "id"
         ],
         "title": "ErdNote",
+        "type": "object"
+      },
+      "ErdParsedRelationship": {
+        "additionalProperties": true,
+        "description": "A reference parsed from SQL, addressed by table and column names.",
+        "properties": {
+          "cardinality": {
+            "default": "many-to-one",
+            "title": "Cardinality",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "source_columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Columns",
+            "type": "array"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "target_columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Target Columns",
+            "type": "array"
+          }
+        },
+        "required": [
+          "source",
+          "target"
+        ],
+        "title": "ErdParsedRelationship",
+        "type": "object"
+      },
+      "ErdParsedTable": {
+        "additionalProperties": true,
+        "description": "A table parsed from SQL, before it has a canvas node id.",
+        "properties": {
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/ErdColumn"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "indexes": {
+            "items": {
+              "$ref": "#/components/schemas/ErdIndex"
+            },
+            "title": "Indexes",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ErdParsedTable",
         "type": "object"
       },
       "ErdRelationship": {
@@ -8545,6 +8780,328 @@
         "title": "KnowledgeRiskResponse",
         "type": "object"
       },
+      "KnowledgeSearchItem": {
+        "additionalProperties": true,
+        "properties": {
+          "block_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Index"
+          },
+          "citation": {
+            "additionalProperties": true,
+            "title": "Citation",
+            "type": "object"
+          },
+          "document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Id"
+          },
+          "document_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Title"
+          },
+          "evidence": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "network_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Network Id"
+          },
+          "network_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Network Name"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "page_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page End"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "snippet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snippet"
+          },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          },
+          "source_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Path"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "score"
+        ],
+        "title": "KnowledgeSearchItem",
+        "type": "object"
+      },
+      "KnowledgeSearchRequest": {
+        "description": "A document-knowledge retrieval request.\n\n``human`` searches all extracted knowledge, including drafts, so an editor\ncan find work in progress. ``agent`` is conservative: graph items must be\nreviewed/certified, and chunks are limited to documents with at least one\nreviewed/certified item.",
+        "properties": {
+          "document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Id"
+          },
+          "include_evidence": {
+            "default": true,
+            "title": "Include Evidence",
+            "type": "boolean"
+          },
+          "kinds": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "chunk",
+                    "document",
+                    "concept",
+                    "relation",
+                    "fact",
+                    "action",
+                    "risk",
+                    "metric",
+                    "evidence"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kinds"
+          },
+          "limit": {
+            "default": 20,
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "mode": {
+            "default": "human",
+            "enum": [
+              "human",
+              "agent"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "network_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Network Id"
+          },
+          "query": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "KnowledgeSearchRequest",
+        "type": "object"
+      },
+      "KnowledgeSearchResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeSearchResult"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "KnowledgeSearchResponse",
+        "type": "object"
+      },
+      "KnowledgeSearchResult": {
+        "additionalProperties": true,
+        "properties": {
+          "context": {
+            "default": "",
+            "title": "Context",
+            "type": "string"
+          },
+          "facets": {
+            "additionalProperties": true,
+            "title": "Facets",
+            "type": "object"
+          },
+          "generated_at": {
+            "title": "Generated At",
+            "type": "string"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeSearchItem"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "returned": {
+            "title": "Returned",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "query",
+          "mode",
+          "total",
+          "returned",
+          "generated_at"
+        ],
+        "title": "KnowledgeSearchResult",
+        "type": "object"
+      },
       "KnowledgeVersionCreate": {
         "properties": {
           "label": {
@@ -9007,6 +9564,17 @@
             "title": "Canvas Id",
             "type": "string"
           },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
           "column_order": {
             "anyOf": [
               {
@@ -9103,6 +9671,17 @@
       "NodeSnapshot": {
         "description": "One node in a client-side undo/redo snapshot.",
         "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
           "collapsed": {
             "default": false,
             "title": "Collapsed",
@@ -9407,6 +9986,792 @@
           "total"
         ],
         "title": "ObjectPageResponse[TableColumns]",
+        "type": "object"
+      },
+      "OntologyApplyRequest": {
+        "description": "The candidates a reviewer wants written to the semantic layer.\n\nThe browser sends ids, never generated text. The server rebuilds the\nreport and applies the current proposal, so a stale tab cannot write an\nold description over a term somebody has since curated.",
+        "properties": {
+          "create_semantic_fks": {
+            "default": true,
+            "title": "Create Semantic Fks",
+            "type": "boolean"
+          },
+          "create_terms": {
+            "default": true,
+            "title": "Create Terms",
+            "type": "boolean"
+          },
+          "entity_node_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Entity Node Ids",
+            "type": "array"
+          },
+          "relationship_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Relationship Ids",
+            "type": "array"
+          }
+        },
+        "title": "OntologyApplyRequest",
+        "type": "object"
+      },
+      "OntologyApplyResult": {
+        "additionalProperties": true,
+        "description": "What an explicit apply changed, reused, skipped or could not apply.",
+        "properties": {
+          "errors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "semantic_fks_created": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Semantic Fks Created",
+            "type": "array"
+          },
+          "skipped": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Skipped",
+            "type": "array"
+          },
+          "terms_created": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Terms Created",
+            "type": "array"
+          },
+          "terms_reused": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Terms Reused",
+            "type": "array"
+          },
+          "terms_updated": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Terms Updated",
+            "type": "array"
+          }
+        },
+        "title": "OntologyApplyResult",
+        "type": "object"
+      },
+      "OntologyCandidateReport": {
+        "additionalProperties": true,
+        "description": "The complete, read-only proposal for one ER canvas.",
+        "properties": {
+          "canvas_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canvas Id"
+          },
+          "catalog_fks_not_drawn": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Catalog Fks Not Drawn",
+            "type": "array"
+          },
+          "entities": {
+            "items": {
+              "$ref": "#/components/schemas/OntologyEntityCandidate"
+            },
+            "title": "Entities",
+            "type": "array"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/OntologyIssue"
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "generated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generated At"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/OntologyRelationshipCandidate"
+            },
+            "title": "Relationships",
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/OntologyCandidateSummary"
+          },
+          "zone_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone Id"
+          },
+          "zone_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone Name"
+          }
+        },
+        "required": [
+          "summary"
+        ],
+        "title": "OntologyCandidateReport",
+        "type": "object"
+      },
+      "OntologyCandidateSummary": {
+        "additionalProperties": true,
+        "properties": {
+          "description_count": {
+            "title": "Description Count",
+            "type": "integer"
+          },
+          "existing_semantic_fk_count": {
+            "title": "Existing Semantic Fk Count",
+            "type": "integer"
+          },
+          "gap_count": {
+            "title": "Gap Count",
+            "type": "integer"
+          },
+          "issue_count": {
+            "title": "Issue Count",
+            "type": "integer"
+          },
+          "mapped_node_count": {
+            "title": "Mapped Node Count",
+            "type": "integer"
+          },
+          "node_count": {
+            "title": "Node Count",
+            "type": "integer"
+          },
+          "readiness": {
+            "title": "Readiness",
+            "type": "number"
+          },
+          "readiness_label": {
+            "title": "Readiness Label",
+            "type": "string"
+          },
+          "relationship_count": {
+            "title": "Relationship Count",
+            "type": "integer"
+          },
+          "term_count": {
+            "title": "Term Count",
+            "type": "integer"
+          },
+          "validated_relationship_count": {
+            "title": "Validated Relationship Count",
+            "type": "integer"
+          },
+          "virtual_node_count": {
+            "title": "Virtual Node Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "node_count",
+          "mapped_node_count",
+          "virtual_node_count",
+          "term_count",
+          "description_count",
+          "relationship_count",
+          "validated_relationship_count",
+          "existing_semantic_fk_count",
+          "issue_count",
+          "gap_count",
+          "readiness",
+          "readiness_label"
+        ],
+        "title": "OntologyCandidateSummary",
+        "type": "object"
+      },
+      "OntologyColumnCandidate": {
+        "additionalProperties": true,
+        "description": "A column as it participates in a candidate entity.",
+        "properties": {
+          "data_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Type"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "distinct_values": {
+            "items": {},
+            "title": "Distinct Values",
+            "type": "array"
+          },
+          "is_nullable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Nullable"
+          },
+          "is_primary_key": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Primary Key"
+          },
+          "is_unique": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Unique"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sample_values": {
+            "items": {},
+            "title": "Sample Values",
+            "type": "array"
+          },
+          "semantic_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Semantic Hint"
+          },
+          "sensitivity_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sensitivity Hint"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "OntologyColumnCandidate",
+        "type": "object"
+      },
+      "OntologyEntityCandidate": {
+        "additionalProperties": true,
+        "description": "One ERD node proposed as a data-ontology entity.",
+        "properties": {
+          "apply": {
+            "additionalProperties": true,
+            "title": "Apply",
+            "type": "object"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/OntologyColumnCandidate"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "database_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Database Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "existing_column_attributes": {
+            "default": 0,
+            "title": "Existing Column Attributes",
+            "type": "integer"
+          },
+          "existing_semantic_fks": {
+            "default": 0,
+            "title": "Existing Semantic Fks",
+            "type": "integer"
+          },
+          "grain": {
+            "additionalProperties": true,
+            "title": "Grain",
+            "type": "object"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "primary_keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Primary Keys",
+            "type": "array"
+          },
+          "proposed_term": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OntologyTermCandidate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "schema_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema Name"
+          },
+          "semantic_role": {
+            "title": "Semantic Role",
+            "type": "string"
+          },
+          "signals": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Signals",
+            "type": "array"
+          },
+          "simulated": {
+            "default": false,
+            "title": "Simulated",
+            "type": "boolean"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "table_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table Id"
+          },
+          "table_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Table Name"
+          },
+          "term": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OntologyTermCandidate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/OntologyIssue"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "semantic_role",
+          "status",
+          "confidence"
+        ],
+        "title": "OntologyEntityCandidate",
+        "type": "object"
+      },
+      "OntologyIssue": {
+        "additionalProperties": true,
+        "description": "One structured warning or gap in a candidate report.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "params": {
+            "additionalProperties": true,
+            "title": "Params",
+            "type": "object"
+          },
+          "relationship_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relationship Id"
+          },
+          "severity": {
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "severity",
+          "message"
+        ],
+        "title": "OntologyIssue",
+        "type": "object"
+      },
+      "OntologyRelationshipCandidate": {
+        "additionalProperties": true,
+        "description": "One ERD relationship proposed as a semantic join.",
+        "properties": {
+          "apply": {
+            "additionalProperties": true,
+            "title": "Apply",
+            "type": "object"
+          },
+          "cardinality": {
+            "title": "Cardinality",
+            "type": "string"
+          },
+          "checks": {
+            "additionalProperties": true,
+            "title": "Checks",
+            "type": "object"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "existing_semantic_fk": {
+            "default": false,
+            "title": "Existing Semantic Fk",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "referenced_columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Referenced Columns",
+            "type": "array"
+          },
+          "referenced_table": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referenced Table"
+          },
+          "referencing_columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Referencing Columns",
+            "type": "array"
+          },
+          "referencing_table": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referencing Table"
+          },
+          "source_columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Columns",
+            "type": "array"
+          },
+          "source_node_id": {
+            "title": "Source Node Id",
+            "type": "string"
+          },
+          "source_table": {
+            "title": "Source Table",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "target_columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Target Columns",
+            "type": "array"
+          },
+          "target_node_id": {
+            "title": "Target Node Id",
+            "type": "string"
+          },
+          "target_table": {
+            "title": "Target Table",
+            "type": "string"
+          },
+          "unique": {
+            "default": false,
+            "title": "Unique",
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/OntologyIssue"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "source_node_id",
+          "target_node_id",
+          "source_table",
+          "target_table",
+          "cardinality",
+          "status",
+          "confidence"
+        ],
+        "title": "OntologyRelationshipCandidate",
+        "type": "object"
+      },
+      "OntologyTermCandidate": {
+        "additionalProperties": true,
+        "description": "An existing or proposed semantic Term.",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "description_certified": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description Certified"
+          },
+          "exists": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exists"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "name_certified": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name Certified"
+          },
+          "synonyms": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Synonyms",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "OntologyTermCandidate",
         "type": "object"
       },
       "Owner": {
@@ -10907,6 +12272,17 @@
             "title": "File Name",
             "type": "string"
           },
+          "file_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Type"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -10922,6 +12298,17 @@
             ],
             "title": "Instance Id"
           },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
           "page_count": {
             "anyOf": [
               {
@@ -10932,6 +12319,28 @@
               }
             ],
             "title": "Page Count"
+          },
+          "page_height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Height"
+          },
+          "page_width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Width"
           },
           "processing_time_ms": {
             "anyOf": [
@@ -10959,6 +12368,51 @@
             "title": "Progress Total",
             "type": "integer"
           },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "source_md5": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Md5"
+          },
+          "source_mtime": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Mtime"
+          },
           "source_name": {
             "anyOf": [
               {
@@ -10969,6 +12423,17 @@
               }
             ],
             "title": "Source Name"
+          },
+          "source_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Path"
           },
           "stage": {
             "anyOf": [
@@ -14409,6 +15874,17 @@
       "all_ontology__server__erd__schemas__NodeUpdate": {
         "description": "A move, resize or collapse. Omitted fields are left alone.",
         "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
           "collapsed": {
             "anyOf": [
               {
@@ -14419,6 +15895,20 @@
               }
             ],
             "title": "Collapsed"
+          },
+          "column_appearance": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/ColumnAppearance"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column Appearance"
           },
           "column_notes": {
             "anyOf": [
@@ -16459,8 +17949,8 @@
             "name": "dialect",
             "required": false,
             "schema": {
-              "default": "postgres",
-              "pattern": "^(postgres|mysql|sqlite)$",
+              "default": "sqlserver",
+              "pattern": "^(sqlserver|postgres|mysql|mariadb|oracle|sqlite)$",
               "title": "Dialect",
               "type": "string"
             }
@@ -16542,6 +18032,102 @@
           }
         },
         "summary": "Import Canvas",
+        "tags": [
+          "erd"
+        ]
+      }
+    },
+    "/api/erd/canvases/{zone_id}/ontology-candidates": {
+      "get": {
+        "description": "Return a read-only data-ontology proposal for the zone's ER canvas.",
+        "operationId": "get_ontology_candidates_api_erd_canvases__zone_id__ontology_candidates_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "zone_id",
+            "required": true,
+            "schema": {
+              "title": "Zone Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_OntologyCandidateReport_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Ontology Candidates",
+        "tags": [
+          "erd"
+        ]
+      }
+    },
+    "/api/erd/canvases/{zone_id}/ontology-candidates/apply": {
+      "post": {
+        "description": "Apply selected candidates to the semantic layer.",
+        "operationId": "apply_ontology_candidates_api_erd_canvases__zone_id__ontology_candidates_apply_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "zone_id",
+            "required": true,
+            "schema": {
+              "title": "Zone Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OntologyApplyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_OntologyApplyResult_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply Ontology Candidates",
         "tags": [
           "erd"
         ]
@@ -17022,6 +18608,48 @@
           }
         },
         "summary": "Patch Note",
+        "tags": [
+          "erd"
+        ]
+      }
+    },
+    "/api/erd/parse-ddl": {
+      "post": {
+        "description": "Parse CREATE TABLE SQL into table drafts without touching the canvas.",
+        "operationId": "parse_ddl_api_erd_parse_ddl_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DdlParseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataResponse_ErdDdlParseResult_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Parse Ddl",
         "tags": [
           "erd"
         ]
@@ -20904,6 +22532,48 @@
         ]
       }
     },
+    "/api/knowledge/search": {
+      "post": {
+        "description": "Search document passages and knowledge objects with citations.\n\n``human`` includes drafts so editors can find work in progress. ``agent``\nis the conservative profile used by prompt builders: graph items must be\nreviewed/certified, and chunks are limited to documents with at least one\nreviewed/certified item.",
+        "operationId": "search_knowledge_route_api_knowledge_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeSearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search Knowledge Route",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
     "/api/knowledge/versions/{version_id}/diff": {
       "get": {
         "operationId": "diff_knowledge_version_api_knowledge_versions__version_id__diff_get",
@@ -22374,7 +24044,7 @@
     },
     "/api/parsing/sources/scan": {
       "post": {
-        "description": "Recursively list PDFs below a selected shared folder.",
+        "description": "Recursively list supported PDFs and images below a server folder.",
         "operationId": "scan_parsing_sources_api_parsing_sources_scan_post",
         "requestBody": {
           "content": {
@@ -22542,7 +24212,7 @@
     },
     "/api/parsing/tasks/from-folder": {
       "post": {
-        "description": "Create one durable task from every PDF below a shared folder.\n\nThe source files are copied into the parsing upload directory, so the\nresult survives the shared folder being renamed or disconnected. Each file\nstill gets its own document row and run, which is what makes per-PDF\nprogress and later comparison possible.",
+        "description": "Create one durable task from every supported document below a folder.\n\nThe source files are copied into the parsing upload directory, so the\nresult survives the shared folder being renamed or disconnected. Each file\nstill gets its own document row and run, which is what makes per-PDF\nprogress and later comparison possible. PDFs and images share the same\nper-document metadata row.",
         "operationId": "create_parsing_task_from_folder_api_parsing_tasks_from_folder_post",
         "requestBody": {
           "content": {

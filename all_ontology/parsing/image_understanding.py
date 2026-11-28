@@ -131,9 +131,7 @@ async def understand_result_images(
         area = width * height
         record.update(
             {
-                "image_md5": hashlib.md5(
-                    payload, usedforsecurity=False
-                ).hexdigest(),
+                "image_md5": hashlib.md5(payload, usedforsecurity=False).hexdigest(),
                 "width": width,
                 "height": height,
                 "area_px": area,

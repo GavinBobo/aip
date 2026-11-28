@@ -23,6 +23,13 @@ const statusClass = (status: string): string => {
 	return 'bg-zinc-100 text-secondary';
 };
 
+const formatBytes = (bytes: number | null): string => {
+	if (bytes == null) return '—';
+	if (bytes < 1024) return `${bytes} B`;
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
 export const ParsingTaskDetailView = ({ taskId }: { taskId: string }) => {
 	const router = useRouter();
 	const [task, setTask] = useState<ParsingTask | null>(null);
@@ -182,6 +189,23 @@ export const ParsingTaskDetailView = ({ taskId }: { taskId: string }) => {
 												<span className="block truncate font-medium text-heading dark:text-zinc-100">
 													{document.file_name}
 												</span>
+												<span className="block truncate text-[10px] text-secondary dark:text-zinc-500">
+													{(document.file_type ?? '?').toUpperCase()} ·{' '}
+													{formatBytes(document.size_bytes)}
+													{document.page_width != null &&
+														document.page_height != null &&
+														` · ${document.page_width}×${document.page_height}`}
+													{document.source_md5 != null &&
+														` · MD5 ${document.source_md5.slice(0, 10)}…`}
+												</span>
+												{document.source_path != null && (
+													<span
+														className="block truncate font-mono text-[9px] text-secondary dark:text-zinc-600"
+														title={document.source_path}
+													>
+														{document.source_path}
+													</span>
+												)}
 												{document.error_message && (
 													<span className="block truncate text-[10px] text-red-600 dark:text-red-400">
 														{document.error_code}:{' '}

@@ -127,7 +127,7 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 				.pop();
 			setName(
 				folder
-					? t('{folder} · {count} PDF files', {
+					? t('{folder} · {count} files', {
 							folder,
 							count: response.data.count,
 						})
@@ -179,7 +179,7 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 					</h2>
 					<p className="mt-1 text-xs text-secondary dark:text-zinc-400">
 						{t(
-							'Choose any folder the deployment server can read. Every PDF in it and its subfolders becomes one parsing document in the task.',
+							'Choose any folder the deployment server can read. Every PDF or image in it and its subfolders becomes one parsing document in the task.',
 						)}
 					</p>
 				</div>
@@ -304,9 +304,10 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 						<div className="mt-4 rounded-lg border border-zinc-200 dark:border-zinc-700">
 							<div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 px-3 py-2 dark:border-zinc-700">
 								<span className="text-xs font-medium text-heading dark:text-zinc-100">
-									{t('{count} PDFs found', { count: scan.count })}
+									{t('{count} documents found', { count: scan.count })}
 								</span>
 								<span className="text-[10px] text-secondary">
+									PDF {scan.pdf_count} · {t('Images')} {scan.image_count} ·{' '}
 									{formatBytes(totalBytes)} · {t('limit')}: {scan.limit}
 								</span>
 							</div>
@@ -317,6 +318,7 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 											{file.relative}
 										</span>
 										<span className="shrink-0 text-secondary">
+											{file.file_type.toUpperCase()} ·{' '}
 											{formatBytes(file.size)}
 										</span>
 									</li>
@@ -459,7 +461,7 @@ export const ParsingFolderTaskModal = ({ open, onClose, onCreated }: Props) => {
 						? t('Select a folder and scan it first.')
 						: healthOk === false
 							? t('Parsing services need attention.')
-							: t('{count} PDFs will be parsed into the result library.', {
+							: t('{count} documents will be parsed into the result library.', {
 									count: scan.count,
 								})}
 				</span>

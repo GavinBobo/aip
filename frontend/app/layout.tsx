@@ -5,6 +5,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { Geist, Geist_Mono } from 'next/font/google';
+import Script from 'next/script';
 import { TooltipProvider } from '@nvidia/foundations-react-core';
 import {
 	HydrationBoundary,
@@ -24,6 +25,7 @@ import { tagQueries } from '@/lib/queries/tags';
 import { zoneQueries } from '@/lib/queries/zones';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { LanguageToggle } from '@/i18n/LanguageToggle';
+import { ThemeToggle } from '@/common/ThemeToggle';
 import './globals.css';
 
 const isLoginOrOauthPath = (pathname: string): boolean =>
@@ -105,8 +107,18 @@ export default async function RootLayout({
 	return (
 		<html
 			lang="en"
+			suppressHydrationWarning
 			className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
 		>
+			<head>
+				<Script
+					id="theme-init"
+					strategy="beforeInteractive"
+					dangerouslySetInnerHTML={{
+						__html: "(function(){try{var k='all-ontology-theme';var v=localStorage.getItem(k);var d=v?v==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',!!d);document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){}})();",
+					}}
+				/>
+			</head>
 			<body className="flex h-full flex-col bg-white text-heading dark:bg-zinc-950 dark:text-zinc-100">
 				<QueryProvider>
 					<TooltipProvider openDelayDuration={400} skipDelayDuration={0}>
@@ -127,7 +139,10 @@ export default async function RootLayout({
 							) : (
 								<>
 									<div className="fixed top-4 right-4 z-50">
-										<LanguageToggle />
+										<div className="flex items-center gap-2">
+											<ThemeToggle />
+											<LanguageToggle />
+										</div>
 									</div>
 									{children}
 								</>

@@ -240,7 +240,7 @@ GET 画布的返回形状：
 
 ### SQL DDL 导出与导入
 
-- 导出：`GET /api/erd/canvases/{zone_id}/export?format=sql&dialect=postgres|mysql|sqlite`。
+- 导出：`GET /api/erd/canvases/{zone_id}/export?format=sql&dialect=sqlserver|postgres|mysql|mariadb|oracle|sqlite`（默认 `sqlserver`）。
   `CREATE TABLE` 加 `PRIMARY KEY` / `NOT NULL` / `UNIQUE`，再按"多"的一端生成
   `ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY`。SQLite 不支持事后加外键，
   因此外键写在 `CREATE TABLE` 内。

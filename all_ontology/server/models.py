@@ -51,6 +51,14 @@ __all__ = [
     "GraphLink",
     "IdRef",
     "NodeUpdateResult",
+    "OntologyApplyResult",
+    "OntologyCandidateReport",
+    "OntologyCandidateSummary",
+    "OntologyColumnCandidate",
+    "OntologyEntityCandidate",
+    "OntologyIssue",
+    "OntologyRelationshipCandidate",
+    "OntologyTermCandidate",
     "PqlAnalysis",
     "PublicConnection",
     "Rule",
@@ -1236,8 +1244,9 @@ class EntityCoverageResult(ApiModel):
 class ErdColumn(ApiModel):
     """One column row on a table card.
 
-    Catalog-backed nodes fill every field from ``catalog_column``; a diagram-only
-    (virtual) node keeps whatever the imported document declared.
+    Catalog-backed nodes fill every schema field from ``catalog_column``; a
+    diagram-only (virtual) node keeps whatever the imported document declared.
+    ``color`` and ``style`` are canvas annotations for either kind of node.
     """
 
     name: str
@@ -1246,6 +1255,8 @@ class ErdColumn(ApiModel):
     is_unique: bool | None = None
     is_nullable: bool | None = None
     note: str | None = None
+    color: str | None = None
+    style: str | None = None
 
 
 class ErdIndex(ApiModel):
@@ -1262,6 +1273,7 @@ class ErdNode(ApiModel):
     id: str
     table_id: str | None = None
     name: str
+    category: str | None = None
     x: float
     y: float
     collapsed: bool = False
@@ -1282,6 +1294,33 @@ class ErdRelationship(ApiModel):
     target_columns: list[str] = Field(default_factory=list)
     cardinality: str
     label: str | None = None
+
+
+class ErdParsedTable(ApiModel):
+    """A table parsed from SQL, before it has a canvas node id."""
+
+    name: str
+    columns: list[ErdColumn] = Field(default_factory=list)
+    indexes: list[ErdIndex] = Field(default_factory=list)
+
+
+class ErdParsedRelationship(ApiModel):
+    """A reference parsed from SQL, addressed by table and column names."""
+
+    source: str
+    target: str
+    source_columns: list[str] = Field(default_factory=list)
+    target_columns: list[str] = Field(default_factory=list)
+    cardinality: str = "many-to-one"
+    label: str | None = None
+
+
+class ErdDdlParseResult(ApiModel):
+    """Tables and references parsed from a CREATE TABLE snippet."""
+
+    tables: list[ErdParsedTable] = Field(default_factory=list)
+    relationships: list[ErdParsedRelationship] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
 
 
 class ErdHiddenNode(ApiModel):
@@ -1426,6 +1465,141 @@ class ErdAssistantReply(ApiModel):
 
 
 # ---------------------------------------------------------------------------
+# ERD -> data-ontology candidates
+# ---------------------------------------------------------------------------
+
+
+class OntologyIssue(ApiModel):
+    """One structured warning or gap in a candidate report."""
+
+    code: str
+    severity: str
+    message: str
+    params: dict[str, Any] = Field(default_factory=dict)
+    entity_id: str | None = None
+    relationship_id: str | None = None
+
+
+class OntologyColumnCandidate(ApiModel):
+    """A column as it participates in a candidate entity."""
+
+    name: str
+    data_type: str | None = None
+    description: str | None = None
+    is_primary_key: bool | None = None
+    is_unique: bool | None = None
+    is_nullable: bool | None = None
+    semantic_hint: str | None = None
+    sensitivity_hint: str | None = None
+    sample_values: list[Any] = Field(default_factory=list)
+    distinct_values: list[Any] = Field(default_factory=list)
+
+
+class OntologyTermCandidate(ApiModel):
+    """An existing or proposed semantic Term."""
+
+    id: str | None = None
+    name: str
+    description: str | None = None
+    synonyms: list[str] = Field(default_factory=list)
+    exists: bool | None = None
+    name_certified: bool | None = None
+    description_certified: bool | None = None
+
+
+class OntologyEntityCandidate(ApiModel):
+    """One ERD node proposed as a data-ontology entity."""
+
+    id: str
+    table_id: str | None = None
+    name: str
+    table_name: str | None = None
+    database_name: str | None = None
+    schema_name: str | None = None
+    category: str | None = None
+    semantic_role: str
+    status: str
+    confidence: float
+    description: str | None = None
+    simulated: bool = False
+    primary_keys: list[str] = Field(default_factory=list)
+    grain: dict[str, Any] = Field(default_factory=dict)
+    columns: list[OntologyColumnCandidate] = Field(default_factory=list)
+    term: OntologyTermCandidate | None = None
+    existing_column_attributes: int = 0
+    existing_semantic_fks: int = 0
+    proposed_term: OntologyTermCandidate | None = None
+    warnings: list[OntologyIssue] = Field(default_factory=list)
+    signals: list[str] = Field(default_factory=list)
+    apply: dict[str, Any] = Field(default_factory=dict)
+
+
+class OntologyRelationshipCandidate(ApiModel):
+    """One ERD relationship proposed as a semantic join."""
+
+    id: str
+    label: str | None = None
+    source_node_id: str
+    target_node_id: str
+    source_table: str
+    target_table: str
+    source_columns: list[str] = Field(default_factory=list)
+    target_columns: list[str] = Field(default_factory=list)
+    cardinality: str
+    referencing_table: str | None = None
+    referenced_table: str | None = None
+    referencing_columns: list[str] = Field(default_factory=list)
+    referenced_columns: list[str] = Field(default_factory=list)
+    status: str
+    confidence: float
+    unique: bool = False
+    checks: dict[str, Any] = Field(default_factory=dict)
+    existing_semantic_fk: bool = False
+    warnings: list[OntologyIssue] = Field(default_factory=list)
+    apply: dict[str, Any] = Field(default_factory=dict)
+
+
+class OntologyCandidateSummary(ApiModel):
+    node_count: int
+    mapped_node_count: int
+    virtual_node_count: int
+    term_count: int
+    description_count: int
+    relationship_count: int
+    validated_relationship_count: int
+    existing_semantic_fk_count: int
+    issue_count: int
+    gap_count: int
+    readiness: float
+    readiness_label: str
+
+
+class OntologyCandidateReport(ApiModel):
+    """The complete, read-only proposal for one ER canvas."""
+
+    zone_id: str | None = None
+    canvas_id: str | None = None
+    zone_name: str | None = None
+    generated_at: str | None = None
+    summary: OntologyCandidateSummary
+    entities: list[OntologyEntityCandidate] = Field(default_factory=list)
+    relationships: list[OntologyRelationshipCandidate] = Field(default_factory=list)
+    catalog_fks_not_drawn: list[dict[str, Any]] = Field(default_factory=list)
+    gaps: list[OntologyIssue] = Field(default_factory=list)
+
+
+class OntologyApplyResult(ApiModel):
+    """What an explicit apply changed, reused, skipped or could not apply."""
+
+    terms_created: list[dict[str, Any]] = Field(default_factory=list)
+    terms_updated: list[dict[str, Any]] = Field(default_factory=list)
+    terms_reused: list[dict[str, Any]] = Field(default_factory=list)
+    semantic_fks_created: list[dict[str, Any]] = Field(default_factory=list)
+    skipped: list[dict[str, Any]] = Field(default_factory=list)
+    errors: list[dict[str, Any]] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
 # Document parsing (ported from OXR)
 # ---------------------------------------------------------------------------
 
@@ -1523,7 +1697,16 @@ class ParsingTaskDocument(ApiModel):
     id: str
     file_name: str
     source_name: str | None = None
+    source_path: str | None = None
     instance_id: str | None = None
+    sha256: str | None = None
+    source_md5: str | None = None
+    mime_type: str | None = None
+    file_type: str | None = None
+    size_bytes: int | None = None
+    page_width: int | None = None
+    page_height: int | None = None
+    source_mtime: datetime | None = None
     status: str
     stage: str | None = None
     progress_done: int = 0

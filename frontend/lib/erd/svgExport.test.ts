@@ -53,4 +53,29 @@ describe('buildSvgDiagram', () => {
 		expect(diagram!.svg).toContain('<title>core metrics</title>');
 		expect(diagram!.svg).toContain('fill="#a1a1aa"');
 	});
+
+	it('paints a column with its configured colour and style', () => {
+		const diagram = buildSvgDiagram(
+			[
+				node({
+					columns: [
+						{
+							name: 'id',
+							data_type: 'bigint',
+							is_primary_key: true,
+							is_unique: null,
+							is_nullable: false,
+							note: null,
+							color: '#ff0000',
+							style: 'bold',
+						},
+					],
+				}),
+			],
+			[],
+		);
+
+		expect(diagram!.svg).toContain('fill="#ff0000"');
+		expect(diagram!.svg).toContain('font-weight="700"');
+	});
 });

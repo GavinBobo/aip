@@ -19,6 +19,7 @@ from all_ontology.knowledge.metrics import preview_metric, validate_metric
 from all_ontology.knowledge.evals import run_evals
 from all_ontology.knowledge.execution import prepare_action_execution
 from all_ontology.knowledge.query import query_graph
+from all_ontology.knowledge.search import search_knowledge
 from all_ontology.knowledge.snapshot import (
     create_version,
     diff_version,
@@ -103,6 +104,8 @@ from all_ontology.server.knowledge.schemas import (
     KnowledgeRiskList,
     KnowledgeRiskPatch,
     KnowledgeRiskResponse,
+    KnowledgeSearchRequest,
+    KnowledgeSearchResponse,
 )
 
 router = APIRouter()
@@ -200,6 +203,57 @@ def list_knowledge_networks() -> dict[str, Any]:
         zone_permissions=current_zone_permissions(),
     )
     return {"data": networks, "count": len(networks)}
+
+
+@router.post("/knowledge/search", response_model=KnowledgeSearchResponse)
+def search_knowledge_route(body: KnowledgeSearchRequest) -> dict[str, Any]:
+    """Search document passages and knowledge objects with citations.
+
+    ``human`` includes drafts so editors can find work in progress. ``agent``
+    is the conservative profile used by prompt builders: graph items must be
+    reviewed/certified, and chunks are limited to documents with at least one
+    reviewed/certified item.
+    """
+    access = current_access()
+    zone_ids = current_zone_ids()
+    user_id = access.user_id if access else None
+    dept_ids = access.dept_ids if access else ()
+    zone_permissions = current_zone_permissions()
+    if body.network_id:
+        network = dal.get_network(
+            body.network_id,
+            zone_ids,
+            user_id=user_id,
+            dept_ids=dept_ids,
+            zone_permissions=zone_permissions,
+        )
+        if network is None:
+            raise HTTPException(status_code=404, detail="Knowledge network not found.")
+        if network.get("permission") is None:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have the required permission on this knowledge network.",
+            )
+        network_ids = [body.network_id]
+    else:
+        network_ids = dal.visible_network_ids(
+            zone_ids,
+            user_id=user_id,
+            dept_ids=dept_ids,
+            zone_permissions=zone_permissions,
+        )
+
+    result = search_knowledge(
+        body.query,
+        network_ids=network_ids,
+        zone_ids=zone_ids,
+        mode=body.mode,
+        kinds=body.kinds,
+        limit=body.limit,
+        document_id=body.document_id,
+        include_evidence=body.include_evidence,
+    )
+    return {"data": result}
 
 
 @router.post(

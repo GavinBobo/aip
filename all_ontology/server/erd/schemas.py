@@ -19,6 +19,13 @@ class ViewportUpdate(BaseModel):
     zoom: float = 1.0
 
 
+class ColumnAppearance(BaseModel):
+    """Canvas-only colour and text style for one column."""
+
+    color: str | None = None
+    style: str | None = None
+
+
 class NodeUpdate(BaseModel):
     """A move, resize or collapse. Omitted fields are left alone."""
 
@@ -26,6 +33,7 @@ class NodeUpdate(BaseModel):
     y: float | None = None
     collapsed: bool | None = None
     width: float | None = None
+    category: str | None = None
     # Only accepted for a diagram-only table; see ``update_node``.
     name: str | None = None
     columns: list[dict[str, Any]] | None = None
@@ -35,6 +43,7 @@ class NodeUpdate(BaseModel):
     # ``column name -> alias``. Documentation rather than schema, so it is
     # accepted for catalog tables too.
     column_notes: dict[str, str] | None = None
+    column_appearance: dict[str, ColumnAppearance] | None = None
     indexes: list[dict[str, Any]] | None = None
     note: str | None = None
 
@@ -45,6 +54,7 @@ class NodeCreate(BaseModel):
     canvas_id: str
     name: str
     table_id: str | None = None
+    category: str | None = None
     columns: list[dict[str, Any]] | None = None
     column_order: list[str] | None = None
     indexes: list[dict[str, Any]] | None = None
@@ -83,12 +93,21 @@ class ImportRequest(BaseModel):
     replace: bool = True
 
 
+class DdlParseRequest(BaseModel):
+    """Parse CREATE TABLE SQL into canvas table drafts, without writing."""
+
+    zone_id: str
+    dialect: str = "sqlserver"
+    content: str = Field(min_length=1, max_length=200_000)
+
+
 class NodeSnapshot(BaseModel):
     """One node in a client-side undo/redo snapshot."""
 
     id: str | None = None
     table_id: str | None = None
     name: str
+    category: str | None = None
     x: float = 0.0
     y: float = 0.0
     width: float = 248.0
@@ -226,3 +245,17 @@ class AssistantRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     canvas: AssistantCanvas = Field(default_factory=AssistantCanvas)
     history: list[AssistantTurn] = Field(default_factory=list, max_length=20)
+
+
+class OntologyApplyRequest(BaseModel):
+    """The candidates a reviewer wants written to the semantic layer.
+
+    The browser sends ids, never generated text. The server rebuilds the
+    report and applies the current proposal, so a stale tab cannot write an
+    old description over a term somebody has since curated.
+    """
+
+    entity_node_ids: list[str] = Field(default_factory=list)
+    relationship_ids: list[str] = Field(default_factory=list)
+    create_terms: bool = True
+    create_semantic_fks: bool = True

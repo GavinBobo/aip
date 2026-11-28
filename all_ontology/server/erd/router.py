@@ -16,11 +16,13 @@ from all_ontology.dal import schema as s
 from all_ontology.dal.session import store
 from all_ontology.server.access import require_zone, require_zone_permission
 from all_ontology.dal.schema import ZONE_PERMISSION_EDIT
+from all_ontology.server.erd.ddl import DIALECTS, parse_sql
 from all_ontology.server.erd.schemas import (
     AreaCreate,
     AreaUpdate,
     AssistantRequest,
     CanvasState,
+    DdlParseRequest,
     NodeCreate,
     NodeUpdate,
     NoteCreate,
@@ -36,6 +38,7 @@ from all_ontology.server.responses import (
     ErdCanvasResponse,
     ErdCanvasVersionListResponse,
     ErdCanvasVersionResponse,
+    ErdDdlParseResponse,
     ErdNodeResponse,
     ErdNoteResponse,
     ErdRelationshipResponse,
@@ -122,6 +125,27 @@ def _require_version_edit(version_id: str) -> None:
     _require_canvas_edit(str(rows[0]["canvas_id"]))
 
 
+@router.post("/erd/parse-ddl", response_model=ErdDdlParseResponse)
+def parse_ddl(body: DdlParseRequest) -> dict:
+    """Parse CREATE TABLE SQL into table drafts without touching the canvas."""
+    _require_zone_edit(body.zone_id)
+    if body.dialect not in DIALECTS:
+        raise HTTPException(
+            status_code=400, detail=f"Unknown SQL dialect {body.dialect!r}"
+        )
+    try:
+        tables, relationships, warnings = parse_sql(body.content)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "data": {
+            "tables": tables,
+            "relationships": relationships,
+            "warnings": warnings,
+        }
+    }
+
+
 @router.post("/erd/assistant", response_model=ErdAssistantResponse)
 def erd_assistant(body: AssistantRequest) -> dict:
     """Turn one sentence into canvas edits, for the canvas chat bubble.
@@ -205,6 +229,11 @@ def patch_node(node_id: str, body: NodeUpdate) -> dict:
     kind of table.
     """
     _require_node_edit(node_id)
+    appearance = (
+        {name: value.model_dump() for name, value in body.column_appearance.items()}
+        if body.column_appearance is not None
+        else None
+    )
     try:
         node = dal.update_node(
             node_id,
@@ -213,9 +242,11 @@ def patch_node(node_id: str, body: NodeUpdate) -> dict:
             collapsed=body.collapsed,
             width=body.width,
             name=body.name,
+            category=body.category,
             columns=body.columns,
             column_order=body.column_order,
             column_notes=body.column_notes,
+            column_appearance=appearance,
             indexes=body.indexes,
             note=body.note,
         )
@@ -245,6 +276,7 @@ def post_node(body: NodeCreate) -> dict:
         canvas_id=body.canvas_id,
         name=name,
         table_id=body.table_id,
+        category=body.category,
         columns=body.columns,
         column_order=body.column_order,
         indexes=body.indexes,

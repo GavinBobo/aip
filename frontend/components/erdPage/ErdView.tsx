@@ -22,6 +22,7 @@ import type { CanvasSnapshot } from '@/lib/erd/history';
 import { CanvasHistory } from '@/lib/erd/history';
 import { gridLayout, layeredLayout } from '@/lib/erd/layout';
 import { moveItem } from '@/lib/erd/ordering';
+import { isEditableTarget } from '@/lib/erd/shortcuts';
 import { buildSvgDiagram, downloadPng, downloadSvg } from '@/lib/erd/svgExport';
 import { validateCanvas, type ErdIssue } from '@/lib/erd/validation';
 import { zoneQueries } from '@/lib/queries/zones';
@@ -29,6 +30,7 @@ import type {
 	ErdCanvas as ErdCanvasModel,
 	ErdAssistantAction,
 	ErdCardinality,
+	ErdColumnStyle,
 	ErdExportFormat,
 	ErdNode,
 	ErdNote,
@@ -38,11 +40,12 @@ import type {
 	SqlDialect,
 } from '@/types/erd';
 import type { Zone } from '@/types/zones';
-import { AddTableDialog, type DraftTable } from './AddTableDialog';
+import { AddTableDialog, type DraftRelationship, type DraftTable } from './AddTableDialog';
 import { ConfirmDialog, type ConfirmRequest } from './ConfirmDialog';
 import { ErdCanvas, type ColumnConnection, type ErdCanvasHandle } from './ErdCanvas';
 import { ErdAssistant } from './ErdAssistant';
 import { ErdToolbar } from './ErdToolbar';
+import { ErdOntologyDialog } from './ErdOntologyDialog';
 import { ImportExportDialog } from './ImportExportDialog';
 import { RelationshipPanel } from './RelationshipPanel';
 import { TableEditorDialog } from './TableEditorDialog';
@@ -78,6 +81,7 @@ export const ErdView = () => {
 	const [showMinimap, setShowMinimap] = useState(true);
 	const [clipboardCount, setClipboardCount] = useState(0);
 	const [versionsOpen, setVersionsOpen] = useState(false);
+	const [ontologyOpen, setOntologyOpen] = useState(false);
 	const [versions, setVersions] = useState<ErdVersion[]>([]);
 	const [versionsBusy, setVersionsBusy] = useState(false);
 	const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -514,6 +518,7 @@ export const ErdView = () => {
 				const response = await erdApi.createNode({
 					canvas_id: canvas.id,
 					name: `${node.name} (copy)`,
+					category: node.category,
 					columns: node.columns,
 					indexes: node.indexes,
 					note: node.note,
@@ -608,6 +613,7 @@ export const ErdView = () => {
 		const payload: ErdClipboard = {
 			nodes: chosen.map((node) => ({
 				name: node.name,
+				category: node.category ?? null,
 				columns: node.columns,
 				indexes: node.indexes,
 				note: node.note,
@@ -643,6 +649,7 @@ export const ErdView = () => {
 			const response = await erdApi.createNode({
 				canvas_id: canvas.id,
 				name,
+				category: node.category,
 				columns: node.columns,
 				indexes: node.indexes,
 				note: node.note,
@@ -1111,31 +1118,63 @@ export const ErdView = () => {
 	}, [canvas, nodes, pushHistory]);
 
 	const handleAddTable = useCallback(
-		(table: DraftTable) => {
+		async (tables: DraftTable[], relationships: DraftRelationship[]) => {
 			if (!canvas) return;
 			pushHistory();
-			const maxY = nodes.reduce((value, node) => Math.max(value, node.y), 0);
-			void erdApi
-				.createNode({
+			const baseY =
+				nodesRef.current.reduce((value, node) => Math.max(value, node.y), 0) + 300;
+			const idByName = new Map(nodesRef.current.map((node) => [node.name, node.id]));
+			const created: ErdNode[] = [];
+			for (const [index, table] of tables.entries()) {
+				const response = await erdApi.createNode({
 					canvas_id: canvas.id,
 					name: table.name,
-					columns: table.columns.map((column) => ({
-						name: column.name,
-						data_type: column.data_type,
-						is_primary_key: column.is_primary_key,
-					})),
-					x: 40,
-					y: maxY + 300,
-				})
-				.then((response) => {
-					if (response.error || !response.data) {
-						setError(response.message ?? t('Failed to add the table'));
-						return;
-					}
-					setNodes((current) => [...current, response.data]);
+					category: table.category,
+					note: table.note,
+					columns: table.columns,
+					indexes: table.indexes.length > 0 ? table.indexes : null,
+					x: 40 + (index % 3) * 320,
+					y: baseY + Math.floor(index / 3) * 280,
 				});
+				if (response.error || !response.data) {
+					setError(response.message ?? t('Failed to add the table'));
+					continue;
+				}
+				idByName.set(response.data.name, response.data.id);
+				created.push(response.data);
+			}
+			if (created.length > 0) {
+				nodesRef.current = [...nodesRef.current, ...created];
+				setNodes(nodesRef.current);
+				setSelectedNodeIds(new Set(created.map((node) => node.id)));
+			}
+			for (const relationship of relationships) {
+				const sourceId = idByName.get(relationship.source);
+				const targetId = idByName.get(relationship.target);
+				if (!sourceId || !targetId || sourceId === targetId) continue;
+				const response = await erdApi.createRelationship({
+					canvas_id: canvas.id,
+					source_node_id: sourceId,
+					target_node_id: targetId,
+					source_columns: relationship.source_columns,
+					target_columns: relationship.target_columns,
+					cardinality: relationship.cardinality,
+					label: relationship.label,
+				});
+				if (response.data) {
+					const createdRelationship = response.data;
+					setCanvas((current) =>
+						current
+							? {
+									...current,
+									relationships: [...current.relationships, createdRelationship],
+								}
+							: current,
+					);
+				}
+			}
 		},
-		[canvas, nodes, pushHistory],
+		[canvas, pushHistory],
 	);
 
 	const handleImport = useCallback(
@@ -1164,7 +1203,7 @@ export const ErdView = () => {
 	);
 
 	const handleExport = useCallback(
-		(format: ErdExportFormat, dialect: SqlDialect = 'postgres') => {
+		(format: ErdExportFormat, dialect: SqlDialect = 'sqlserver') => {
 			if (!zoneId) return;
 			setBusy(true);
 			void erdApi.exportCanvas(zoneId, format, dialect).then((response) => {
@@ -1206,6 +1245,10 @@ export const ErdView = () => {
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
+			// Canvas shortcuts must never shadow native editing shortcuts in
+			// inputs, textareas, selects or contenteditable blocks. Ctrl+V in
+			// the import box, for example, has to behave like a normal paste.
+			if (isEditableTarget(event.target as HTMLElement | null)) return;
 			const modifier = event.ctrlKey || event.metaKey;
 			if (modifier && event.key.toLowerCase() === 'z') {
 				event.preventDefault();
@@ -1234,8 +1277,6 @@ export const ErdView = () => {
 				return;
 			}
 			if (event.key !== 'Delete' && event.key !== 'Backspace') return;
-			const tag = (event.target as HTMLElement | null)?.tagName;
-			if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 			if (selectedNodeIds.size > 0) {
 				event.preventDefault();
 				handleDeleteSelected();
@@ -1265,6 +1306,7 @@ export const ErdView = () => {
 	const handleSaveTable = useCallback(
 		(patch: {
 			name: string;
+			category: string;
 			note: string | null;
 			indexes: { name: string | null; columns: string[]; unique: boolean }[];
 			columns: {
@@ -1274,17 +1316,28 @@ export const ErdView = () => {
 				is_unique: boolean;
 				is_nullable: boolean;
 				note: string | null;
+				color: string | null;
+				style: ErdColumnStyle | null;
 			}[];
 			column_notes: Record<string, string>;
+			column_appearance: Record<
+				string,
+				{ color: string | null; style: ErdColumnStyle | null }
+			>;
 		}) => {
 			if (!editingNodeId) return;
 			setSavingTable(true);
 			pushHistory();
 			const editing = nodesRef.current.find((node) => node.id === editingNodeId);
-			// A catalog table's schema mirrors the database: its note and its
-			// per-column aliases are the only things the canvas owns.
+			// A catalog table's schema mirrors the database: category, note,
+			// aliases and column appearance are the only things the canvas owns.
 			const payload = editing?.table_id
-				? { note: patch.note, column_notes: patch.column_notes }
+				? {
+						category: patch.category,
+						note: patch.note,
+						column_notes: patch.column_notes,
+						column_appearance: patch.column_appearance,
+					}
 				: patch;
 			void erdApi.updateNode(editingNodeId, payload).then((response) => {
 				setSavingTable(false);
@@ -1547,6 +1600,7 @@ export const ErdView = () => {
 					setIssuesOpen((open) => !open);
 					setHiddenOpen(false);
 				}}
+				onOpenOntology={() => setOntologyOpen(true)}
 				selectedCount={selectedNodeIds.size}
 				onAddNote={handleAddNote}
 				onAddArea={handleAddArea}
@@ -1743,7 +1797,12 @@ export const ErdView = () => {
 				/>
 			)}
 			{addOpen && (
-				<AddTableDialog open onClose={() => setAddOpen(false)} onCreate={handleAddTable} />
+				<AddTableDialog
+					open
+					zoneId={zoneId}
+					onClose={() => setAddOpen(false)}
+					onCreate={handleAddTable}
+				/>
 			)}
 			{editingNode && (
 				<TableEditorDialog
@@ -1763,6 +1822,12 @@ export const ErdView = () => {
 				onCreate={handleCreateVersion}
 				onRestore={handleRestoreVersion}
 				onDelete={handleDeleteVersion}
+			/>
+			<ErdOntologyDialog
+				open={ontologyOpen}
+				zoneId={zoneId}
+				readOnly={readOnly}
+				onClose={() => setOntologyOpen(false)}
 			/>
 			<TemplatesDialog
 				open={templatesOpen}

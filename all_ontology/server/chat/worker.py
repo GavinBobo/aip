@@ -196,9 +196,9 @@ def _worker_loop(
             )
             custom_prompts = fetch_custom_prompts()
             try:
-                from all_ontology.knowledge.context import retrieve_knowledge_context
+                from all_ontology.knowledge.search import retrieve_agent_context
 
-                knowledge_context = retrieve_knowledge_context(
+                knowledge_context = retrieve_agent_context(
                     processing_question,
                     zone_ids=zone_ids,
                     network_ids=knowledge_network_ids,

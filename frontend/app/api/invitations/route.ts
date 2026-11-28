@@ -10,9 +10,7 @@ import {
 	listInvitations,
 	parseInviteRole,
 } from '@/lib/invitations';
-
-const publicAppUrl = (request: Request): string =>
-	process.env.APP_URL?.replace(/\/+$/, '') || new URL(request.url).origin;
+import { publicAppUrl } from '@/lib/publicUrl';
 
 const isEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 

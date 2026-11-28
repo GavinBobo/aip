@@ -9,9 +9,7 @@ import {
 	createPasswordResetInvitation,
 	ResetUserNotFoundError,
 } from '@/lib/invitations';
-
-const publicAppUrl = (request: Request): string =>
-	process.env.APP_URL?.replace(/\/+$/, '') || new URL(request.url).origin;
+import { publicAppUrl } from '@/lib/publicUrl';
 
 // Password reset for an existing user: mint an invite bound to that account.
 // The user row stays; redeeming the link updates the credential password.

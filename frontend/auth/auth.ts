@@ -2,6 +2,7 @@
 // All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+import os from 'node:os';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { admin } from 'better-auth/plugins/admin';
@@ -87,11 +88,35 @@ const loopbackOrigins = (appUrl: string | undefined): string[] => {
 	}
 };
 
+/**
+ * The same app reached through one of this host's own addresses. A browser on
+ * another computer reaches the dev server at the host's LAN address, sends that
+ * address in `Origin`, and Better Auth would otherwise reject sign-in with
+ * "Invalid origin" even though the page itself loads. Only plain-HTTP
+ * deployments need this: a TLS deployment names its origin in `APP_URL`.
+ */
+const hostAddressOrigins = (appUrl: string | undefined): string[] => {
+	if (!appUrl) return [];
+	let parsed: URL;
+	try {
+		parsed = new URL(appUrl);
+	} catch {
+		return [];
+	}
+	if (parsed.protocol !== 'http:') return [];
+	const suffix = parsed.port ? `:${parsed.port}` : '';
+	return Object.values(os.networkInterfaces())
+		.flatMap((addresses) => addresses ?? [])
+		.filter((address) => address.family === 'IPv4' && !address.internal)
+		.map((address) => `http://${address.address}${suffix}`);
+};
+
 const appUrl = process.env.APP_URL?.replace(/\/+$/, '');
 
 const trustedOrigins = [
 	appUrl,
 	...loopbackOrigins(appUrl),
+	...hostAddressOrigins(appUrl),
 	...configuredWebOrigins(),
 	// Cursor's desktop callback is a custom-scheme URI. Without this, the
 	// authorize/consent hop can fail origin checks after DCR succeeds.

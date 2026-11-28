@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import path from 'node:path';
+import os from 'node:os';
 import dotenv from 'dotenv';
 import type { NextConfig } from 'next';
 
@@ -34,6 +35,18 @@ const devOriginHostnames = (): string[] => {
 	addHost(process.env.APP_URL);
 	for (const origin of (process.env.AUTH_TRUSTED_ORIGINS ?? '').split(',')) {
 		addHost(origin.trim());
+	}
+
+	// A machine that reaches the dev server from another computer does so by
+	// this host's address, and the browser sends that address in the Origin of
+	// every module request. Without it Next answers `/_next/*` with 403 and the
+	// page renders server-side but never hydrates - which looks like "the
+	// buttons do nothing" rather than a configuration error. The host's own
+	// addresses are exactly the names a LAN browser can use, so trust them.
+	for (const addresses of Object.values(os.networkInterfaces())) {
+		for (const address of addresses ?? []) {
+			if (address.family === 'IPv4' && !address.internal) hosts.add(address.address);
+		}
 	}
 
 	return [...hosts];

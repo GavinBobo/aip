@@ -29,6 +29,7 @@ const ALL_KINDS: KnowledgeSearchKind[] = [
 	'action',
 	'risk',
 	'metric',
+	'rule',
 	'evidence',
 ];
 
@@ -44,6 +45,7 @@ const KIND_STYLES: Record<KnowledgeSearchKind, string> = {
 	action: 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950/30 dark:text-violet-300',
 	risk: 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300',
 	metric: 'border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-800 dark:bg-cyan-950/30 dark:text-cyan-300',
+	rule: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700 dark:border-fuchsia-800 dark:bg-fuchsia-950/30 dark:text-fuchsia-300',
 	evidence:
 		'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-300',
 };
@@ -66,7 +68,9 @@ const kindLabel = (kind: KnowledgeSearchKind): string =>
 									? 'Risk'
 									: kind === 'metric'
 										? 'Metric'
-										: 'Evidence',
+										: kind === 'rule'
+											? 'Rule'
+											: 'Evidence',
 	);
 
 const statusLabel = (status: string | null): string =>

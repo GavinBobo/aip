@@ -20,9 +20,7 @@
             "title": "Replacing"
           }
         },
-        "required": [
-          "connection"
-        ],
+        "required": ["connection"],
         "title": "ApiPreviewBody",
         "type": "object"
       },
@@ -128,9 +126,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "canvas_id"
-        ],
+        "required": ["canvas_id"],
         "title": "AreaCreate",
         "type": "object"
       },
@@ -258,9 +254,7 @@
             "title": "Note"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "AssistantColumn",
         "type": "object"
       },
@@ -305,10 +299,7 @@
             "title": "Table Id"
           }
         },
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "AssistantNode",
         "type": "object"
       },
@@ -358,11 +349,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "id",
-          "source",
-          "target"
-        ],
+        "required": ["id", "source", "target"],
         "title": "AssistantRelationship",
         "type": "object"
       },
@@ -391,10 +378,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "zone_id",
-          "message"
-        ],
+        "required": ["zone_id", "message"],
         "title": "AssistantRequest",
         "type": "object"
       },
@@ -406,18 +390,12 @@
             "type": "string"
           },
           "role": {
-            "enum": [
-              "user",
-              "assistant"
-            ],
+            "enum": ["user", "assistant"],
             "title": "Role",
             "type": "string"
           }
         },
-        "required": [
-          "role",
-          "content"
-        ],
+        "required": ["role", "content"],
         "title": "AssistantTurn",
         "type": "object"
       },
@@ -489,10 +467,7 @@
             "title": "Sheet"
           }
         },
-        "required": [
-          "file",
-          "database"
-        ],
+        "required": ["file", "database"],
         "title": "Body_create_file_connection_api_connections_file_post",
         "type": "object"
       },
@@ -556,9 +531,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "files"
-        ],
+        "required": ["files"],
         "title": "Body_create_parsing_task_api_parsing_tasks_post",
         "type": "object"
       },
@@ -570,9 +543,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "file"
-        ],
+        "required": ["file"],
         "title": "Body_import_knowledge_network_api_knowledge_networks__network_id__import_post",
         "type": "object"
       },
@@ -649,9 +620,7 @@
             "title": "Output Formats"
           }
         },
-        "required": [
-          "file"
-        ],
+        "required": ["file"],
         "title": "Body_parse_document_api_parsing_documents_post",
         "type": "object"
       },
@@ -688,9 +657,7 @@
             "title": "Sheet"
           }
         },
-        "required": [
-          "file"
-        ],
+        "required": ["file"],
         "title": "Body_preview_file_upload_api_connections_file_preview_post",
         "type": "object"
       },
@@ -752,9 +719,7 @@
             "title": "Sheet"
           }
         },
-        "required": [
-          "file"
-        ],
+        "required": ["file"],
         "title": "Body_replace_file_dataset_api_connections__database_name__file_put",
         "type": "object"
       },
@@ -813,9 +778,7 @@
             "title": "Output Formats"
           }
         },
-        "required": [
-          "file"
-        ],
+        "required": ["file"],
         "title": "Body_submit_parsing_job_api_parsing_jobs_post",
         "type": "object"
       },
@@ -864,9 +827,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "cancelled"
-        ],
+        "required": ["cancelled"],
         "title": "ChatCancelResponse",
         "type": "object"
       },
@@ -927,9 +888,7 @@
             "title": "Target Db"
           }
         },
-        "required": [
-          "question"
-        ],
+        "required": ["question"],
         "title": "ChatRequest",
         "type": "object"
       },
@@ -1160,9 +1119,7 @@
             "title": "Zones"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "ColumnAttribute",
         "type": "object"
       },
@@ -1281,9 +1238,7 @@
             "title": "Table Name"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "ColumnAttributeExplorationColumn",
         "type": "object"
       },
@@ -1336,10 +1291,7 @@
             "title": "Term Certification"
           }
         },
-        "required": [
-          "data",
-          "term_certification"
-        ],
+        "required": ["data", "term_certification"],
         "title": "ColumnAttributePatchResponse",
         "type": "object"
       },
@@ -1439,9 +1391,7 @@
             "title": "Relationship Type"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "ColumnExplorationAttribute",
         "type": "object"
       },
@@ -1595,9 +1545,7 @@
             "title": "Table Name"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "ColumnExplorationForeignKeyColumn",
         "type": "object"
       },
@@ -1665,9 +1613,7 @@
             "title": "Table Name"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "ColumnRef",
         "type": "object"
       },
@@ -1756,9 +1702,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "ColumnSummary",
         "type": "object"
       },
@@ -1770,9 +1714,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "connection"
-        ],
+        "required": ["connection"],
         "title": "ConnectionBody",
         "type": "object"
       },
@@ -1795,9 +1737,7 @@
             "title": "Replacing"
           }
         },
-        "required": [
-          "connection"
-        ],
+        "required": ["connection"],
         "title": "ConnectionTestBody",
         "type": "object"
       },
@@ -1817,10 +1757,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "schemas"
-        ],
+        "required": ["success", "schemas"],
         "title": "ConnectionTestResponse",
         "type": "object"
       },
@@ -1866,9 +1803,7 @@
             "title": "Sql"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "CustomAnalysis",
         "type": "object"
       },
@@ -1889,11 +1824,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "description",
-          "sql"
-        ],
+        "required": ["name", "description", "sql"],
         "title": "CustomAnalysisCreate",
         "type": "object"
       },
@@ -1905,9 +1836,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "sql"
-        ],
+        "required": ["sql"],
         "title": "CustomAnalysisValidate",
         "type": "object"
       },
@@ -2070,9 +1999,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "DataGraphNode",
         "type": "object"
       },
@@ -2083,9 +2010,7 @@
             "$ref": "#/components/schemas/ColumnAttributeExplorationDetails"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ColumnAttributeExplorationDetails]",
         "type": "object"
       },
@@ -2096,9 +2021,7 @@
             "$ref": "#/components/schemas/ColumnExplorationDetails"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ColumnExplorationDetails]",
         "type": "object"
       },
@@ -2109,9 +2032,7 @@
             "$ref": "#/components/schemas/CustomAnalysis"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[CustomAnalysis]",
         "type": "object"
       },
@@ -2122,9 +2043,7 @@
             "$ref": "#/components/schemas/DataExplorationGraph"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[DataExplorationGraph]",
         "type": "object"
       },
@@ -2135,9 +2054,7 @@
             "$ref": "#/components/schemas/EntityCoverageResult"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[EntityCoverageResult]",
         "type": "object"
       },
@@ -2148,9 +2065,7 @@
             "$ref": "#/components/schemas/ErdArea"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ErdArea]",
         "type": "object"
       },
@@ -2161,9 +2076,7 @@
             "$ref": "#/components/schemas/ErdAssistantReply"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ErdAssistantReply]",
         "type": "object"
       },
@@ -2174,9 +2087,7 @@
             "$ref": "#/components/schemas/ErdCanvasVersion"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ErdCanvasVersion]",
         "type": "object"
       },
@@ -2187,9 +2098,7 @@
             "$ref": "#/components/schemas/ErdCanvas"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ErdCanvas]",
         "type": "object"
       },
@@ -2200,9 +2109,7 @@
             "$ref": "#/components/schemas/ErdDdlParseResult"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ErdDdlParseResult]",
         "type": "object"
       },
@@ -2213,9 +2120,7 @@
             "$ref": "#/components/schemas/ErdExport"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ErdExport]",
         "type": "object"
       },
@@ -2226,9 +2131,7 @@
             "$ref": "#/components/schemas/ErdImportResult"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ErdImportResult]",
         "type": "object"
       },
@@ -2239,9 +2142,7 @@
             "$ref": "#/components/schemas/ErdNode"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ErdNode]",
         "type": "object"
       },
@@ -2252,9 +2153,7 @@
             "$ref": "#/components/schemas/ErdNote"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ErdNote]",
         "type": "object"
       },
@@ -2265,9 +2164,7 @@
             "$ref": "#/components/schemas/ErdRelationship"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ErdRelationship]",
         "type": "object"
       },
@@ -2278,9 +2175,7 @@
             "$ref": "#/components/schemas/ExplorationLinkPath"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ExplorationLinkPath]",
         "type": "object"
       },
@@ -2291,9 +2186,7 @@
             "$ref": "#/components/schemas/ExplorationRelatedNodes"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ExplorationRelatedNodes]",
         "type": "object"
       },
@@ -2304,9 +2197,7 @@
             "$ref": "#/components/schemas/Group"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[Group]",
         "type": "object"
       },
@@ -2317,9 +2208,7 @@
             "$ref": "#/components/schemas/IdRef"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[IdRef]",
         "type": "object"
       },
@@ -2330,9 +2219,7 @@
             "$ref": "#/components/schemas/OntologyApplyResult"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[OntologyApplyResult]",
         "type": "object"
       },
@@ -2343,9 +2230,7 @@
             "$ref": "#/components/schemas/OntologyCandidateReport"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[OntologyCandidateReport]",
         "type": "object"
       },
@@ -2356,9 +2241,7 @@
             "$ref": "#/components/schemas/PairModeAnalysis"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[PairModeAnalysis]",
         "type": "object"
       },
@@ -2369,9 +2252,7 @@
             "$ref": "#/components/schemas/ParsingCapabilities"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ParsingCapabilities]",
         "type": "object"
       },
@@ -2382,9 +2263,7 @@
             "$ref": "#/components/schemas/ParsingDocument"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ParsingDocument]",
         "type": "object"
       },
@@ -2395,9 +2274,7 @@
             "$ref": "#/components/schemas/ParsingInstanceDetail"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ParsingInstanceDetail]",
         "type": "object"
       },
@@ -2408,9 +2285,7 @@
             "$ref": "#/components/schemas/ParsingJob"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ParsingJob]",
         "type": "object"
       },
@@ -2421,9 +2296,7 @@
             "$ref": "#/components/schemas/ParsingRunDetail"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ParsingRunDetail]",
         "type": "object"
       },
@@ -2434,9 +2307,7 @@
             "$ref": "#/components/schemas/ParsingTask"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[ParsingTask]",
         "type": "object"
       },
@@ -2447,9 +2318,7 @@
             "$ref": "#/components/schemas/PqlAnalysis"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[PqlAnalysis]",
         "type": "object"
       },
@@ -2460,9 +2329,7 @@
             "$ref": "#/components/schemas/PublicConnection"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[PublicConnection]",
         "type": "object"
       },
@@ -2473,9 +2340,7 @@
             "$ref": "#/components/schemas/Rule"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[Rule]",
         "type": "object"
       },
@@ -2486,9 +2351,7 @@
             "$ref": "#/components/schemas/SemanticExplorationGraph"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[SemanticExplorationGraph]",
         "type": "object"
       },
@@ -2499,9 +2362,7 @@
             "$ref": "#/components/schemas/SqlAttributeExplorationDetails"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[SqlAttributeExplorationDetails]",
         "type": "object"
       },
@@ -2512,9 +2373,7 @@
             "$ref": "#/components/schemas/SqlAttribute"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[SqlAttribute]",
         "type": "object"
       },
@@ -2525,9 +2384,7 @@
             "$ref": "#/components/schemas/SqlExplorationDetails"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[SqlExplorationDetails]",
         "type": "object"
       },
@@ -2538,9 +2395,7 @@
             "$ref": "#/components/schemas/SqlExpressionValidationResult"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[SqlExpressionValidationResult]",
         "type": "object"
       },
@@ -2551,9 +2406,7 @@
             "$ref": "#/components/schemas/SqlValidationResult"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[SqlValidationResult]",
         "type": "object"
       },
@@ -2564,9 +2417,7 @@
             "$ref": "#/components/schemas/SsoFederationState"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[SsoFederationState]",
         "type": "object"
       },
@@ -2577,9 +2428,7 @@
             "$ref": "#/components/schemas/TableExplorationDetails"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[TableExplorationDetails]",
         "type": "object"
       },
@@ -2590,9 +2439,7 @@
             "$ref": "#/components/schemas/TablePreview"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[TablePreview]",
         "type": "object"
       },
@@ -2603,9 +2450,7 @@
             "$ref": "#/components/schemas/Tag"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[Tag]",
         "type": "object"
       },
@@ -2616,9 +2461,7 @@
             "$ref": "#/components/schemas/TermDetail"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[TermDetail]",
         "type": "object"
       },
@@ -2629,9 +2472,7 @@
             "$ref": "#/components/schemas/TermExplorationDetails"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[TermExplorationDetails]",
         "type": "object"
       },
@@ -2642,9 +2483,7 @@
             "$ref": "#/components/schemas/Term"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[Term]",
         "type": "object"
       },
@@ -2662,9 +2501,7 @@
             ]
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[Union[ParsingRunDetail, NoneType]]",
         "type": "object"
       },
@@ -2675,9 +2512,7 @@
             "$ref": "#/components/schemas/Zone"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[Zone]",
         "type": "object"
       },
@@ -2690,9 +2525,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[dict[str, Any]]",
         "type": "object"
       },
@@ -2707,9 +2540,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[dict[str, int]]",
         "type": "object"
       },
@@ -2727,9 +2558,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[dict[str, list[ZoneChip]]]",
         "type": "object"
       },
@@ -2745,9 +2574,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DataResponse[list[dict[str, Any]]]",
         "type": "object"
       },
@@ -2822,9 +2649,7 @@
             "title": "Source Type"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "DatabaseSummary",
         "type": "object"
       },
@@ -2847,10 +2672,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "zone_id",
-          "content"
-        ],
+        "required": ["zone_id", "content"],
         "title": "DdlParseRequest",
         "type": "object"
       },
@@ -2880,9 +2702,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "DepartmentCreate",
         "type": "object"
       },
@@ -2958,9 +2778,7 @@
             "title": "Data"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "DescriptionSuggestionResponse",
         "type": "object"
       },
@@ -3032,9 +2850,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "question"
-        ],
+        "required": ["question"],
         "title": "EntityCoverageRequest",
         "type": "object"
       },
@@ -3068,9 +2884,7 @@
             "title": "Uncovered Entities"
           }
         },
-        "required": [
-          "coverage"
-        ],
+        "required": ["coverage"],
         "title": "EntityCoverageResult",
         "type": "object"
       },
@@ -3119,9 +2933,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "ErdArea",
         "type": "object"
       },
@@ -3298,9 +3110,7 @@
             "title": "Y"
           }
         },
-        "required": [
-          "kind"
-        ],
+        "required": ["kind"],
         "title": "ErdAssistantAction",
         "type": "object"
       },
@@ -3335,9 +3145,7 @@
             "title": "Note"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "ErdAssistantColumn",
         "type": "object"
       },
@@ -3364,9 +3172,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "reply"
-        ],
+        "required": ["reply"],
         "title": "ErdAssistantReply",
         "type": "object"
       },
@@ -3436,11 +3242,7 @@
             "title": "Zone Name"
           }
         },
-        "required": [
-          "id",
-          "zone_id",
-          "viewport"
-        ],
+        "required": ["id", "zone_id", "viewport"],
         "title": "ErdCanvas",
         "type": "object"
       },
@@ -3490,9 +3292,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "ErdCanvasVersion",
         "type": "object"
       },
@@ -3576,9 +3376,7 @@
             "title": "Style"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "ErdColumn",
         "type": "object"
       },
@@ -3628,11 +3426,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "format",
-          "filename",
-          "content"
-        ],
+        "required": ["format", "filename", "content"],
         "title": "ErdExport",
         "type": "object"
       },
@@ -3660,10 +3454,7 @@
             "title": "Table Id"
           }
         },
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "ErdHiddenNode",
         "type": "object"
       },
@@ -3690,11 +3481,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "canvas",
-          "imported_nodes",
-          "imported_relationships"
-        ],
+        "required": ["canvas", "imported_nodes", "imported_relationships"],
         "title": "ErdImportResult",
         "type": "object"
       },
@@ -3821,12 +3608,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "x",
-          "y"
-        ],
+        "required": ["id", "name", "x", "y"],
         "title": "ErdNode",
         "type": "object"
       },
@@ -3875,9 +3657,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "ErdNote",
         "type": "object"
       },
@@ -3924,10 +3704,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "source",
-          "target"
-        ],
+        "required": ["source", "target"],
         "title": "ErdParsedRelationship",
         "type": "object"
       },
@@ -3954,9 +3731,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "ErdParsedTable",
         "type": "object"
       },
@@ -4006,12 +3781,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "source_node_id",
-          "target_node_id",
-          "cardinality"
-        ],
+        "required": ["id", "source_node_id", "target_node_id", "cardinality"],
         "title": "ErdRelationship",
         "type": "object"
       },
@@ -4071,10 +3841,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "source",
-          "target"
-        ],
+        "required": ["source", "target"],
         "title": "ExplorationEdge",
         "type": "object"
       },
@@ -4108,11 +3875,7 @@
             "$ref": "#/components/schemas/ExplorationLinkPathNode"
           }
         },
-        "required": [
-          "relationship",
-          "source",
-          "target"
-        ],
+        "required": ["relationship", "source", "target"],
         "title": "ExplorationLinkPathHop",
         "type": "object"
       },
@@ -4206,10 +3969,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "type"
-        ],
+        "required": ["id", "type"],
         "title": "ExplorationLinkPathNode",
         "type": "object"
       },
@@ -4277,9 +4037,7 @@
             "title": "Table Type"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "ExplorationRelatedNode",
         "type": "object"
       },
@@ -4496,10 +4254,7 @@
             "title": "Sheet"
           }
         },
-        "required": [
-          "path",
-          "database"
-        ],
+        "required": ["path", "database"],
         "title": "FileSourceBody",
         "type": "object"
       },
@@ -4533,9 +4288,7 @@
             "title": "Sheet"
           }
         },
-        "required": [
-          "path"
-        ],
+        "required": ["path"],
         "title": "FileSourcePreviewBody",
         "type": "object"
       },
@@ -4601,9 +4354,7 @@
             "title": "Sheet"
           }
         },
-        "required": [
-          "path"
-        ],
+        "required": ["path"],
         "title": "FileSourceSettings",
         "type": "object"
       },
@@ -4689,10 +4440,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "type"
-        ],
+        "required": ["name", "type"],
         "title": "GlobalSearchBreadcrumb",
         "type": "object"
       },
@@ -4840,10 +4588,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "type"
-        ],
+        "required": ["id", "type"],
         "title": "GlobalSearchItem",
         "type": "object"
       },
@@ -4863,9 +4608,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "search_term"
-        ],
+        "required": ["search_term"],
         "title": "GlobalSearchRequest",
         "type": "object"
       },
@@ -4889,10 +4632,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "source",
-          "target"
-        ],
+        "required": ["source", "target"],
         "title": "GraphLink",
         "type": "object"
       },
@@ -4995,11 +4735,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "name",
-          "color",
-          "role"
-        ],
+        "required": ["name", "color", "role"],
         "title": "GroupCreate",
         "type": "object"
       },
@@ -5016,10 +4752,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "GroupRole",
         "type": "object"
       },
@@ -5115,11 +4848,7 @@
             "title": "Role"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "email"
-        ],
+        "required": ["id", "name", "email"],
         "title": "GroupUser",
         "type": "object"
       },
@@ -5145,9 +4874,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "IdRef",
         "type": "object"
       },
@@ -5159,11 +4886,7 @@
             "type": "string"
           },
           "format": {
-            "enum": [
-              "json",
-              "dbml",
-              "sql"
-            ],
+            "enum": ["json", "dbml", "sql"],
             "title": "Format",
             "type": "string"
           },
@@ -5173,10 +4896,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "format",
-          "content"
-        ],
+        "required": ["format", "content"],
         "title": "ImportRequest",
         "type": "object"
       },
@@ -5188,9 +4908,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "capability_id"
-        ],
+        "required": ["capability_id"],
         "title": "KnowledgeActionCapabilityLink",
         "type": "object"
       },
@@ -5348,12 +5066,7 @@
             "title": "Status"
           }
         },
-        "required": [
-          "id",
-          "network_id",
-          "key",
-          "name"
-        ],
+        "required": ["id", "network_id", "key", "name"],
         "title": "KnowledgeActionItem",
         "type": "object"
       },
@@ -5372,10 +5085,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeActionList",
         "type": "object"
       },
@@ -5384,12 +5094,7 @@
           "action_intent": {
             "anyOf": [
               {
-                "enum": [
-                  "add",
-                  "modify",
-                  "delete",
-                  "execute"
-                ],
+                "enum": ["add", "modify", "delete", "execute"],
                 "type": "string"
               },
               {
@@ -5464,11 +5169,7 @@
           "status": {
             "anyOf": [
               {
-                "enum": [
-                  "draft",
-                  "reviewed",
-                  "certified"
-                ],
+                "enum": ["draft", "reviewed", "certified"],
                 "type": "string"
               },
               {
@@ -5488,10 +5189,278 @@
             "$ref": "#/components/schemas/KnowledgeActionItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeActionResponse",
+        "type": "object"
+      },
+      "KnowledgeBridgeAction": {
+        "additionalProperties": true,
+        "properties": {
+          "capabilities": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "linked": {
+            "default": false,
+            "title": "Linked",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "required": ["id", "name"],
+        "title": "KnowledgeBridgeAction",
+        "type": "object"
+      },
+      "KnowledgeBridgeConcept": {
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "linked": {
+            "default": false,
+            "title": "Linked",
+            "type": "boolean"
+          },
+          "links": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "required": ["id", "name"],
+        "title": "KnowledgeBridgeConcept",
+        "type": "object"
+      },
+      "KnowledgeBridgeData": {
+        "additionalProperties": true,
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeBridgeAction"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "capabilities": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeBridgeConcept"
+            },
+            "title": "Concepts",
+            "type": "array"
+          },
+          "generated_at": {
+            "title": "Generated At",
+            "type": "string"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeBridgeMetric"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/KnowledgeBridgeSummary"
+          }
+        },
+        "required": ["network_id", "generated_at", "summary"],
+        "title": "KnowledgeBridgeData",
+        "type": "object"
+      },
+      "KnowledgeBridgeMetric": {
+        "additionalProperties": true,
+        "properties": {
+          "expression": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expression"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "linked": {
+            "default": false,
+            "title": "Linked",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sql_attribute_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sql Attribute Id"
+          },
+          "sql_attribute_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sql Attribute Name"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": ["id", "name"],
+        "title": "KnowledgeBridgeMetric",
+        "type": "object"
+      },
+      "KnowledgeBridgeResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeBridgeData"
+          }
+        },
+        "required": ["data"],
+        "title": "KnowledgeBridgeResponse",
+        "type": "object"
+      },
+      "KnowledgeBridgeSummary": {
+        "additionalProperties": true,
+        "properties": {
+          "action_linked": {
+            "title": "Action Linked",
+            "type": "integer"
+          },
+          "action_total": {
+            "title": "Action Total",
+            "type": "integer"
+          },
+          "concept_linked": {
+            "title": "Concept Linked",
+            "type": "integer"
+          },
+          "concept_total": {
+            "title": "Concept Total",
+            "type": "integer"
+          },
+          "coverage": {
+            "title": "Coverage",
+            "type": "number"
+          },
+          "metric_linked": {
+            "title": "Metric Linked",
+            "type": "integer"
+          },
+          "metric_total": {
+            "title": "Metric Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "concept_total",
+          "concept_linked",
+          "metric_total",
+          "metric_linked",
+          "action_total",
+          "action_linked",
+          "coverage"
+        ],
+        "title": "KnowledgeBridgeSummary",
         "type": "object"
       },
       "KnowledgeCapabilityCreate": {
@@ -5513,12 +5482,7 @@
             "title": "Description"
           },
           "kind": {
-            "enum": [
-              "skill",
-              "function",
-              "mcp_tool",
-              "knowledge_base"
-            ],
+            "enum": ["skill", "function", "mcp_tool", "knowledge_base"],
             "title": "Kind",
             "type": "string"
           },
@@ -5529,10 +5493,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "kind"
-        ],
+        "required": ["name", "kind"],
         "title": "KnowledgeCapabilityCreate",
         "type": "object"
       },
@@ -5618,13 +5579,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "network_id",
-          "key",
-          "name",
-          "kind"
-        ],
+        "required": ["id", "network_id", "key", "name", "kind"],
         "title": "KnowledgeCapabilityItem",
         "type": "object"
       },
@@ -5643,10 +5598,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeCapabilityList",
         "type": "object"
       },
@@ -5710,9 +5662,7 @@
             "$ref": "#/components/schemas/KnowledgeCapabilityItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeCapabilityResponse",
         "type": "object"
       },
@@ -5743,9 +5693,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "KnowledgeConceptGroupCreate",
         "type": "object"
       },
@@ -5819,12 +5767,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "network_id",
-          "key",
-          "name"
-        ],
+        "required": ["id", "network_id", "key", "name"],
         "title": "KnowledgeConceptGroupItem",
         "type": "object"
       },
@@ -5843,10 +5786,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeConceptGroupList",
         "type": "object"
       },
@@ -5887,9 +5827,7 @@
             "$ref": "#/components/schemas/KnowledgeConceptGroupItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeConceptGroupResponse",
         "type": "object"
       },
@@ -6062,12 +6000,7 @@
             "title": "Status"
           }
         },
-        "required": [
-          "id",
-          "network_id",
-          "key",
-          "name"
-        ],
+        "required": ["id", "network_id", "key", "name"],
         "title": "KnowledgeConceptItem",
         "type": "object"
       },
@@ -6086,10 +6019,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeConceptList",
         "type": "object"
       },
@@ -6184,11 +6114,7 @@
           "status": {
             "anyOf": [
               {
-                "enum": [
-                  "draft",
-                  "reviewed",
-                  "certified"
-                ],
+                "enum": ["draft", "reviewed", "certified"],
                 "type": "string"
               },
               {
@@ -6208,9 +6134,7 @@
             "$ref": "#/components/schemas/KnowledgeConceptItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeConceptResponse",
         "type": "object"
       },
@@ -6233,18 +6157,12 @@
             "type": "string"
           },
           "target_kind": {
-            "enum": [
-              "term",
-              "table"
-            ],
+            "enum": ["term", "table"],
             "title": "Target Kind",
             "type": "string"
           }
         },
-        "required": [
-          "target_kind",
-          "target_id"
-        ],
+        "required": ["target_kind", "target_id"],
         "title": "KnowledgeDataLinkCreate",
         "type": "object"
       },
@@ -6257,9 +6175,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeDataLinkResponse",
         "type": "object"
       },
@@ -6290,11 +6206,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "kind",
-          "id",
-          "name"
-        ],
+        "required": ["kind", "id", "name"],
         "title": "KnowledgeDataTarget",
         "type": "object"
       },
@@ -6313,10 +6225,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeDataTargetList",
         "type": "object"
       },
@@ -6329,9 +6238,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeDeleteResponse",
         "type": "object"
       },
@@ -6343,9 +6250,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "run_id"
-        ],
+        "required": ["run_id"],
         "title": "KnowledgeDocumentCreate",
         "type": "object"
       },
@@ -6484,10 +6389,7 @@
             "title": "Title"
           }
         },
-        "required": [
-          "id",
-          "network_id"
-        ],
+        "required": ["id", "network_id"],
         "title": "KnowledgeDocumentItem",
         "type": "object"
       },
@@ -6506,10 +6408,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeDocumentList",
         "type": "object"
       },
@@ -6520,9 +6419,7 @@
             "$ref": "#/components/schemas/KnowledgeDocumentItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeDocumentResponse",
         "type": "object"
       },
@@ -6559,9 +6456,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "question"
-        ],
+        "required": ["question"],
         "title": "KnowledgeEvalCaseCreate",
         "type": "object"
       },
@@ -6644,11 +6539,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "network_id",
-          "question"
-        ],
+        "required": ["id", "network_id", "question"],
         "title": "KnowledgeEvalCaseItem",
         "type": "object"
       },
@@ -6667,10 +6558,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeEvalCaseList",
         "type": "object"
       },
@@ -6681,9 +6569,7 @@
             "$ref": "#/components/schemas/KnowledgeEvalCaseItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeEvalCaseResponse",
         "type": "object"
       },
@@ -6745,12 +6631,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "network_id",
-          "total",
-          "passed"
-        ],
+        "required": ["id", "network_id", "total", "passed"],
         "title": "KnowledgeEvalRunItem",
         "type": "object"
       },
@@ -6769,10 +6650,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeEvalRunList",
         "type": "object"
       },
@@ -6783,9 +6661,7 @@
             "$ref": "#/components/schemas/KnowledgeEvalRunItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeEvalRunResponse",
         "type": "object"
       },
@@ -6891,12 +6767,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "network_id",
-          "action_id",
-          "status"
-        ],
+        "required": ["id", "network_id", "action_id", "status"],
         "title": "KnowledgeExecutionItem",
         "type": "object"
       },
@@ -6915,10 +6786,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeExecutionList",
         "type": "object"
       },
@@ -6929,9 +6797,7 @@
             "$ref": "#/components/schemas/KnowledgeExecutionItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeExecutionResponse",
         "type": "object"
       },
@@ -7109,10 +6975,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeFactList",
         "type": "object"
       },
@@ -7170,11 +7033,7 @@
           "status": {
             "anyOf": [
               {
-                "enum": [
-                  "draft",
-                  "reviewed",
-                  "certified"
-                ],
+                "enum": ["draft", "reviewed", "certified"],
                 "type": "string"
               },
               {
@@ -7194,9 +7053,7 @@
             "$ref": "#/components/schemas/KnowledgeFactItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeFactResponse",
         "type": "object"
       },
@@ -7216,10 +7073,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeGrantAuditList",
         "type": "object"
       },
@@ -7232,9 +7086,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeGrantResponse",
         "type": "object"
       },
@@ -7284,10 +7136,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "nodes",
-          "edges"
-        ],
+        "required": ["nodes", "edges"],
         "title": "KnowledgeGraph",
         "type": "object"
       },
@@ -7333,12 +7182,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "source",
-          "target",
-          "kind"
-        ],
+        "required": ["id", "source", "target", "kind"],
         "title": "KnowledgeGraphEdge",
         "type": "object"
       },
@@ -7402,11 +7246,7 @@
             "title": "Status"
           }
         },
-        "required": [
-          "id",
-          "kind",
-          "label"
-        ],
+        "required": ["id", "kind", "label"],
         "title": "KnowledgeGraphNode",
         "type": "object"
       },
@@ -7421,11 +7261,7 @@
           },
           "direction": {
             "default": "both",
-            "enum": [
-              "out",
-              "in",
-              "both"
-            ],
+            "enum": ["out", "in", "both"],
             "title": "Direction",
             "type": "string"
           },
@@ -7461,9 +7297,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeGraphQueryResponse",
         "type": "object"
       },
@@ -7474,9 +7308,7 @@
             "$ref": "#/components/schemas/KnowledgeGraph"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeGraphResponse",
         "type": "object"
       },
@@ -7489,9 +7321,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeImportResponse",
         "type": "object"
       },
@@ -7559,9 +7389,7 @@
             "title": "Unit"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "KnowledgeMetricCreate",
         "type": "object"
       },
@@ -7717,12 +7545,7 @@
             "title": "Unit"
           }
         },
-        "required": [
-          "id",
-          "network_id",
-          "key",
-          "name"
-        ],
+        "required": ["id", "network_id", "key", "name"],
         "title": "KnowledgeMetricItem",
         "type": "object"
       },
@@ -7741,10 +7564,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeMetricList",
         "type": "object"
       },
@@ -7823,11 +7643,7 @@
           "status": {
             "anyOf": [
               {
-                "enum": [
-                  "draft",
-                  "reviewed",
-                  "certified"
-                ],
+                "enum": ["draft", "reviewed", "certified"],
                 "type": "string"
               },
               {
@@ -7860,9 +7676,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeMetricPreviewResponse",
         "type": "object"
       },
@@ -7873,9 +7687,7 @@
             "$ref": "#/components/schemas/KnowledgeMetricItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeMetricResponse",
         "type": "object"
       },
@@ -7888,9 +7700,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeMetricValidateResponse",
         "type": "object"
       },
@@ -7936,9 +7746,7 @@
             "title": "Zone Id"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "KnowledgeNetworkCreate",
         "type": "object"
       },
@@ -8105,10 +7913,7 @@
             "title": "Zone Id"
           }
         },
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "KnowledgeNetworkItem",
         "type": "object"
       },
@@ -8127,10 +7932,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeNetworkList",
         "type": "object"
       },
@@ -8174,11 +7976,7 @@
           "status": {
             "anyOf": [
               {
-                "enum": [
-                  "draft",
-                  "published",
-                  "archived"
-                ],
+                "enum": ["draft", "published", "archived"],
                 "type": "string"
               },
               {
@@ -8220,9 +8018,7 @@
             "$ref": "#/components/schemas/KnowledgeNetworkItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeNetworkResponse",
         "type": "object"
       },
@@ -8405,10 +8201,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeRelationList",
         "type": "object"
       },
@@ -8474,11 +8267,7 @@
           "status": {
             "anyOf": [
               {
-                "enum": [
-                  "draft",
-                  "reviewed",
-                  "certified"
-                ],
+                "enum": ["draft", "reviewed", "certified"],
                 "type": "string"
               },
               {
@@ -8498,9 +8287,7 @@
             "$ref": "#/components/schemas/KnowledgeRelationItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeRelationResponse",
         "type": "object"
       },
@@ -8638,12 +8425,7 @@
             "title": "Status"
           }
         },
-        "required": [
-          "id",
-          "network_id",
-          "key",
-          "name"
-        ],
+        "required": ["id", "network_id", "key", "name"],
         "title": "KnowledgeRiskItem",
         "type": "object"
       },
@@ -8662,10 +8444,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeRiskList",
         "type": "object"
       },
@@ -8733,12 +8512,7 @@
           "severity": {
             "anyOf": [
               {
-                "enum": [
-                  "low",
-                  "medium",
-                  "high",
-                  "critical"
-                ],
+                "enum": ["low", "medium", "high", "critical"],
                 "type": "string"
               },
               {
@@ -8750,11 +8524,7 @@
           "status": {
             "anyOf": [
               {
-                "enum": [
-                  "draft",
-                  "reviewed",
-                  "certified"
-                ],
+                "enum": ["draft", "reviewed", "certified"],
                 "type": "string"
               },
               {
@@ -8774,9 +8544,7 @@
             "$ref": "#/components/schemas/KnowledgeRiskItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeRiskResponse",
         "type": "object"
       },
@@ -8946,11 +8714,7 @@
             "title": "Title"
           }
         },
-        "required": [
-          "kind",
-          "id",
-          "score"
-        ],
+        "required": ["kind", "id", "score"],
         "title": "KnowledgeSearchItem",
         "type": "object"
       },
@@ -9007,10 +8771,7 @@
           },
           "mode": {
             "default": "human",
-            "enum": [
-              "human",
-              "agent"
-            ],
+            "enum": ["human", "agent"],
             "title": "Mode",
             "type": "string"
           },
@@ -9032,9 +8793,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "query"
-        ],
+        "required": ["query"],
         "title": "KnowledgeSearchRequest",
         "type": "object"
       },
@@ -9045,9 +8804,7 @@
             "$ref": "#/components/schemas/KnowledgeSearchResult"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeSearchResponse",
         "type": "object"
       },
@@ -9092,13 +8849,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "query",
-          "mode",
-          "total",
-          "returned",
-          "generated_at"
-        ],
+        "required": ["query", "mode", "total", "returned", "generated_at"],
         "title": "KnowledgeSearchResult",
         "type": "object"
       },
@@ -9128,9 +8879,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeVersionDiffResponse",
         "type": "object"
       },
@@ -9184,11 +8933,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "network_id",
-          "version"
-        ],
+        "required": ["id", "network_id", "version"],
         "title": "KnowledgeVersionItem",
         "type": "object"
       },
@@ -9207,10 +8952,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "KnowledgeVersionList",
         "type": "object"
       },
@@ -9221,9 +8963,7 @@
             "$ref": "#/components/schemas/KnowledgeVersionItem"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeVersionResponse",
         "type": "object"
       },
@@ -9236,9 +8976,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "data"
-        ],
+        "required": ["data"],
         "title": "KnowledgeVersionRestoreResponse",
         "type": "object"
       },
@@ -9257,10 +8995,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "ListResponse[DatabaseSummary]",
         "type": "object"
       },
@@ -9279,10 +9014,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "ListResponse[ErdCanvasVersion]",
         "type": "object"
       },
@@ -9301,10 +9033,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "ListResponse[ExplorationEdge]",
         "type": "object"
       },
@@ -9323,10 +9052,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "ListResponse[GlobalSearchItem]",
         "type": "object"
       },
@@ -9345,10 +9071,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "ListResponse[Group]",
         "type": "object"
       },
@@ -9367,10 +9090,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "ListResponse[Owner]",
         "type": "object"
       },
@@ -9389,10 +9109,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "ListResponse[ParsingInstance]",
         "type": "object"
       },
@@ -9411,10 +9128,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "ListResponse[ParsingProfile]",
         "type": "object"
       },
@@ -9433,10 +9147,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "ListResponse[PublicConnection]",
         "type": "object"
       },
@@ -9455,10 +9166,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "ListResponse[SqlAttribute]",
         "type": "object"
       },
@@ -9477,10 +9185,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "ListResponse[TableSummary]",
         "type": "object"
       },
@@ -9499,10 +9204,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "ListResponse[TagChip]",
         "type": "object"
       },
@@ -9521,19 +9223,13 @@
             "type": "array"
           }
         },
-        "required": [
-          "data",
-          "count"
-        ],
+        "required": ["data", "count"],
         "title": "ListResponse[Zone]",
         "type": "object"
       },
       "ModelFormat": {
         "description": "Serialisation dialect of an exchanged model document.",
-        "enum": [
-          "all_ontology",
-          "ossie"
-        ],
+        "enum": ["all_ontology", "ossie"],
         "title": "ModelFormat",
         "type": "string"
       },
@@ -9550,10 +9246,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "success",
-          "summary"
-        ],
+        "required": ["success", "summary"],
         "title": "ModelImportResponse",
         "type": "object"
       },
@@ -9661,10 +9354,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "canvas_id",
-          "name"
-        ],
+        "required": ["canvas_id", "name"],
         "title": "NodeCreate",
         "type": "object"
       },
@@ -9784,9 +9474,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "NodeSnapshot",
         "type": "object"
       },
@@ -9846,9 +9534,7 @@
             "title": "Sample Values"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "NodeUpdateResult",
         "type": "object"
       },
@@ -9886,9 +9572,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "canvas_id"
-        ],
+        "required": ["canvas_id"],
         "title": "NoteCreate",
         "type": "object"
       },
@@ -9980,11 +9664,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "data",
-          "count",
-          "total"
-        ],
+        "required": ["data", "count", "total"],
         "title": "ObjectPageResponse[TableColumns]",
         "type": "object"
       },
@@ -10156,9 +9836,7 @@
             "title": "Zone Name"
           }
         },
-        "required": [
-          "summary"
-        ],
+        "required": ["summary"],
         "title": "OntologyCandidateReport",
         "type": "object"
       },
@@ -10327,9 +10005,7 @@
             "title": "Sensitivity Hint"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "OntologyColumnCandidate",
         "type": "object"
       },
@@ -10497,13 +10173,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "semantic_role",
-          "status",
-          "confidence"
-        ],
+        "required": ["id", "name", "semantic_role", "status", "confidence"],
         "title": "OntologyEntityCandidate",
         "type": "object"
       },
@@ -10551,11 +10221,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code",
-          "severity",
-          "message"
-        ],
+        "required": ["code", "severity", "message"],
         "title": "OntologyIssue",
         "type": "object"
       },
@@ -10768,9 +10434,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "OntologyTermCandidate",
         "type": "object"
       },
@@ -10816,12 +10480,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "kind",
-          "permissions"
-        ],
+        "required": ["id", "name", "kind", "permissions"],
         "title": "Owner",
         "type": "object"
       },
@@ -10844,11 +10503,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "data",
-          "count",
-          "total"
-        ],
+        "required": ["data", "count", "total"],
         "title": "PagedListResponse[ColumnAttribute]",
         "type": "object"
       },
@@ -10871,11 +10526,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "data",
-          "count",
-          "total"
-        ],
+        "required": ["data", "count", "total"],
         "title": "PagedListResponse[CustomAnalysis]",
         "type": "object"
       },
@@ -10898,11 +10549,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "data",
-          "count",
-          "total"
-        ],
+        "required": ["data", "count", "total"],
         "title": "PagedListResponse[ParsingRunSummary]",
         "type": "object"
       },
@@ -10925,11 +10572,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "data",
-          "count",
-          "total"
-        ],
+        "required": ["data", "count", "total"],
         "title": "PagedListResponse[ParsingTask]",
         "type": "object"
       },
@@ -10952,11 +10595,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "data",
-          "count",
-          "total"
-        ],
+        "required": ["data", "count", "total"],
         "title": "PagedListResponse[PqlAnalysis]",
         "type": "object"
       },
@@ -10979,11 +10618,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "data",
-          "count",
-          "total"
-        ],
+        "required": ["data", "count", "total"],
         "title": "PagedListResponse[Rule]",
         "type": "object"
       },
@@ -11006,11 +10641,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "data",
-          "count",
-          "total"
-        ],
+        "required": ["data", "count", "total"],
         "title": "PagedListResponse[SqlAttribute]",
         "type": "object"
       },
@@ -11033,11 +10664,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "data",
-          "count",
-          "total"
-        ],
+        "required": ["data", "count", "total"],
         "title": "PagedListResponse[TagItem]",
         "type": "object"
       },
@@ -11060,11 +10687,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "data",
-          "count",
-          "total"
-        ],
+        "required": ["data", "count", "total"],
         "title": "PagedListResponse[Tag]",
         "type": "object"
       },
@@ -11096,11 +10719,7 @@
             "$ref": "#/components/schemas/ZoneChip"
           }
         },
-        "required": [
-          "zone",
-          "graph",
-          "summary"
-        ],
+        "required": ["zone", "graph", "summary"],
         "title": "PairModeAnalysis",
         "type": "object"
       },
@@ -11289,10 +10908,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "mode",
-          "state"
-        ],
+        "required": ["mode", "state"],
         "title": "ParsingCapabilities",
         "type": "object"
       },
@@ -11350,9 +10966,7 @@
             "title": "Source Md5"
           }
         },
-        "required": [
-          "file_name"
-        ],
+        "required": ["file_name"],
         "title": "ParsingDocument",
         "type": "object"
       },
@@ -11406,9 +11020,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "path"
-        ],
+        "required": ["path"],
         "title": "ParsingFolderTaskBody",
         "type": "object"
       },
@@ -11481,9 +11093,7 @@
             "title": "Source Name"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "ParsingInstance",
         "type": "object"
       },
@@ -11547,11 +11157,7 @@
             "title": "Source Name"
           }
         },
-        "required": [
-          "id",
-          "document",
-          "run"
-        ],
+        "required": ["id", "document", "run"],
         "title": "ParsingInstanceDetail",
         "type": "object"
       },
@@ -11616,10 +11222,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "task_id",
-          "status"
-        ],
+        "required": ["task_id", "status"],
         "title": "ParsingJob",
         "type": "object"
       },
@@ -11657,10 +11260,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "ParsingProfile",
         "type": "object"
       },
@@ -11903,13 +11503,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "task_id",
-          "document_id",
-          "profile",
-          "status"
-        ],
+        "required": ["id", "task_id", "document_id", "profile", "status"],
         "title": "ParsingRunDetail",
         "type": "object"
       },
@@ -12107,13 +11701,7 @@
             "title": "Task Name"
           }
         },
-        "required": [
-          "id",
-          "task_id",
-          "document_id",
-          "profile",
-          "status"
-        ],
+        "required": ["id", "task_id", "document_id", "profile", "status"],
         "title": "ParsingRunSummary",
         "type": "object"
       },
@@ -12124,9 +11712,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "path"
-        ],
+        "required": ["path"],
         "title": "ParsingSourceScanBody",
         "type": "object"
       },
@@ -12233,12 +11819,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "status",
-          "profile"
-        ],
+        "required": ["id", "name", "status", "profile"],
         "title": "ParsingTask",
         "type": "object"
       },
@@ -12451,11 +12032,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "file_name",
-          "status"
-        ],
+        "required": ["id", "file_name", "status"],
         "title": "ParsingTaskDocument",
         "type": "object"
       },
@@ -12501,9 +12078,7 @@
             "title": "Pql"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "PqlAnalysis",
         "type": "object"
       },
@@ -12535,11 +12110,7 @@
             "title": "Zone Id"
           }
         },
-        "required": [
-          "name",
-          "description",
-          "pql"
-        ],
+        "required": ["name", "description", "pql"],
         "title": "PqlAnalysisCreate",
         "type": "object"
       },
@@ -12564,9 +12135,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "database_name"
-        ],
+        "required": ["database_name"],
         "title": "PublicConnection",
         "type": "object"
       },
@@ -12616,11 +12185,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "canvas_id",
-          "source_node_id",
-          "target_node_id"
-        ],
+        "required": ["canvas_id", "source_node_id", "target_node_id"],
         "title": "RelationshipCreate",
         "type": "object"
       },
@@ -12677,10 +12242,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "source_node_id",
-          "target_node_id"
-        ],
+        "required": ["source_node_id", "target_node_id"],
         "title": "RelationshipSnapshot",
         "type": "object"
       },
@@ -12837,11 +12399,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "search_term",
-          "tags"
-        ],
+        "required": ["name", "search_term", "tags"],
         "title": "RuleCreate",
         "type": "object"
       },
@@ -12885,9 +12443,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "RuleTagRef",
         "type": "object"
       },
@@ -12899,9 +12455,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "RuleUpdate",
         "type": "object"
       },
@@ -12958,9 +12512,7 @@
             "title": "Tables Count"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "SchemaSummary",
         "type": "object"
       },
@@ -12980,10 +12532,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "schemas_count",
-          "schemas"
-        ],
+        "required": ["schemas_count", "schemas"],
         "title": "SchemasPayload",
         "type": "object"
       },
@@ -13087,9 +12636,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "SemanticGraphNode",
         "type": "object"
       },
@@ -13351,9 +12898,7 @@
             "title": "Zones"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "SqlAttribute",
         "type": "object"
       },
@@ -13394,12 +12939,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "description",
-          "expression",
-          "term_id"
-        ],
+        "required": ["name", "description", "expression", "term_id"],
         "title": "SqlAttributeCreate",
         "type": "object"
       },
@@ -13451,9 +12991,7 @@
             "title": "Sql"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "SqlAttributeExplorationSql",
         "type": "object"
       },
@@ -13527,10 +13065,7 @@
             "title": "Term Certification"
           }
         },
-        "required": [
-          "data",
-          "term_certification"
-        ],
+        "required": ["data", "term_certification"],
         "title": "SqlAttributePatchResponse",
         "type": "object"
       },
@@ -13560,12 +13095,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "description",
-          "expression",
-          "term_id"
-        ],
+        "required": ["name", "description", "expression", "term_id"],
         "title": "SqlAttributeUpdate",
         "type": "object"
       },
@@ -13599,9 +13129,7 @@
             "title": "Term Id"
           }
         },
-        "required": [
-          "expression"
-        ],
+        "required": ["expression"],
         "title": "SqlAttributeValidate",
         "type": "object"
       },
@@ -13713,9 +13241,7 @@
             "title": "Table Name"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "SqlExplorationColumn",
         "type": "object"
       },
@@ -13750,9 +13276,7 @@
             "title": "Name"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "SqlExplorationCustomAnalysis",
         "type": "object"
       },
@@ -13845,9 +13369,7 @@
             "title": "Term Name"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "SqlExplorationSqlAttribute",
         "type": "object"
       },
@@ -13926,9 +13448,7 @@
             "title": "Table Type"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "SqlExplorationTable",
         "type": "object"
       },
@@ -13945,10 +13465,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "valid",
-          "expression"
-        ],
+        "required": ["valid", "expression"],
         "title": "SqlExpressionValidationResult",
         "type": "object"
       },
@@ -13965,10 +13482,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "valid",
-          "sql"
-        ],
+        "required": ["valid", "sql"],
         "title": "SqlValidationResult",
         "type": "object"
       },
@@ -13979,9 +13493,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "enabled"
-        ],
+        "required": ["enabled"],
         "title": "SsoFederationBody",
         "type": "object"
       },
@@ -13998,10 +13510,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "database_name",
-          "sso_federation"
-        ],
+        "required": ["database_name", "sso_federation"],
         "title": "SsoFederationState",
         "type": "object"
       },
@@ -14014,9 +13523,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "title": "StatusResponse",
         "type": "object"
       },
@@ -14161,9 +13668,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "TableExplorationTerm",
         "type": "object"
       },
@@ -14199,13 +13704,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "table_id",
-          "columns",
-          "rows",
-          "row_count",
-          "truncated"
-        ],
+        "required": ["table_id", "columns", "rows", "row_count", "truncated"],
         "title": "TablePreview",
         "type": "object"
       },
@@ -14229,9 +13728,7 @@
             "title": "Sql"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "TableSqlQuery",
         "type": "object"
       },
@@ -14361,9 +13858,7 @@
             "title": "Terms Count"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "TableSummary",
         "type": "object"
       },
@@ -14412,12 +13907,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "created",
-          "modified"
-        ],
+        "required": ["id", "name", "created", "modified"],
         "title": "Tag",
         "type": "object"
       },
@@ -14434,10 +13924,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "TagChip",
         "type": "object"
       },
@@ -14448,9 +13935,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "TagCreate",
         "type": "object"
       },
@@ -14551,12 +14036,7 @@
             "$ref": "#/components/schemas/TagTargetType"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "type",
-          "tagged"
-        ],
+        "required": ["id", "name", "type", "tagged"],
         "title": "TagItem",
         "type": "object"
       },
@@ -14573,10 +14053,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "title": "TagItemRule",
         "type": "object"
       },
@@ -14591,10 +14068,7 @@
             "$ref": "#/components/schemas/TagTargetType"
           }
         },
-        "required": [
-          "type",
-          "id"
-        ],
+        "required": ["type", "id"],
         "title": "TagTarget",
         "type": "object"
       },
@@ -14618,9 +14092,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "TagUpdate",
         "type": "object"
       },
@@ -14727,9 +14199,7 @@
             "title": "Zones"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "Term",
         "type": "object"
       },
@@ -14746,10 +14216,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "term_id",
-          "count"
-        ],
+        "required": ["term_id", "count"],
         "title": "TermCountEntry",
         "type": "object"
       },
@@ -14934,9 +14401,7 @@
             "title": "Zones"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "TermDetail",
         "type": "object"
       },
@@ -15048,9 +14513,7 @@
             "title": "Table Type"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "TermExplorationTable",
         "type": "object"
       },
@@ -15178,9 +14641,7 @@
             "title": "Zones"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "TermListItem",
         "type": "object"
       },
@@ -15215,9 +14676,7 @@
             "title": "Name"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "TermSummary",
         "type": "object"
       },
@@ -15263,9 +14722,7 @@
             "title": "Schema Id"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "TermTable",
         "type": "object"
       },
@@ -15424,11 +14881,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError",
         "type": "object"
       },
@@ -15551,9 +15004,7 @@
             "title": "Name"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "Zone",
         "type": "object"
       },
@@ -15629,9 +15080,7 @@
             "title": "Name"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "ZoneChip",
         "type": "object"
       },
@@ -15664,11 +15113,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "color",
-          "items"
-        ],
+        "required": ["name", "color", "items"],
         "title": "ZoneCreate",
         "type": "object"
       },
@@ -15687,11 +15132,7 @@
           },
           "permission": {
             "default": "read",
-            "enum": [
-              "read",
-              "edit",
-              "manage"
-            ],
+            "enum": ["read", "edit", "manage"],
             "title": "Permission",
             "type": "string"
           },
@@ -15700,18 +15141,12 @@
             "type": "string"
           },
           "subject_type": {
-            "enum": [
-              "user",
-              "department"
-            ],
+            "enum": ["user", "department"],
             "title": "Subject Type",
             "type": "string"
           }
         },
-        "required": [
-          "subject_type",
-          "subject_id"
-        ],
+        "required": ["subject_type", "subject_id"],
         "title": "ZoneGrantInput",
         "type": "object"
       },
@@ -15746,9 +15181,7 @@
             "title": "Name"
           }
         },
-        "required": [
-          "id"
-        ],
+        "required": ["id"],
         "title": "ZoneItem",
         "type": "object"
       },
@@ -15759,9 +15192,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "enabled"
-        ],
+        "required": ["enabled"],
         "title": "ZoneStatusUpdate",
         "type": "object"
       },
@@ -16054,9 +15485,7 @@
           }
         },
         "summary": "List Departments",
-        "tags": [
-          "access"
-        ]
+        "tags": ["access"]
       },
       "post": {
         "description": "Create a department. Requires admin.",
@@ -16096,9 +15525,7 @@
           }
         },
         "summary": "Create Department",
-        "tags": [
-          "access"
-        ]
+        "tags": ["access"]
       }
     },
     "/api/access/departments/{dept_id}": {
@@ -16141,9 +15568,7 @@
           }
         },
         "summary": "Delete Department",
-        "tags": [
-          "access"
-        ]
+        "tags": ["access"]
       },
       "patch": {
         "description": "Patch a department and optionally replace its members. Requires admin.",
@@ -16194,9 +15619,7 @@
           }
         },
         "summary": "Update Department",
-        "tags": [
-          "access"
-        ]
+        "tags": ["access"]
       }
     },
     "/api/access/departments/{dept_id}/members": {
@@ -16249,9 +15672,7 @@
           }
         },
         "summary": "Replace Department Members",
-        "tags": [
-          "access"
-        ]
+        "tags": ["access"]
       }
     },
     "/api/access/me": {
@@ -16273,9 +15694,7 @@
           }
         },
         "summary": "Get My Access",
-        "tags": [
-          "access"
-        ]
+        "tags": ["access"]
       }
     },
     "/api/access/users": {
@@ -16297,9 +15716,7 @@
           }
         },
         "summary": "List Access Users",
-        "tags": [
-          "access"
-        ]
+        "tags": ["access"]
       }
     },
     "/api/access/users/{user_id}/departments": {
@@ -16352,9 +15769,7 @@
           }
         },
         "summary": "Replace User Departments",
-        "tags": [
-          "access"
-        ]
+        "tags": ["access"]
       }
     },
     "/api/chat/cancel": {
@@ -16396,9 +15811,7 @@
           }
         },
         "summary": "Chat Cancel",
-        "tags": [
-          "chat"
-        ]
+        "tags": ["chat"]
       }
     },
     "/api/chat/completions": {
@@ -16438,9 +15851,7 @@
           }
         },
         "summary": "Chat Completions",
-        "tags": [
-          "chat"
-        ]
+        "tags": ["chat"]
       }
     },
     "/api/chat/watch": {
@@ -16482,9 +15893,7 @@
           }
         },
         "summary": "Chat Watch",
-        "tags": [
-          "chat"
-        ]
+        "tags": ["chat"]
       }
     },
     "/api/columns/{table_id}": {
@@ -16558,10 +15967,7 @@
           }
         },
         "summary": "List Columns By Table",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       }
     },
     "/api/connections": {
@@ -16581,9 +15987,7 @@
           }
         },
         "summary": "List Connections",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       },
       "post": {
         "description": "Register a database connection and return it credential-free.\n\nThe connection is validated on the way in; anything the driver rejects comes\nback as 422 with the failure message rather than a 500. Call\n``POST /connections/test`` first to check credentials and list the schemas\navailable for the picker.",
@@ -16621,9 +16025,7 @@
           }
         },
         "summary": "Create Connection",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/api": {
@@ -16663,9 +16065,7 @@
           }
         },
         "summary": "Create Api Connection",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/api/preview": {
@@ -16705,9 +16105,7 @@
           }
         },
         "summary": "Preview Api Source",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/file": {
@@ -16747,9 +16145,7 @@
           }
         },
         "summary": "Create File Connection",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/file-path": {
@@ -16789,9 +16185,7 @@
           }
         },
         "summary": "Create File Connection From Path",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/file/browse": {
@@ -16841,9 +16235,7 @@
           }
         },
         "summary": "Browse File Source",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/file/preview": {
@@ -16883,9 +16275,7 @@
           }
         },
         "summary": "Preview File Upload",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/file/preview-path": {
@@ -16925,9 +16315,7 @@
           }
         },
         "summary": "Preview File Source",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/source": {
@@ -16948,9 +16336,7 @@
           }
         },
         "summary": "Is Env Source",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/test": {
@@ -16990,9 +16376,7 @@
           }
         },
         "summary": "Test Connection",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/{database_name}": {
@@ -17035,9 +16419,7 @@
           }
         },
         "summary": "Delete Connection",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       },
       "put": {
         "description": "Rewrite a connection's settings and return it credential-free.\n\n``database`` and ``type`` are the connection's identity and cannot change \u2014\nsending different ones is a 422. Credentials left blank keep their stored\nvalue, since the UI is never given them to send back. Re-ingest is\ntriggered only when the ``schemas`` allowlist changed.\n\n404 when no connection carries that ``database_name``.",
@@ -17088,9 +16470,7 @@
           }
         },
         "summary": "Update Connection",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/{database_name}/api": {
@@ -17143,9 +16523,7 @@
           }
         },
         "summary": "Update Api Connection",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/{database_name}/file": {
@@ -17198,9 +16576,7 @@
           }
         },
         "summary": "Replace File Dataset",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/{database_name}/file-path": {
@@ -17253,9 +16629,7 @@
           }
         },
         "summary": "Replace File Dataset From Path",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/{database_name}/refresh": {
@@ -17298,9 +16672,7 @@
           }
         },
         "summary": "Refresh Connection",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/connections/{database_name}/sso-federation": {
@@ -17353,9 +16725,7 @@
           }
         },
         "summary": "Set Sso Federation",
-        "tags": [
-          "connections"
-        ]
+        "tags": ["connections"]
       }
     },
     "/api/custom-analyses": {
@@ -17438,10 +16808,7 @@
           }
         },
         "summary": "List Custom Analyses",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       },
       "post": {
         "description": "Create a new CustomAnalysis with its Sql node.\n\nStrict insert: input shape is enforced by :class:`CustomAnalysisCreate`\nand the frontend is responsible for trimming and rejecting blank\nvalues before sending. Updating an existing analysis goes through\n``PUT /custom-analyses/{analysis_id}``.\n\nReturns 409 when ``name`` or ``sql`` is already used by another\nCustomAnalysis (both are unique natural keys), and 422 when the SQL\ncan't be parsed against the current catalog (no recognised tables) \u2014\nwithout those references the analysis would be invisible to\nretrieval.",
@@ -17479,10 +16846,7 @@
           }
         },
         "summary": "Create Custom Analysis",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       }
     },
     "/api/custom-analyses/validate": {
@@ -17522,10 +16886,7 @@
           }
         },
         "summary": "Validate Custom Analysis Sql",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       }
     },
     "/api/custom-analyses/{analysis_id}": {
@@ -17566,10 +16927,7 @@
           }
         },
         "summary": "Delete Custom Analysis",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       },
       "put": {
         "description": "Replace a CustomAnalysis (matched by id) and re-link its Sql node.\n\nReturns 404 when no CustomAnalysis with ``analysis_id`` exists, 409\nwhen ``name`` or ``sql`` is already taken by a different\nCustomAnalysis, and 422 when the SQL can't be parsed against the\ncurrent catalog \u2014 all surface the failure to the UI without\nproducing an inconsistent graph.",
@@ -17618,10 +16976,7 @@
           }
         },
         "summary": "Update Custom Analysis",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       }
     },
     "/api/datasources/dbs": {
@@ -17641,10 +16996,7 @@
           }
         },
         "summary": "List Databases",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       }
     },
     "/api/erd/areas": {
@@ -17684,9 +17036,7 @@
           }
         },
         "summary": "Post Area",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/areas/{area_id}": {
@@ -17727,9 +17077,7 @@
           }
         },
         "summary": "Remove Area",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       },
       "patch": {
         "description": "Move, resize, rename or recolour a grouping rectangle.",
@@ -17778,9 +17126,7 @@
           }
         },
         "summary": "Patch Area",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/assistant": {
@@ -17820,9 +17166,7 @@
           }
         },
         "summary": "Erd Assistant",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/canvases/{zone_id}": {
@@ -17863,9 +17207,7 @@
           }
         },
         "summary": "Get Canvas",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       },
       "patch": {
         "description": "Persist the canvas pan/zoom so the next visit opens at the same view.",
@@ -17914,9 +17256,7 @@
           }
         },
         "summary": "Patch Canvas",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/canvases/{zone_id}/export": {
@@ -17979,9 +17319,7 @@
           }
         },
         "summary": "Export Canvas",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/canvases/{zone_id}/import": {
@@ -18032,9 +17370,7 @@
           }
         },
         "summary": "Import Canvas",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/canvases/{zone_id}/ontology-candidates": {
@@ -18075,9 +17411,7 @@
           }
         },
         "summary": "Get Ontology Candidates",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/canvases/{zone_id}/ontology-candidates/apply": {
@@ -18128,9 +17462,7 @@
           }
         },
         "summary": "Apply Ontology Candidates",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/canvases/{zone_id}/state": {
@@ -18181,9 +17513,7 @@
           }
         },
         "summary": "Put Canvas State",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/canvases/{zone_id}/versions": {
@@ -18224,9 +17554,7 @@
           }
         },
         "summary": "List Versions",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       },
       "post": {
         "description": "Snapshot the canvas as it stands, under a user-provided label.",
@@ -18293,9 +17621,7 @@
           }
         },
         "summary": "Create Version",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/nodes": {
@@ -18335,9 +17661,7 @@
           }
         },
         "summary": "Post Node",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/nodes/{node_id}": {
@@ -18378,9 +17702,7 @@
           }
         },
         "summary": "Remove Node",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       },
       "patch": {
         "description": "Move, resize or collapse one table card, or annotate its columns.\n\nColumn aliases (``column_notes``) and the table note are accepted for\ncatalog tables as well; renaming or rewriting columns is not. A\n``column_order`` and ``width`` are presentation-only and work for either\nkind of table.",
@@ -18429,9 +17751,7 @@
           }
         },
         "summary": "Patch Node",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/nodes/{node_id}/restore": {
@@ -18472,9 +17792,7 @@
           }
         },
         "summary": "Restore Hidden Node",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/notes": {
@@ -18514,9 +17832,7 @@
           }
         },
         "summary": "Post Note",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/notes/{note_id}": {
@@ -18557,9 +17873,7 @@
           }
         },
         "summary": "Remove Note",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       },
       "patch": {
         "description": "Move, resize or retype a sticky note.",
@@ -18608,9 +17922,7 @@
           }
         },
         "summary": "Patch Note",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/parse-ddl": {
@@ -18650,9 +17962,7 @@
           }
         },
         "summary": "Parse Ddl",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/relationships": {
@@ -18692,9 +18002,7 @@
           }
         },
         "summary": "Post Relationship",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/relationships/{rel_id}": {
@@ -18735,9 +18043,7 @@
           }
         },
         "summary": "Remove Relationship",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       },
       "patch": {
         "description": "Change a relationship's cardinality, label or column pair.",
@@ -18786,9 +18092,7 @@
           }
         },
         "summary": "Patch Relationship",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/versions/{version_id}": {
@@ -18829,9 +18133,7 @@
           }
         },
         "summary": "Remove Version",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/erd/versions/{version_id}/restore": {
@@ -18872,9 +18174,7 @@
           }
         },
         "summary": "Restore Version",
-        "tags": [
-          "erd"
-        ]
+        "tags": ["erd"]
       }
     },
     "/api/exploration/column-attributes/{attr_id}/details": {
@@ -18948,9 +18248,7 @@
           }
         },
         "summary": "Get Column Attribute Exploration Details",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/exploration/columns/{column_id}/details": {
@@ -18991,9 +18289,7 @@
           }
         },
         "summary": "Get Column Exploration Details",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/exploration/edges": {
@@ -19013,9 +18309,7 @@
           }
         },
         "summary": "List Data Exploration Edges",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/exploration/graph": {
@@ -19096,9 +18390,7 @@
           }
         },
         "summary": "Get Data Exploration Graph",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/exploration/nodes/{node_id}/relationships": {
@@ -19124,10 +18416,7 @@
             "required": true,
             "schema": {
               "description": "Which graph to walk: ``data`` relates tables sharing a SQL query or a foreign key, ``semantic`` relates terms sharing a table.",
-              "enum": [
-                "data",
-                "semantic"
-              ],
+              "enum": ["data", "semantic"],
               "title": "Layer",
               "type": "string"
             }
@@ -19189,9 +18478,7 @@
           }
         },
         "summary": "Get Exploration Node Relationships",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/exploration/pair-mode": {
@@ -19234,9 +18521,7 @@
           }
         },
         "summary": "Get Pair Mode Analysis",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/exploration/semantic-graph": {
@@ -19317,9 +18602,7 @@
           }
         },
         "summary": "Get Semantic Exploration Graph",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/exploration/sql-attributes/{attr_id}/details": {
@@ -19360,9 +18643,7 @@
           }
         },
         "summary": "Get Sql Attribute Exploration Details",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/exploration/sql/{sql_id}/details": {
@@ -19403,9 +18684,7 @@
           }
         },
         "summary": "Get Sql Exploration Details",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/exploration/tables/zones": {
@@ -19425,9 +18704,7 @@
           }
         },
         "summary": "List Table Zones",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/exploration/tables/{table_id}/details": {
@@ -19501,9 +18778,7 @@
           }
         },
         "summary": "Get Table Exploration Details",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/exploration/tables/{table_id}/preview": {
@@ -19558,9 +18833,7 @@
           }
         },
         "summary": "Get Table Preview",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/exploration/terms/{term_id}/details": {
@@ -19634,9 +18907,7 @@
           }
         },
         "summary": "Get Term Exploration Details",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/exploration/terms/{term_id}/path/{other_term_id}": {
@@ -19686,9 +18957,7 @@
           }
         },
         "summary": "Get Semantic Link Path",
-        "tags": [
-          "exploration"
-        ]
+        "tags": ["exploration"]
       }
     },
     "/api/groups": {
@@ -19708,9 +18977,7 @@
           }
         },
         "summary": "List Groups",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       },
       "post": {
         "description": "Create a group and its members. Requires the admin role.\n\nThe caller is the gateway's identity header. A missing header is 401; a\ncaller who is not an admin is 403.\n\n409 when another group already holds the name, compared\ncase-insensitively on the trimmed value. 400 when a member id is not an\naccount, or when the name, color, or role is missing or invalid.",
@@ -19748,9 +19015,7 @@
           }
         },
         "summary": "Create Group",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       }
     },
     "/api/groups/{group_id}": {
@@ -19791,9 +19056,7 @@
           }
         },
         "summary": "Delete Group",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       },
       "get": {
         "description": "Return one group. Requires admin.\n\n404 for an unknown id rather than an empty group: the caller asked for a\nrow it expects to exist.",
@@ -19832,9 +19095,7 @@
           }
         },
         "summary": "Get Group",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       },
       "patch": {
         "description": "Update a group's fields and, when sent, replace its members.\n\nRequires the admin role, for the same reason create does.\n\nOmitting ``user_ids`` leaves membership alone. Sending a list replaces\nit, and an empty list clears it. A patch that names no field returns the\ngroup unchanged.\n\n404 for an unknown id, 409 for a name another group holds, 400 for an\ninvalid field or a member id that is not an account.",
@@ -19883,9 +19144,7 @@
           }
         },
         "summary": "Update Group",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       }
     },
     "/api/knowledge/actions/{action_id}": {
@@ -19925,9 +19184,7 @@
           }
         },
         "summary": "Delete Knowledge Action",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "patch": {
         "operationId": "update_knowledge_action_api_knowledge_actions__action_id__patch",
@@ -19975,9 +19232,7 @@
           }
         },
         "summary": "Update Knowledge Action",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/actions/{action_id}/capabilities": {
@@ -20027,9 +19282,7 @@
           }
         },
         "summary": "Link Action Capability",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/actions/{action_id}/capabilities/{capability_id}": {
@@ -20078,9 +19331,7 @@
           }
         },
         "summary": "Unlink Action Capability",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/actions/{action_id}/execute": {
@@ -20130,9 +19381,7 @@
           }
         },
         "summary": "Execute Knowledge Action",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/capabilities/{capability_id}": {
@@ -20172,9 +19421,7 @@
           }
         },
         "summary": "Delete Knowledge Capability",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "patch": {
         "operationId": "update_knowledge_capability_api_knowledge_capabilities__capability_id__patch",
@@ -20222,9 +19469,7 @@
           }
         },
         "summary": "Update Knowledge Capability",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/concept-groups/{group_id}": {
@@ -20264,9 +19509,7 @@
           }
         },
         "summary": "Delete Knowledge Concept Group",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "patch": {
         "operationId": "update_knowledge_concept_group_api_knowledge_concept_groups__group_id__patch",
@@ -20314,9 +19557,7 @@
           }
         },
         "summary": "Update Knowledge Concept Group",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/concepts/{concept_id}": {
@@ -20356,9 +19597,7 @@
           }
         },
         "summary": "Delete Knowledge Concept",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "patch": {
         "operationId": "update_knowledge_concept_api_knowledge_concepts__concept_id__patch",
@@ -20406,9 +19645,7 @@
           }
         },
         "summary": "Update Knowledge Concept",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/concepts/{concept_id}/links": {
@@ -20458,9 +19695,7 @@
           }
         },
         "summary": "Link Knowledge Concept",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/data-targets": {
@@ -20509,9 +19744,7 @@
           }
         },
         "summary": "List Knowledge Data Targets",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/documents/{document_id}": {
@@ -20551,9 +19784,7 @@
           }
         },
         "summary": "Delete Knowledge Document",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/documents/{document_id}/extract": {
@@ -20593,9 +19824,7 @@
           }
         },
         "summary": "Reextract Knowledge Document",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/eval-cases/{case_id}": {
@@ -20635,9 +19864,7 @@
           }
         },
         "summary": "Delete Eval Case",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/facts/{fact_id}": {
@@ -20677,9 +19904,7 @@
           }
         },
         "summary": "Delete Knowledge Fact",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "patch": {
         "operationId": "update_knowledge_fact_api_knowledge_facts__fact_id__patch",
@@ -20727,9 +19952,7 @@
           }
         },
         "summary": "Update Knowledge Fact",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/links/{link_id}": {
@@ -20769,9 +19992,7 @@
           }
         },
         "summary": "Unlink Knowledge Concept",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/metrics/{metric_id}": {
@@ -20811,9 +20032,7 @@
           }
         },
         "summary": "Delete Knowledge Metric",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "patch": {
         "operationId": "update_knowledge_metric_api_knowledge_metrics__metric_id__patch",
@@ -20861,9 +20080,7 @@
           }
         },
         "summary": "Update Knowledge Metric",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/metrics/{metric_id}/preview": {
@@ -20903,9 +20120,7 @@
           }
         },
         "summary": "Preview Knowledge Metric",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/metrics/{metric_id}/validate": {
@@ -20945,9 +20160,7 @@
           }
         },
         "summary": "Validate Knowledge Metric",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks": {
@@ -20966,9 +20179,7 @@
           }
         },
         "summary": "List Knowledge Networks",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "post": {
         "operationId": "create_knowledge_network_api_knowledge_networks_post",
@@ -21005,9 +20216,7 @@
           }
         },
         "summary": "Create Knowledge Network",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}": {
@@ -21047,9 +20256,7 @@
           }
         },
         "summary": "Delete Knowledge Network",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "get": {
         "operationId": "get_knowledge_network_api_knowledge_networks__network_id__get",
@@ -21087,9 +20294,7 @@
           }
         },
         "summary": "Get Knowledge Network",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "patch": {
         "operationId": "update_knowledge_network_api_knowledge_networks__network_id__patch",
@@ -21137,9 +20342,7 @@
           }
         },
         "summary": "Update Knowledge Network",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/actions": {
@@ -21179,9 +20382,48 @@
           }
         },
         "summary": "List Knowledge Actions",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
+      }
+    },
+    "/api/knowledge/networks/{network_id}/bridge": {
+      "get": {
+        "description": "Return the semantic-bridge coverage for one knowledge network.\n\nThe bridge has three independently useful lanes:\n\n* document concept -> glossary term or catalog table;\n* knowledge metric -> SQL attribute;\n* knowledge action -> executable capability.\n\nAn item is linked when it has at least one target in its lane. The summary\nis a coverage signal, not a certification: a linked item can still be\ndraft or unreviewed.",
+        "operationId": "get_knowledge_bridge_api_knowledge_networks__network_id__bridge_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeBridgeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Knowledge Bridge",
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/capabilities": {
@@ -21221,9 +20463,7 @@
           }
         },
         "summary": "List Knowledge Capabilities",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "post": {
         "operationId": "create_knowledge_capability_api_knowledge_networks__network_id__capabilities_post",
@@ -21271,9 +20511,7 @@
           }
         },
         "summary": "Create Knowledge Capability",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/concept-groups": {
@@ -21313,9 +20551,7 @@
           }
         },
         "summary": "List Knowledge Concept Groups",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "post": {
         "operationId": "create_knowledge_concept_group_api_knowledge_networks__network_id__concept_groups_post",
@@ -21363,9 +20599,7 @@
           }
         },
         "summary": "Create Knowledge Concept Group",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/concepts": {
@@ -21405,9 +20639,7 @@
           }
         },
         "summary": "List Knowledge Concepts",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/documents": {
@@ -21447,9 +20679,7 @@
           }
         },
         "summary": "List Knowledge Documents",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "post": {
         "operationId": "add_knowledge_document_api_knowledge_networks__network_id__documents_post",
@@ -21497,9 +20727,7 @@
           }
         },
         "summary": "Add Knowledge Document",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/eval-cases": {
@@ -21539,9 +20767,7 @@
           }
         },
         "summary": "List Eval Cases",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "post": {
         "operationId": "create_eval_case_api_knowledge_networks__network_id__eval_cases_post",
@@ -21589,9 +20815,7 @@
           }
         },
         "summary": "Create Eval Case",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/eval-runs": {
@@ -21631,9 +20855,7 @@
           }
         },
         "summary": "List Eval Runs",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "post": {
         "operationId": "create_eval_run_api_knowledge_networks__network_id__eval_runs_post",
@@ -21671,9 +20893,7 @@
           }
         },
         "summary": "Create Eval Run",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/executions": {
@@ -21713,9 +20933,7 @@
           }
         },
         "summary": "List Action Executions",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/export": {
@@ -21753,9 +20971,7 @@
           }
         },
         "summary": "Export Knowledge Network",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/facts": {
@@ -21795,9 +21011,7 @@
           }
         },
         "summary": "List Knowledge Facts",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/grant-audit": {
@@ -21837,9 +21051,7 @@
           }
         },
         "summary": "List Knowledge Network Grant Audit",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/grants": {
@@ -21879,9 +21091,7 @@
           }
         },
         "summary": "Get Knowledge Network Grants",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "put": {
         "operationId": "replace_knowledge_network_grants_api_knowledge_networks__network_id__grants_put",
@@ -21929,9 +21139,7 @@
           }
         },
         "summary": "Replace Knowledge Network Grants",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/graph": {
@@ -21971,9 +21179,7 @@
           }
         },
         "summary": "Get Knowledge Graph",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/import": {
@@ -22023,9 +21229,7 @@
           }
         },
         "summary": "Import Knowledge Network",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/metrics": {
@@ -22065,9 +21269,7 @@
           }
         },
         "summary": "List Knowledge Metrics",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "post": {
         "operationId": "create_knowledge_metric_api_knowledge_networks__network_id__metrics_post",
@@ -22115,9 +21317,7 @@
           }
         },
         "summary": "Create Knowledge Metric",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/query": {
@@ -22167,9 +21367,7 @@
           }
         },
         "summary": "Query Knowledge Graph",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/relations": {
@@ -22209,9 +21407,7 @@
           }
         },
         "summary": "List Knowledge Relations",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/risks": {
@@ -22251,9 +21447,7 @@
           }
         },
         "summary": "List Knowledge Risks",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/networks/{network_id}/versions": {
@@ -22293,9 +21487,7 @@
           }
         },
         "summary": "List Knowledge Versions",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "post": {
         "operationId": "create_knowledge_version_api_knowledge_networks__network_id__versions_post",
@@ -22343,9 +21535,7 @@
           }
         },
         "summary": "Create Knowledge Version",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/relations/{relation_id}": {
@@ -22385,9 +21575,7 @@
           }
         },
         "summary": "Delete Knowledge Relation",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "patch": {
         "operationId": "update_knowledge_relation_api_knowledge_relations__relation_id__patch",
@@ -22435,9 +21623,7 @@
           }
         },
         "summary": "Update Knowledge Relation",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/risks/{risk_id}": {
@@ -22477,9 +21663,7 @@
           }
         },
         "summary": "Delete Knowledge Risk",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       },
       "patch": {
         "operationId": "update_knowledge_risk_api_knowledge_risks__risk_id__patch",
@@ -22527,9 +21711,7 @@
           }
         },
         "summary": "Update Knowledge Risk",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/search": {
@@ -22569,9 +21751,7 @@
           }
         },
         "summary": "Search Knowledge Route",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/versions/{version_id}/diff": {
@@ -22611,9 +21791,7 @@
           }
         },
         "summary": "Diff Knowledge Version",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/knowledge/versions/{version_id}/restore": {
@@ -22653,9 +21831,7 @@
           }
         },
         "summary": "Restore Knowledge Version",
-        "tags": [
-          "knowledge"
-        ]
+        "tags": ["knowledge"]
       }
     },
     "/api/model/export": {
@@ -22701,9 +21877,7 @@
           }
         },
         "summary": "Export Model",
-        "tags": [
-          "model-interchange"
-        ]
+        "tags": ["model-interchange"]
       }
     },
     "/api/model/import": {
@@ -22764,9 +21938,7 @@
           }
         },
         "summary": "Import Model",
-        "tags": [
-          "model-interchange"
-        ]
+        "tags": ["model-interchange"]
       }
     },
     "/api/nodes/{node_id}": {
@@ -22827,10 +21999,7 @@
           }
         },
         "summary": "Update Node",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       }
     },
     "/api/owners": {
@@ -22850,9 +22019,7 @@
           }
         },
         "summary": "List Owners",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       }
     },
     "/api/parsing/assets/{document}/{kind}/{name}": {
@@ -22909,9 +22076,7 @@
           }
         },
         "summary": "Parsing Asset",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/backends/test": {
@@ -22959,9 +22124,7 @@
           }
         },
         "summary": "Test Parsing Backend",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/capabilities": {
@@ -22981,9 +22144,7 @@
           }
         },
         "summary": "Parsing Capabilities",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/documents": {
@@ -23023,9 +22184,7 @@
           }
         },
         "summary": "Parse Document",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/documents/{document_id}/retry": {
@@ -23067,9 +22226,7 @@
           }
         },
         "summary": "Retry Parsing Document",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/health": {
@@ -23089,9 +22246,7 @@
           }
         },
         "summary": "Parsing Health",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/instances": {
@@ -23133,9 +22288,7 @@
           }
         },
         "summary": "List Parsing Instances",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/instances/{document}/{run}": {
@@ -23187,9 +22340,7 @@
           }
         },
         "summary": "Delete Parsing Instance",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       },
       "get": {
         "description": "One stored run, Markdown and JSON included.",
@@ -23237,9 +22388,7 @@
           }
         },
         "summary": "Get Parsing Instance",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/instances/{document}/{run}/source": {
@@ -23287,9 +22436,7 @@
           }
         },
         "summary": "Get Parsing Instance Source",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/jobs": {
@@ -23329,9 +22476,7 @@
           }
         },
         "summary": "Submit Parsing Job",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/jobs/{task_id}": {
@@ -23372,9 +22517,7 @@
           }
         },
         "summary": "Get Parsing Job",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/layout/test": {
@@ -23422,9 +22565,7 @@
           }
         },
         "summary": "Test Parsing Layout",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/profiles": {
@@ -23444,9 +22585,7 @@
           }
         },
         "summary": "Parsing Profiles",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/runs": {
@@ -23546,9 +22685,7 @@
           }
         },
         "summary": "List Parsing Runs",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/runs/{run_id}": {
@@ -23590,9 +22727,7 @@
           }
         },
         "summary": "Delete Parsing Run",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       },
       "get": {
         "operationId": "get_parsing_run_api_parsing_runs__run_id__get",
@@ -23630,9 +22765,7 @@
           }
         },
         "summary": "Get Parsing Run",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/runs/{run_id}/blocks": {
@@ -23685,9 +22818,7 @@
           }
         },
         "summary": "Update Parsing Blocks",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/runs/{run_id}/export": {
@@ -23726,9 +22857,7 @@
           }
         },
         "summary": "Export Parsing Run",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/runs/{run_id}/images": {
@@ -23769,9 +22898,7 @@
           }
         },
         "summary": "Parsing Run Images",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/runs/{run_id}/page/{page_index}": {
@@ -23819,9 +22946,7 @@
           }
         },
         "summary": "Parsing Run Page",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/runs/{run_id}/previous": {
@@ -23862,9 +22987,7 @@
           }
         },
         "summary": "Get Previous Parsing Run",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/runs/{run_id}/reparse": {
@@ -23905,9 +23028,7 @@
           }
         },
         "summary": "Reparse Parsing Run",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/runs/{run_id}/review": {
@@ -23965,9 +23086,7 @@
           }
         },
         "summary": "Review Parsing Run",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/settings": {
@@ -23987,9 +23106,7 @@
           }
         },
         "summary": "Get Parsing Settings",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/sources": {
@@ -24037,9 +23154,7 @@
           }
         },
         "summary": "Browse Parsing Sources",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/sources/scan": {
@@ -24079,9 +23194,7 @@
           }
         },
         "summary": "Scan Parsing Sources",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/tasks": {
@@ -24165,9 +23278,7 @@
           }
         },
         "summary": "List Parsing Tasks",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       },
       "post": {
         "description": "Create a durable batch task and store each source file.\n\nNothing is parsed in this request: it validates, writes the sources, and\nreturns a task id. The worker picks up the files and writes progress, which\nis what lets a refresh or an API restart keep the task.",
@@ -24205,9 +23316,7 @@
           }
         },
         "summary": "Create Parsing Task",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/tasks/from-folder": {
@@ -24247,9 +23356,7 @@
           }
         },
         "summary": "Create Parsing Task From Folder",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/tasks/{task_id}": {
@@ -24291,9 +23398,7 @@
           }
         },
         "summary": "Delete Parsing Task",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       },
       "get": {
         "operationId": "get_parsing_task_api_parsing_tasks__task_id__get",
@@ -24331,9 +23436,7 @@
           }
         },
         "summary": "Get Parsing Task",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/parsing/tasks/{task_id}/cancel": {
@@ -24373,9 +23476,7 @@
           }
         },
         "summary": "Cancel Parsing Task",
-        "tags": [
-          "parsing"
-        ]
+        "tags": ["parsing"]
       }
     },
     "/api/pql-analyses": {
@@ -24458,10 +23559,7 @@
           }
         },
         "summary": "List Pql Analyses",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       },
       "post": {
         "description": "Create a new PqlAnalysis (verified PQL example) and embed it.\n\nReturns 409 when ``name`` or ``pql`` is already used by another PqlAnalysis.\nThe PQL text is stored as-is \u2014 it is validated against the prediction graph at\npredict time, not here.",
@@ -24499,10 +23597,7 @@
           }
         },
         "summary": "Create Pql Analysis",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       }
     },
     "/api/pql-analyses/{analysis_id}": {
@@ -24543,10 +23638,7 @@
           }
         },
         "summary": "Delete Pql Analysis",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       },
       "put": {
         "description": "Replace a PqlAnalysis (matched by id) and re-embed it.\n\nReturns 404 when no PqlAnalysis with ``analysis_id`` exists, and 409 when\n``name`` or ``pql`` is already taken by a different PqlAnalysis.",
@@ -24595,10 +23687,7 @@
           }
         },
         "summary": "Update Pql Analysis",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       }
     },
     "/api/question-entity-coverage": {
@@ -24638,9 +23727,7 @@
           }
         },
         "summary": "Entity Coverage",
-        "tags": [
-          "metadata"
-        ]
+        "tags": ["metadata"]
       }
     },
     "/api/rules": {
@@ -24723,9 +23810,7 @@
           }
         },
         "summary": "List Rules",
-        "tags": [
-          "rules"
-        ]
+        "tags": ["rules"]
       },
       "post": {
         "description": "Save a rule, and answer with its id.\n\nThe id alone: the dialog that posted the rule closes on success and the\nsettings list re-reads, so a whole rule in the answer would be a copy\nnothing renders. Everything else about a stored rule -- the timestamps, the\nauthor, the tag names -- comes from :func:`list_rules`, read from the row\nrather than from what was posted.\n\nThe filters are stored as the caller sent them, ``exclude_none`` and not a\nfull dump: a filter that was not sent is absent from the stored JSON rather\nthan present as ``null``. It reads back the same either way -- the response\nmodel fills the default -- but the row then says which filters a rule\nactually carries, instead of recording every filter the search has ever\noffered against every rule ever saved.\n\nSaving the rule also *applies* it: the search is replayed and the tags are\nattached to everything it matches, recorded as this rule's doing so a tag's\npage can name the rule that labelled each object. The insert and those\nlabels are one transaction, so a rule that could not label the catalog is\nnot left saved and inert -- the create either produces a rule with its\nlabels or nothing at all. The search that finds them runs before that\ntransaction, holding no write connection and no locks while it does; see\n``domain.rules.find_targets``.\n\n400 for a body that could never be a rule: a blank name, a search term\nshorter than global search accepts, a match option it does not implement,\nor no tags at all. 404 for a tag id that is not a tag. 409 for a name\nanother rule already holds, as renaming answers. 401 when the request\ncarries no identity to attribute the rule to.",
@@ -24763,9 +23848,7 @@
           }
         },
         "summary": "Create Rule",
-        "tags": [
-          "rules"
-        ]
+        "tags": ["rules"]
       }
     },
     "/api/rules/{rule_id}": {
@@ -24818,9 +23901,7 @@
           }
         },
         "summary": "Delete Rule",
-        "tags": [
-          "rules"
-        ]
+        "tags": ["rules"]
       },
       "patch": {
         "description": "Rename a rule.\n\nThe name is all an edit changes -- see :class:`RuleUpdate` for why the\nsearch and the tags are not editable. What the rule has already labelled is\nuntouched: those rows name the rule by id, so the new name appears against\nevery object it labelled under the old one.\n\nAnswers with the whole rule rather than an echo of the name, the way\nrenaming a tag does: the edit also advances ``modified`` and records a\n``modified_by``, so the row the caller just edited is redrawn from this one\nresponse instead of from a re-read.\n\n400 for a blank name. 409 for a name another rule holds -- rule names are\nunique, so that the list's own way of referring to a rule identifies one.\nA rename to the rule's own name is not a conflict, and neither is one that\nonly changes case, which is how a rule created shouting gets fixed. 404 for\nan id that is not stored -- the settings page edits a row from a list it has\nalready read, so a missing rule means that list is stale.\n\nNo 401, unlike the create: an edit is recorded against whoever made it when\nthe request says, and a request that names nobody still renames the rule\nsomebody else created. ``modified_by`` is nullable for exactly that.",
@@ -24869,9 +23950,7 @@
           }
         },
         "summary": "Update Rule",
-        "tags": [
-          "rules"
-        ]
+        "tags": ["rules"]
       }
     },
     "/api/schemas/{db_id}": {
@@ -24920,10 +23999,7 @@
           }
         },
         "summary": "List Schemas By Database",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       }
     },
     "/api/search/global-search": {
@@ -24963,9 +24039,7 @@
           }
         },
         "summary": "Post Global Search",
-        "tags": [
-          "search"
-        ]
+        "tags": ["search"]
       }
     },
     "/api/search/global-search/count": {
@@ -25005,9 +24079,7 @@
           }
         },
         "summary": "Post Global Search Count",
-        "tags": [
-          "search"
-        ]
+        "tags": ["search"]
       }
     },
     "/api/semantic-compilation/reset": {
@@ -25027,9 +24099,7 @@
           }
         },
         "summary": "Reset",
-        "tags": [
-          "semantic-compilation"
-        ]
+        "tags": ["semantic-compilation"]
       }
     },
     "/api/semantic-compilation/status": {
@@ -25049,9 +24119,7 @@
           }
         },
         "summary": "Semantic Status",
-        "tags": [
-          "semantic-compilation"
-        ]
+        "tags": ["semantic-compilation"]
       }
     },
     "/api/semantic-compilation/trigger": {
@@ -25071,9 +24139,7 @@
           }
         },
         "summary": "Trigger",
-        "tags": [
-          "semantic-compilation"
-        ]
+        "tags": ["semantic-compilation"]
       }
     },
     "/api/sql-attributes": {
@@ -25093,9 +24159,7 @@
           }
         },
         "summary": "List Sql Attributes",
-        "tags": [
-          "sql-attributes"
-        ]
+        "tags": ["sql-attributes"]
       },
       "post": {
         "description": "Create a SqlAttribute with its Sql node, linked to a Term.\n\nThe connector is resolved server-side (never chosen by the client \u2014\nsee ``all_ontology/connectors/registry.py``). ``owner_id``, when set,\nnames a user or a group that can edit the catalog; omit it to leave the\nattribute unassigned. The caller is stored as ``created_by`` so the side\npanel can name them. Returns 400 when that id cannot be assigned, 409\nwhen the name is already taken, 422 when the target Term does not exist\nor the SQL can't be parsed.",
@@ -25133,9 +24197,7 @@
           }
         },
         "summary": "Create Sql Attribute",
-        "tags": [
-          "sql-attributes"
-        ]
+        "tags": ["sql-attributes"]
       }
     },
     "/api/sql-attributes/validate": {
@@ -25175,9 +24237,7 @@
           }
         },
         "summary": "Validate Sql Attribute",
-        "tags": [
-          "sql-attributes"
-        ]
+        "tags": ["sql-attributes"]
       }
     },
     "/api/sql-attributes/{attr_id}": {
@@ -25218,9 +24278,7 @@
           }
         },
         "summary": "Delete Sql Attribute",
-        "tags": [
-          "sql-attributes"
-        ]
+        "tags": ["sql-attributes"]
       },
       "get": {
         "description": "One SqlAttribute by id, including its resolved zones.",
@@ -25259,9 +24317,7 @@
           }
         },
         "summary": "Get Sql Attribute",
-        "tags": [
-          "sql-attributes"
-        ]
+        "tags": ["sql-attributes"]
       },
       "patch": {
         "description": "Patch SqlAttribute name/description without touching SQL expression.",
@@ -25310,9 +24366,7 @@
           }
         },
         "summary": "Patch Sql Attribute",
-        "tags": [
-          "sql-attributes"
-        ]
+        "tags": ["sql-attributes"]
       },
       "put": {
         "description": "Replace a SqlAttribute, re-parse SQL, and re-link to a Term.\n\nThe connector is resolved server-side (never chosen by the client \u2014\nsee ``all_ontology/connectors/registry.py``). Returns 404 when no SqlAttribute\nwith that id exists, 409 on name conflict, 422 when the Term doesn't\nexist or SQL can't be parsed. Returns 403 when the caller may not edit\nthis attribute, the same check as the metadata patch.",
@@ -25361,9 +24415,7 @@
           }
         },
         "summary": "Update Sql Attribute",
-        "tags": [
-          "sql-attributes"
-        ]
+        "tags": ["sql-attributes"]
       }
     },
     "/api/sql-attributes/{attr_id}/description-suggestion": {
@@ -25404,9 +24456,7 @@
           }
         },
         "summary": "Get Sql Attribute Description Suggestion",
-        "tags": [
-          "sql-attributes"
-        ]
+        "tags": ["sql-attributes"]
       }
     },
     "/api/tables/{schema_id}": {
@@ -25465,10 +24515,7 @@
           }
         },
         "summary": "List Tables By Schema",
-        "tags": [
-          "datasources",
-          "connectors"
-        ]
+        "tags": ["datasources", "connectors"]
       }
     },
     "/api/tags": {
@@ -25551,9 +24598,7 @@
           }
         },
         "summary": "List Tags",
-        "tags": [
-          "tags"
-        ]
+        "tags": ["tags"]
       },
       "post": {
         "description": "Create a tag.\n\nThe author is read from the gateway's identity header rather than taken\nfrom the body: the Next.js route in front of this one has already resolved\nthe session, so the header is the one account that can be credited, and a\nbody field would let a caller name somebody else.\n\n``required=False`` because the identity is audit rather than authorization\n-- the route's permission gate is the gateway's -- so a direct call on the\nprivate network still creates the tag, with no author recorded.",
@@ -25591,9 +24636,7 @@
           }
         },
         "summary": "Create Tag",
-        "tags": [
-          "tags"
-        ]
+        "tags": ["tags"]
       }
     },
     "/api/tags/{tag_id}": {
@@ -25634,9 +24677,7 @@
           }
         },
         "summary": "Delete Tag",
-        "tags": [
-          "tags"
-        ]
+        "tags": ["tags"]
       },
       "get": {
         "description": "Return one tag.\n\nThe tag alone: what it labels is a list of its own, read a page at a time\nfrom :func:`list_tag_targets` below. A tag can label the whole catalog --\nthat is what a rule does to one -- so a detail that carried every object\nwould grow without bound while the page it feeds shows a screenful.\n\n404 for an unknown id, rather than an empty tag: the page opens this from a\nrow it has already read, so a missing tag means the row is stale, and a\nblank page titled with nothing would look like a tag with no items.",
@@ -25675,9 +24716,7 @@
           }
         },
         "summary": "Get Tag",
-        "tags": [
-          "tags"
-        ]
+        "tags": ["tags"]
       },
       "patch": {
         "description": "Rename a tag.\n\nAnswers with the whole tag rather than an echo of the name, because the\nrename has also advanced ``modified`` and recorded a ``modified_by`` \u2014 so\nthe settings page redraws the row it just edited from this one response\ninstead of re-reading the list to find out what they became.\n\nThe editor is read from the gateway's identity header, for the reason\n``create_tag`` reads the author from it.\n\n404 for an unknown id and 409 for a name another tag holds, as create and\ndelete answer: the page renames from a list it has already read, so either\nmeans that list is stale.\n\nA rename to the tag's own name is not a 409 \u2014 see ``update_tag`` in the DAL\n\u2014 and neither is one that only changes case, which is the ordinary way to\nfix a tag that was created shouting.\n\n403 for the system-managed ``PII`` tag, which PII detection finds by name.",
@@ -25726,9 +24765,7 @@
           }
         },
         "summary": "Update Tag",
-        "tags": [
-          "tags"
-        ]
+        "tags": ["tags"]
       }
     },
     "/api/tags/{tag_id}/targets": {
@@ -25802,9 +24839,7 @@
           }
         },
         "summary": "List Tag Targets",
-        "tags": [
-          "tags"
-        ]
+        "tags": ["tags"]
       },
       "post": {
         "description": "Label one object with this tag.\n\nBoth write routes live here rather than on ``/terms/{id}/tags`` and its two\nattribute equivalents, because ``tag_target`` is one polymorphic table and\nsix routes over three routers would spread that polymorphism across the\ncodebase to say the same thing.\n\nAnswers with the **object's** tags, so the page that added a chip redraws\nits whole set from one response instead of trusting its own optimistic\nedit. Labelling something that already carries the tag is a 201 with the\nsame body: two clicks on one tag are one intention.\n\nWho applied the label is read from the gateway's identity header, for the\nreason ``create_tag`` reads an author from it, and shows in the \"Tagged By\"\ncolumn on the tag's page. ``required=False`` for the same reason too: it is\naudit rather than authorization, so a direct call on the private network\nstill labels the object -- recorded as the deployment's own doing, which\nthat column names \"Auto Generated\". See ``attach_tag`` in the DAL.\n\nRe-labelling something keeps the source it already had, so this does not\ntake a label away from the rule that applied it -- see ``attach_tag`` in the\nDAL.\n\n409 for a column or SQL attribute that is not a property of any term: it\nexists, so a 404 would be a lie, but it is unreachable \u2014 every list of\nattributes goes through the term that owns them \u2014 and a tag on it could\nnever be seen or taken off again.",
@@ -25853,9 +24888,7 @@
           }
         },
         "summary": "Attach Tag",
-        "tags": [
-          "tags"
-        ]
+        "tags": ["tags"]
       }
     },
     "/api/tags/{tag_id}/targets/{target_type}/{item_id}": {
@@ -25913,9 +24946,7 @@
           }
         },
         "summary": "Detach Tag",
-        "tags": [
-          "tags"
-        ]
+        "tags": ["tags"]
       }
     },
     "/api/terms": {
@@ -25998,9 +25029,7 @@
           }
         },
         "summary": "List Terms",
-        "tags": [
-          "terms"
-        ]
+        "tags": ["terms"]
       }
     },
     "/api/terms/{term_id}": {
@@ -26041,9 +25070,7 @@
           }
         },
         "summary": "Get Term",
-        "tags": [
-          "terms"
-        ]
+        "tags": ["terms"]
       },
       "patch": {
         "description": "Update a Term and invalidate dependent SqlAttribute suggestions.",
@@ -26092,9 +25119,7 @@
           }
         },
         "summary": "Update Term",
-        "tags": [
-          "terms"
-        ]
+        "tags": ["terms"]
       }
     },
     "/api/terms/{term_id}/column-attributes": {
@@ -26168,9 +25193,7 @@
           }
         },
         "summary": "List Term Column Attributes By Id",
-        "tags": [
-          "terms"
-        ]
+        "tags": ["terms"]
       }
     },
     "/api/terms/{term_id}/column-attributes/{attr_id}": {
@@ -26232,9 +25255,7 @@
           }
         },
         "summary": "Update Column Attribute",
-        "tags": [
-          "terms"
-        ]
+        "tags": ["terms"]
       }
     },
     "/api/terms/{term_id}/sql-attributes": {
@@ -26308,9 +25329,7 @@
           }
         },
         "summary": "List Term Sql Attributes By Id",
-        "tags": [
-          "terms"
-        ]
+        "tags": ["terms"]
       }
     },
     "/api/zones": {
@@ -26330,9 +25349,7 @@
           }
         },
         "summary": "List Zones",
-        "tags": [
-          "zones"
-        ]
+        "tags": ["zones"]
       },
       "post": {
         "description": "Create a zone and attach catalog items.  Requires admin role.",
@@ -26370,9 +25387,7 @@
           }
         },
         "summary": "Create Zone",
-        "tags": [
-          "zones"
-        ]
+        "tags": ["zones"]
       }
     },
     "/api/zones/{zone_id}": {
@@ -26413,9 +25428,7 @@
           }
         },
         "summary": "Delete Zone",
-        "tags": [
-          "zones"
-        ]
+        "tags": ["zones"]
       },
       "get": {
         "description": "Return one zone with its catalog data items.",
@@ -26454,9 +25467,7 @@
           }
         },
         "summary": "Get Zone",
-        "tags": [
-          "zones"
-        ]
+        "tags": ["zones"]
       },
       "patch": {
         "description": "Update zone fields and optionally replace catalog data items.",
@@ -26505,9 +25516,7 @@
           }
         },
         "summary": "Update Zone",
-        "tags": [
-          "zones"
-        ]
+        "tags": ["zones"]
       }
     },
     "/api/zones/{zone_id}/access": {
@@ -26558,9 +25567,7 @@
           }
         },
         "summary": "Replace Zone Access",
-        "tags": [
-          "zones"
-        ]
+        "tags": ["zones"]
       }
     },
     "/api/zones/{zone_id}/grant-audit": {
@@ -26603,9 +25610,7 @@
           }
         },
         "summary": "List Zone Grant Audit",
-        "tags": [
-          "zones"
-        ]
+        "tags": ["zones"]
       }
     },
     "/api/zones/{zone_id}/status": {
@@ -26656,9 +25661,7 @@
           }
         },
         "summary": "Set Zone Status",
-        "tags": [
-          "zones"
-        ]
+        "tags": ["zones"]
       }
     }
   }

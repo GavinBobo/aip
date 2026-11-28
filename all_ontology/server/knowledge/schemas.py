@@ -41,6 +41,7 @@ class KnowledgeNetworkItem(ApiModel):
     action_count: int = 0
     risk_count: int = 0
     metric_count: int = 0
+    rule_count: int = 0
     group_count: int = 0
     capability_count: int = 0
     document_count: int = 0
@@ -205,6 +206,59 @@ class KnowledgeMetricItem(ApiModel):
     source_document_id: str | None = None
 
 
+class KnowledgeRuleItem(ApiModel):
+    id: str
+    network_id: str
+    key: str
+    name: str
+    statement: str
+    description: str | None = None
+    scope: str | None = None
+    condition: str | None = None
+    roles: list[Any] = Field(default_factory=list)
+    exceptions: list[Any] = Field(default_factory=list)
+    effective_from: datetime | None = None
+    effective_to: datetime | None = None
+    status: str | None = None
+    confidence: float | None = None
+    source_document_id: str | None = None
+    concepts: list[dict[str, Any]] = Field(default_factory=list)
+    metrics: list[dict[str, Any]] = Field(default_factory=list)
+    actions: list[dict[str, Any]] = Field(default_factory=list)
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class KnowledgeRuleCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    statement: str = Field(min_length=1)
+    description: str | None = None
+    scope: str | None = None
+    condition: str | None = None
+    roles: list[Any] = Field(default_factory=list)
+    exceptions: list[Any] = Field(default_factory=list)
+    effective_from: datetime | None = None
+    effective_to: datetime | None = None
+
+
+class KnowledgeRulePatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    statement: str | None = Field(default=None, min_length=1)
+    description: str | None = None
+    scope: str | None = None
+    condition: str | None = None
+    roles: list[Any] | None = None
+    exceptions: list[Any] | None = None
+    effective_from: datetime | None = None
+    effective_to: datetime | None = None
+    status: Status | None = None
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+
+
+class KnowledgeRuleLink(BaseModel):
+    target_kind: Literal["concept", "metric", "action"]
+    target_id: str = Field(min_length=1)
+
+
 class KnowledgeSearchRequest(BaseModel):
     """A document-knowledge retrieval request.
 
@@ -275,6 +329,80 @@ class KnowledgeSearchResult(ApiModel):
 
 class KnowledgeSearchResponse(ApiModel):
     data: KnowledgeSearchResult
+
+
+class KnowledgeBridgeConcept(ApiModel):
+    id: str
+    name: str
+    kind: str | None = None
+    status: str | None = None
+    links: list[dict[str, Any]] = Field(default_factory=list)
+    linked: bool = False
+
+
+class KnowledgeBridgeMetric(ApiModel):
+    id: str
+    name: str
+    expression: str | None = None
+    unit: str | None = None
+    status: str | None = None
+    sql_attribute_id: str | None = None
+    sql_attribute_name: str | None = None
+    linked: bool = False
+
+
+class KnowledgeBridgeAction(ApiModel):
+    id: str
+    name: str
+    status: str | None = None
+    capabilities: list[dict[str, Any]] = Field(default_factory=list)
+    linked: bool = False
+
+
+class KnowledgeBridgeRule(ApiModel):
+    id: str
+    name: str
+    statement: str | None = None
+    status: str | None = None
+    metrics: list[dict[str, Any]] = Field(default_factory=list)
+    actions: list[dict[str, Any]] = Field(default_factory=list)
+    linked: bool = False
+
+
+class KnowledgeBridgeSummary(ApiModel):
+    concept_total: int
+    concept_linked: int
+    metric_total: int
+    metric_linked: int
+    rule_total: int
+    rule_linked: int
+    action_total: int
+    action_linked: int
+    coverage: float
+
+
+class KnowledgeBridgeData(ApiModel):
+    network_id: str
+    generated_at: str
+    summary: KnowledgeBridgeSummary
+    concepts: list[KnowledgeBridgeConcept] = Field(default_factory=list)
+    metrics: list[KnowledgeBridgeMetric] = Field(default_factory=list)
+    rules: list[KnowledgeBridgeRule] = Field(default_factory=list)
+    actions: list[KnowledgeBridgeAction] = Field(default_factory=list)
+    capabilities: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class KnowledgeBridgeResponse(ApiModel):
+    data: KnowledgeBridgeData
+
+
+class KnowledgeRuleList(ApiModel):
+    data: list[KnowledgeRuleItem]
+    count: int
+
+
+class KnowledgeRuleResponse(ApiModel):
+    data: KnowledgeRuleItem
 
 
 class KnowledgeConceptGroupItem(ApiModel):

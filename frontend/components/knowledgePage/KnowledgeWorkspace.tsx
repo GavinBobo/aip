@@ -227,6 +227,13 @@ export const KnowledgeWorkspace = () => {
 							<Icon name={IconName.Discovery} className="h-4 w-4" />
 							{t('Knowledge search')}
 						</Link>
+						<Link
+							href="/knowledge/bridge"
+							className="inline-flex h-9 items-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 text-sm font-medium text-body no-underline transition-colors hover:border-[#76b900] hover:bg-[#76b900]/10 hover:text-[#5e9400] dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-[#76b900]/20 dark:hover:text-[#a3d63a]"
+						>
+							<Icon name={IconName.Link} className="h-4 w-4" />
+							{t('Semantic bridge')}
+						</Link>
 						<Button onClick={() => setCreating(true)}>
 							<Icon name={IconName.Plus} className="mr-1.5 h-4 w-4" />
 							{t('New knowledge network')}

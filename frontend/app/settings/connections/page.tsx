@@ -4,14 +4,16 @@
 
 import { redirect } from 'next/navigation';
 import { ConnectionsView } from '@/components/connectionsPage/ConnectionsView';
+import { requireAdmin } from '@/auth/auth-guards';
 import { readConnectionsEnvSource } from '@/lib/server/connections';
 
 export default async function ConnectionsSettingsPage() {
+	const session = await requireAdmin();
 	// Connections from CONNECTION_STRINGS are fixed by config and cannot be
 	// created, edited or removed here, which is why SettingsNav hides this
 	// section. Hiding the link is not enough on its own: a bookmark or a typed
 	// URL would still reach a page whose every action is a dead end.
-	const envManaged = await readConnectionsEnvSource();
+	const envManaged = await readConnectionsEnvSource(session.user.id);
 	if (envManaged === true) {
 		redirect('/settings/zones');
 	}

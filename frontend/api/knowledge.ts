@@ -23,6 +23,7 @@ export type KnowledgeNetwork = {
 	action_count: number;
 	risk_count: number;
 	metric_count: number;
+	rule_count: number;
 	group_count: number;
 	capability_count: number;
 	document_count: number;
@@ -256,6 +257,48 @@ export type KnowledgeMetric = {
 	source_document_id: string | null;
 };
 
+export type KnowledgeRule = {
+	id: string;
+	network_id: string;
+	key: string;
+	name: string;
+	statement: string;
+	description: string | null;
+	scope: string | null;
+	condition: string | null;
+	roles: Array<string | Record<string, unknown>>;
+	exceptions: Array<string | Record<string, unknown>>;
+	effective_from: string | null;
+	effective_to: string | null;
+	status: 'draft' | 'reviewed' | 'certified' | string;
+	confidence: number;
+	source_document_id: string | null;
+	concepts: Array<{ id: string; key: string; name: string }>;
+	metrics: Array<{
+		id: string;
+		key: string;
+		name: string;
+		expression: string | null;
+		unit: string | null;
+	}>;
+	actions: Array<{ id: string; key: string; name: string; action_intent: string }>;
+	evidence: KnowledgeEvidence[];
+};
+
+export type KnowledgeRuleInput = {
+	name: string;
+	statement: string;
+	description?: string | null;
+	scope?: string | null;
+	condition?: string | null;
+	roles?: Array<string | Record<string, unknown>>;
+	exceptions?: Array<string | Record<string, unknown>>;
+	effective_from?: string | null;
+	effective_to?: string | null;
+	status?: string;
+	confidence?: number;
+};
+
 export type KnowledgeCapability = {
 	id: string;
 	network_id: string;
@@ -390,6 +433,7 @@ export type KnowledgeSearchKind =
 	| 'action'
 	| 'risk'
 	| 'metric'
+	| 'rule'
 	| 'evidence';
 
 export type KnowledgeSearchCitation = {
@@ -460,6 +504,65 @@ export type KnowledgeSearchInput = {
 	kinds?: KnowledgeSearchKind[];
 	limit?: number;
 	include_evidence?: boolean;
+};
+
+export type KnowledgeBridgeConcept = {
+	id: string;
+	name: string;
+	kind: string | null;
+	status: string | null;
+	links: KnowledgeDataLink[];
+	linked: boolean;
+};
+
+export type KnowledgeBridgeMetric = {
+	id: string;
+	name: string;
+	expression: string | null;
+	unit: string | null;
+	status: string | null;
+	sql_attribute_id: string | null;
+	sql_attribute_name: string | null;
+	linked: boolean;
+};
+
+export type KnowledgeBridgeAction = {
+	id: string;
+	name: string;
+	status: string | null;
+	capabilities: KnowledgeAction['capabilities'];
+	linked: boolean;
+};
+
+export type KnowledgeBridgeRule = {
+	id: string;
+	name: string;
+	statement: string | null;
+	status: string | null;
+	metrics: Array<{ id: string; key: string; name: string }>;
+	actions: Array<{ id: string; key: string; name: string }>;
+	linked: boolean;
+};
+
+export type KnowledgeBridge = {
+	network_id: string;
+	generated_at: string;
+	summary: {
+		concept_total: number;
+		concept_linked: number;
+		metric_total: number;
+		metric_linked: number;
+		rule_total: number;
+		rule_linked: number;
+		action_total: number;
+		action_linked: number;
+		coverage: number;
+	};
+	concepts: KnowledgeBridgeConcept[];
+	metrics: KnowledgeBridgeMetric[];
+	rules: KnowledgeBridgeRule[];
+	actions: KnowledgeBridgeAction[];
+	capabilities: KnowledgeCapability[];
 };
 
 export const knowledgeApi = {
@@ -692,13 +795,59 @@ export const knowledgeApi = {
 		payload: Partial<
 			Pick<
 				KnowledgeMetric,
-				'name' | 'description' | 'expression' | 'unit' | 'status' | 'confidence'
+				| 'name'
+				| 'description'
+				| 'expression'
+				| 'unit'
+				| 'sql_attribute_id'
+				| 'status'
+				| 'confidence'
 			>
 		>,
 	): Single<KnowledgeMetric> =>
 		requests.patch<{ data: KnowledgeMetric }>(
 			`knowledge/metrics/${encodeURIComponent(metricId)}`,
 			payload,
+		),
+
+	listRules: (networkId: string): List<KnowledgeRule> =>
+		requests.get<{ data: KnowledgeRule[]; count: number }>(
+			`knowledge/networks/${encodeURIComponent(networkId)}/rules`,
+		),
+	createRule: (networkId: string, payload: KnowledgeRuleInput): Single<KnowledgeRule> =>
+		requests.post<{ data: KnowledgeRule }>(
+			`knowledge/networks/${encodeURIComponent(networkId)}/rules`,
+			payload,
+		),
+	updateRule: (
+		ruleId: string,
+		payload: Partial<KnowledgeRuleInput>,
+	): Single<KnowledgeRule> =>
+		requests.patch<{ data: KnowledgeRule }>(
+			`knowledge/rules/${encodeURIComponent(ruleId)}`,
+			payload,
+		),
+	deleteRule: (ruleId: string): Single<{ id: string }> =>
+		requests.delete<{ data: { id: string } }>(
+			`knowledge/rules/${encodeURIComponent(ruleId)}`,
+		),
+	linkRule: (
+		ruleId: string,
+		payload: { target_kind: 'concept' | 'metric' | 'action'; target_id: string },
+	): Single<Record<string, unknown>> =>
+		requests.post<{ data: Record<string, unknown> }>(
+			`knowledge/rules/${encodeURIComponent(ruleId)}/links`,
+			payload,
+		),
+	unlinkRule: (
+		ruleId: string,
+		targetKind: 'concept' | 'metric' | 'action',
+		targetId: string,
+	): Single<Record<string, unknown>> =>
+		requests.delete<{ data: Record<string, unknown> }>(
+			`knowledge/rules/${encodeURIComponent(ruleId)}/links/${encodeURIComponent(
+				targetKind,
+			)}/${encodeURIComponent(targetId)}`,
 		),
 	deleteMetric: (metricId: string): Single<{ id: string }> =>
 		requests.delete<{ data: { id: string } }>(
@@ -842,4 +991,9 @@ export const knowledgeApi = {
 
 	search: (input: KnowledgeSearchInput): Single<KnowledgeSearchResult> =>
 		requests.post<{ data: KnowledgeSearchResult }>('knowledge/search', input),
+
+	getBridge: (networkId: string): Single<KnowledgeBridge> =>
+		requests.get<{ data: KnowledgeBridge }>(
+			`knowledge/networks/${encodeURIComponent(networkId)}/bridge`,
+		),
 };

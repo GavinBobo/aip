@@ -2489,6 +2489,12 @@ knowledge_evidence = Table(
         nullable=True,
     ),
     Column(
+        "rule_id",
+        Text,
+        ForeignKey("knowledge_rule.id", ondelete="CASCADE"),
+        nullable=True,
+    ),
+    Column(
         "image_id",
         Text,
         ForeignKey("parsing_image.id", ondelete="SET NULL"),
@@ -2505,7 +2511,7 @@ knowledge_evidence = Table(
         "created", DateTime(timezone=True), nullable=True, server_default=func.now()
     ),
     CheckConstraint(
-        "num_nonnulls(concept_id, relation_id, fact_id, action_id, risk_id, metric_id) = 1",
+        "num_nonnulls(concept_id, relation_id, fact_id, action_id, risk_id, metric_id, rule_id) = 1",
         name="exactly_one_target",
     ),
 )
@@ -2678,6 +2684,104 @@ knowledge_metric = Table(
         name="known_status",
     ),
 )
+
+# A document-grounded business rule. A metric answers "how much"; a rule
+# answers "who must do what, under which condition, with which exceptions".
+# Rules reference metrics/actions/concepts through the join tables below rather
+# than becoming a special kind of metric.
+knowledge_rule = Table(
+    "knowledge_rule",
+    METADATA,
+    _id(),
+    Column(
+        "network_id",
+        Text,
+        ForeignKey(knowledge_network.c.id, ondelete="CASCADE"),
+        nullable=False,
+    ),
+    Column("key", Text, nullable=False),
+    Column("name", Text, nullable=False),
+    Column("statement", Text, nullable=False),
+    Column("description", Text, nullable=True),
+    Column("scope", Text, nullable=True),
+    Column("condition", Text, nullable=True),
+    Column("roles", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    Column("exceptions", JSONB, nullable=False, server_default=text("'[]'::jsonb")),
+    Column("effective_from", DateTime(timezone=True), nullable=True),
+    Column("effective_to", DateTime(timezone=True), nullable=True),
+    Column("status", Text, nullable=False, server_default=text("'draft'")),
+    Column("confidence", Double, nullable=False, server_default=text("0.6")),
+    Column(
+        "source_document_id",
+        Text,
+        ForeignKey(knowledge_document.c.id, ondelete="SET NULL"),
+        nullable=True,
+    ),
+    Column(
+        "created", DateTime(timezone=True), nullable=True, server_default=func.now()
+    ),
+    Column("modified", DateTime(timezone=True), nullable=True),
+    UniqueConstraint("network_id", "key", name="uq_knowledge_rule_network_key"),
+    CheckConstraint(
+        "status IN ('draft', 'reviewed', 'certified')",
+        name="known_status",
+    ),
+)
+
+
+knowledge_rule__concept = Table(
+    "knowledge_rule__concept",
+    METADATA,
+    Column(
+        "rule_id",
+        Text,
+        ForeignKey(knowledge_rule.c.id, ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "concept_id",
+        Text,
+        ForeignKey(knowledge_concept.c.id, ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
+
+knowledge_rule__metric = Table(
+    "knowledge_rule__metric",
+    METADATA,
+    Column(
+        "rule_id",
+        Text,
+        ForeignKey(knowledge_rule.c.id, ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "metric_id",
+        Text,
+        ForeignKey(knowledge_metric.c.id, ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
+
+knowledge_rule__action = Table(
+    "knowledge_rule__action",
+    METADATA,
+    Column(
+        "rule_id",
+        Text,
+        ForeignKey(knowledge_rule.c.id, ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "action_id",
+        Text,
+        ForeignKey(knowledge_action.c.id, ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
 
 knowledge_concept_group = Table(
     "knowledge_concept_group",
@@ -2938,6 +3042,11 @@ Index(
     knowledge_metric.c.network_id,
     knowledge_metric.c.name,
 )
+Index(
+    "ix_knowledge_rule_network",
+    knowledge_rule.c.network_id,
+    knowledge_rule.c.name,
+)
 # Knowledge-context retrieval matches substrings of these free-text columns on
 # every chat turn. A btree cannot serve an unanchored ILIKE; these get the same
 # pg_trgm GIN treatment as global search (see TRIGRAM_SEARCH_TABLES above).
@@ -2949,6 +3058,7 @@ for _knowledge_table, _knowledge_columns in (
     (knowledge_action, ("name", "description")),
     (knowledge_risk, ("name", "description", "mitigation")),
     (knowledge_metric, ("name", "description", "expression")),
+    (knowledge_rule, ("name", "statement", "description", "scope", "condition")),
 ):
     for _knowledge_column in _knowledge_columns:
         Index(

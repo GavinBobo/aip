@@ -6,7 +6,7 @@
 
 A snapshot is deliberately the *definitions* graph, not the source documents
 themselves. Documents stay in the parse library; rolling a network back swaps
-its concepts/relations/facts/actions/risks/metrics/groups/capabilities and
+its concepts/relations/facts/actions/risks/metrics/rules/groups/capabilities and
 their evidence, leaving the documents and their parsing runs untouched.
 """
 
@@ -16,6 +16,7 @@ import json
 from typing import Any
 
 from sqlalchemy import delete, func, select
+from sqlalchemy.dialects.postgresql import insert
 
 from all_ontology.dal import knowledge as knowledge_dal
 from all_ontology.dal import schema as s
@@ -43,6 +44,7 @@ def build_snapshot(network_id: str) -> dict[str, Any]:
         "actions": knowledge_dal.list_actions(network_id),
         "risks": knowledge_dal.list_risks(network_id),
         "metrics": knowledge_dal.list_metrics(network_id),
+        "rules": knowledge_dal.list_rules(network_id),
         "groups": knowledge_dal.list_concept_groups(network_id),
         "capabilities": knowledge_dal.list_capabilities(network_id),
     }
@@ -122,6 +124,7 @@ _DIFF_COLLECTIONS = (
     "actions",
     "risks",
     "metrics",
+    "rules",
     "groups",
     "capabilities",
 )
@@ -228,6 +231,7 @@ def _insert_evidence(
     action_id: str | None = None,
     risk_id: str | None = None,
     metric_id: str | None = None,
+    rule_id: str | None = None,
 ) -> None:
     quote = str(item.get("quote") or "").strip()
     if not quote:
@@ -242,6 +246,7 @@ def _insert_evidence(
             action_id=action_id,
             risk_id=risk_id,
             metric_id=metric_id,
+            rule_id=rule_id,
             page=item.get("page"),
             block_index=item.get("block_index"),
             quote=quote[:4000],
@@ -281,6 +286,7 @@ def restore_version(version_id: str) -> dict[str, Any]:
         for table in (
             s.knowledge_concept_group,
             s.knowledge_capability,
+            s.knowledge_rule,
             s.knowledge_metric,
             s.knowledge_action,
             s.knowledge_risk,
@@ -476,6 +482,62 @@ def restore_version(version_id: str) -> dict[str, Any]:
                             item=evidence,
                             **{key: item["id"]},
                         )
+
+        for rule in snapshot.get("rules") or []:
+            store().query_write(
+                s.knowledge_rule.insert().values(
+                    id=rule["id"],
+                    network_id=network_id,
+                    key=rule["key"],
+                    name=rule["name"],
+                    statement=rule["statement"],
+                    description=rule.get("description"),
+                    scope=rule.get("scope"),
+                    condition=rule.get("condition"),
+                    roles=rule.get("roles") or [],
+                    exceptions=rule.get("exceptions") or [],
+                    effective_from=rule.get("effective_from"),
+                    effective_to=rule.get("effective_to"),
+                    status=rule.get("status") or "draft",
+                    confidence=float(rule.get("confidence") or 0.6),
+                    source_document_id=(
+                        rule.get("source_document_id")
+                        if rule.get("source_document_id") in document_ids
+                        else None
+                    ),
+                )
+            )
+            for target, column, values in (
+                (
+                    s.knowledge_rule__concept,
+                    "concept_id",
+                    [item["id"] for item in rule.get("concepts") or [] if item.get("id")],
+                ),
+                (
+                    s.knowledge_rule__metric,
+                    "metric_id",
+                    [item["id"] for item in rule.get("metrics") or [] if item.get("id")],
+                ),
+                (
+                    s.knowledge_rule__action,
+                    "action_id",
+                    [item["id"] for item in rule.get("actions") or [] if item.get("id")],
+                ),
+            ):
+                for target_id in values:
+                    store().query_write(
+                        insert(target)
+                        .values({"rule_id": rule["id"], column: target_id})
+                        .on_conflict_do_nothing()
+                    )
+            for evidence in rule.get("evidence") or []:
+                if evidence.get("document_id") in document_ids:
+                    _insert_evidence(
+                        network_id=network_id,
+                        document_id=evidence["document_id"],
+                        item=evidence,
+                        rule_id=rule["id"],
+                    )
 
         for group in snapshot.get("groups") or []:
             store().query_write(

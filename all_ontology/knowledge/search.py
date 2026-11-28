@@ -859,6 +859,7 @@ def _attach_evidence(results: list[dict[str, Any]]) -> None:
         "action": s.knowledge_evidence.c.action_id,
         "risk": s.knowledge_evidence.c.risk_id,
         "metric": s.knowledge_evidence.c.metric_id,
+        "rule": s.knowledge_evidence.c.rule_id,
     }
     for result in results:
         if result["kind"] in column_by_kind:
@@ -978,6 +979,7 @@ def search_knowledge(
         "action",
         "risk",
         "metric",
+        "rule",
         "evidence",
     }
     selected = set(kinds or allowed_kinds) & allowed_kinds
@@ -1046,6 +1048,7 @@ def search_knowledge(
         ("action", s.knowledge_action, 0.95),
         ("risk", s.knowledge_risk, 0.95),
         ("metric", s.knowledge_metric, 0.95),
+        ("rule", s.knowledge_rule, 1.2),
     ):
         if kind not in selected:
             continue
@@ -1053,14 +1056,21 @@ def search_knowledge(
             extra = [s.knowledge_action.c.action_intent]
         elif kind == "risk":
             extra = [s.knowledge_risk.c.severity, s.knowledge_risk.c.mitigation]
-        else:
+        elif kind == "metric":
             extra = [s.knowledge_metric.c.expression, s.knowledge_metric.c.unit]
+        else:
+            extra = [s.knowledge_rule.c.scope, s.knowledge_rule.c.condition]
+        description_column = (
+            s.knowledge_rule.c.statement
+            if kind == "rule"
+            else table.c.description
+        )
         results.extend(
             _simple_graph_results(
                 kind=kind,
                 table=table,
                 name_column=table.c.name,
-                description_column=table.c.description,
+                description_column=description_column,
                 extra_columns=extra,
                 query=cleaned,
                 tokens=tokens,

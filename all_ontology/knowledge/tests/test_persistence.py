@@ -41,6 +41,7 @@ from all_ontology.knowledge.extractor import (  # noqa: E402
     ExtractedChunk,
     ExtractedConcept,
     ExtractedFact,
+    ExtractedRule,
     extract_document,
 )
 from all_ontology.server.knowledge.router import get_knowledge_graph  # noqa: E402

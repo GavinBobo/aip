@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 // The entire Settings section (Connections, Zones, Users, SSO) is admin-only.
 // This is the real gate; the nav rail also hides Settings from non-admins.
 export default async function SettingsLayout({ children }: { children: React.ReactNode }) {
-	await requireAdmin();
+	const session = await requireAdmin();
 	// Read once here so the nav renders its final shape on the first paint, and
 	// so navigating between sections does not re-ask: the layout survives those
 	// navigations, the nav's own effect did not. The page rendering inside this
@@ -25,7 +25,7 @@ export default async function SettingsLayout({ children }: { children: React.Rea
 	// puts it in the query cache for the Connections page to subscribe to —
 	// this one is a plain server value the nav reads while rendering, so it
 	// stays a direct await.
-	const envManaged = await readConnectionsEnvSource();
+	const envManaged = await readConnectionsEnvSource(session.user.id);
 
 	return (
 		<SettingsPanelLayout connectionsEnvManaged={envManaged === true}>

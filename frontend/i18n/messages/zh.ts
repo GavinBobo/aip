@@ -2024,7 +2024,6 @@ export const zh: Record<string, string> = {
 	'Semantic FKs': '语义外键',
 	'+{count} more warnings': '另有 {count} 条提示',
 	'Catalog FK': '目录外键',
-	'Unique': '唯一',
 	'Values': '值重叠',
 	'Existing semantic FK': '已有语义外键',
 	'Virtual table “{table}” is not queryable until it is bound to a catalog table.':
@@ -2085,8 +2084,52 @@ export const zh: Record<string, string> = {
 	'Knowledge fact': '知识事实',
 	Risk: '风险',
 	Metric: '指标',
+	Rule: '规则',
 	Draft: '草稿',
 	Extracted: '已抽取',
+
+	// Semantic bridge
+	'Semantic bridge': '语义桥',
+	'Connect document concepts to terms or tables, knowledge metrics to SQL attributes, and actions to executable capabilities.':
+		'把文档概念连到术语/数据表，把知识指标连到 SQL 属性，把动作连到可执行能力。',
+	'Failed to load the semantic bridge.': '加载语义桥失败。',
+	'Failed to link the concept.': '关联概念失败。',
+	'Failed to link the metric.': '关联指标失败。',
+	'Failed to link the action.': '关联动作失败。',
+	'Failed to link the rule.': '关联规则失败。',
+	'Overall coverage': '总体覆盖率',
+	'Concepts linked': '概念已关联',
+	'Metrics linked': '指标已关联',
+	'Actions linked': '动作已关联',
+	'Rules linked': '规则已关联',
+	'Concepts to terms and tables': '概念 → 术语 / 数据表',
+	'Map a document concept to the glossary term or catalog table it describes.':
+		'把文档概念关联到它描述的术语或目录表。',
+	'No concepts in this network.': '这个知识网络还没有概念。',
+	Linked: '已关联',
+	Unlinked: '未关联',
+	'Search term or catalog table': '搜索术语或目录表',
+	'Metrics to SQL attributes': '指标 → SQL 属性',
+	'Attach a knowledge metric to the reviewed SQL expression that computes it.':
+		'把知识指标挂到已审阅的 SQL 计算表达式上。',
+	'No metrics in this network.': '这个知识网络还没有指标。',
+	'No expression': '没有表达式',
+	'Select SQL attribute': '选择 SQL 属性',
+	'Rules to metrics and actions': '规则 → 指标 / 动作',
+	'Link a rule to the metrics it evaluates and the actions it triggers. A rule is not a metric.':
+		'把规则关联到它使用的指标和触发动作。规则不是指标。',
+	'No rules in this network.': '这个知识网络还没有规则。',
+	'Select metric': '选择指标',
+	'Select action': '选择动作',
+	'Actions to capabilities': '动作 → 执行能力',
+	'Attach an executable action to a mounted Skill, Function, MCP tool or knowledge base.':
+		'把可执行动作挂到 Skill、Function、MCP 工具或知识库上。',
+	'No actions in this network.': '这个知识网络还没有动作。',
+	'No capability mounted': '未挂载能力',
+	'Select capability': '选择能力',
+	'Open network': '打开知识网络',
+	'Select a knowledge network to inspect its semantic bridge.':
+		'选择知识网络后查看它的语义桥。',
 
 	// Shared chrome and parsing labels that used to be hard-coded
 	Language: '语言',

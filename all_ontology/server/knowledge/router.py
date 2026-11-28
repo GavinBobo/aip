@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, File, HTTPException, Query, Request, Response, UploadFile
@@ -76,6 +77,7 @@ from all_ontology.server.knowledge.schemas import (
     KnowledgeCapabilityList,
     KnowledgeCapabilityPatch,
     KnowledgeCapabilityResponse,
+    KnowledgeBridgeResponse,
     KnowledgeNetworkCreate,
     KnowledgeNetworkList,
     KnowledgeNetworkPatch,
@@ -86,6 +88,11 @@ from all_ontology.server.knowledge.schemas import (
     KnowledgeMetricResponse,
     KnowledgeMetricPreviewResponse,
     KnowledgeMetricValidateResponse,
+    KnowledgeRuleCreate,
+    KnowledgeRuleLink,
+    KnowledgeRuleList,
+    KnowledgeRulePatch,
+    KnowledgeRuleResponse,
     KnowledgeVersionCreate,
     KnowledgeVersionList,
     KnowledgeVersionResponse,
@@ -254,6 +261,108 @@ def search_knowledge_route(body: KnowledgeSearchRequest) -> dict[str, Any]:
         include_evidence=body.include_evidence,
     )
     return {"data": result}
+
+
+@router.get(
+    "/knowledge/networks/{network_id}/bridge",
+    response_model=KnowledgeBridgeResponse,
+)
+def get_knowledge_bridge(network_id: str) -> dict[str, Any]:
+    """Return the semantic-bridge coverage for one knowledge network.
+
+    The bridge has three independently useful lanes:
+
+    * document concept -> glossary term or catalog table;
+    * knowledge metric -> SQL attribute;
+    * knowledge action -> executable capability.
+
+    An item is linked when it has at least one target in its lane. The summary
+    is a coverage signal, not a certification: a linked item can still be
+    draft or unreviewed.
+    """
+    _require_network(network_id)
+    concepts = dal.list_concepts(network_id)
+    metrics = dal.list_metrics(network_id)
+    rules = dal.list_rules(network_id)
+    actions = dal.list_actions(network_id)
+    capabilities = dal.list_capabilities(network_id)
+
+    concept_rows = [
+        {
+            "id": str(item["id"]),
+            "name": item["name"],
+            "kind": item.get("kind"),
+            "status": item.get("status"),
+            "links": item.get("data_links") or [],
+            "linked": bool(item.get("data_links")),
+        }
+        for item in concepts
+    ]
+    metric_rows = [
+        {
+            "id": str(item["id"]),
+            "name": item["name"],
+            "expression": item.get("expression"),
+            "unit": item.get("unit"),
+            "status": item.get("status"),
+            "sql_attribute_id": item.get("sql_attribute_id"),
+            "sql_attribute_name": item.get("sql_attribute_name"),
+            "linked": bool(item.get("sql_attribute_id")),
+        }
+        for item in metrics
+    ]
+    rule_rows = [
+        {
+            "id": str(item["id"]),
+            "name": item["name"],
+            "statement": item.get("statement"),
+            "status": item.get("status"),
+            "metrics": item.get("metrics") or [],
+            "actions": item.get("actions") or [],
+            "linked": bool(item.get("metrics") or item.get("actions")),
+        }
+        for item in rules
+    ]
+    action_rows = [
+        {
+            "id": str(item["id"]),
+            "name": item["name"],
+            "status": item.get("status"),
+            "capabilities": item.get("capabilities") or [],
+            "linked": bool(item.get("capabilities")),
+        }
+        for item in actions
+    ]
+    linked = (
+        sum(1 for row in concept_rows if row["linked"])
+        + sum(1 for row in metric_rows if row["linked"])
+        + sum(1 for row in rule_rows if row["linked"])
+        + sum(1 for row in action_rows if row["linked"])
+    )
+    total = len(concept_rows) + len(metric_rows) + len(rule_rows) + len(action_rows)
+    coverage = round(linked / total, 2) if total else 0.0
+    return {
+        "data": {
+            "network_id": network_id,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "summary": {
+                "concept_total": len(concept_rows),
+                "concept_linked": sum(1 for row in concept_rows if row["linked"]),
+                "metric_total": len(metric_rows),
+                "metric_linked": sum(1 for row in metric_rows if row["linked"]),
+                "rule_total": len(rule_rows),
+                "rule_linked": sum(1 for row in rule_rows if row["linked"]),
+                "action_total": len(action_rows),
+                "action_linked": sum(1 for row in action_rows if row["linked"]),
+                "coverage": coverage,
+            },
+            "concepts": concept_rows,
+            "metrics": metric_rows,
+            "rules": rule_rows,
+            "actions": action_rows,
+            "capabilities": capabilities,
+        }
+    }
 
 
 @router.post(
@@ -697,6 +806,115 @@ def list_knowledge_metrics(network_id: str) -> dict[str, Any]:
     _require_network(network_id)
     metrics = dal.list_metrics(network_id)
     return {"data": metrics, "count": len(metrics)}
+
+
+@router.get(
+    "/knowledge/networks/{network_id}/rules",
+    response_model=KnowledgeRuleList,
+)
+def list_knowledge_rules(network_id: str) -> dict[str, Any]:
+    _require_network(network_id)
+    rules = dal.list_rules(network_id)
+    return {"data": rules, "count": len(rules)}
+
+
+@router.post(
+    "/knowledge/networks/{network_id}/rules",
+    response_model=KnowledgeRuleResponse,
+    status_code=201,
+)
+def create_knowledge_rule(
+    network_id: str, body: KnowledgeRuleCreate
+) -> dict[str, Any]:
+    _require_network(network_id, ZONE_PERMISSION_EDIT)
+    existing = {item["key"] for item in dal.list_rules(network_id)}
+    base = definition_key(body.name, prefix="rule")
+    key = base
+    suffix = 2
+    while key in existing:
+        key = f"{base}_{suffix}"
+        suffix += 1
+    try:
+        rule = dal.create_rule(
+            network_id=network_id,
+            key=key,
+            name=body.name,
+            statement=body.statement,
+            description=body.description,
+            scope=body.scope,
+            condition=body.condition,
+            roles=body.roles,
+            exceptions=body.exceptions,
+            effective_from=body.effective_from,
+            effective_to=body.effective_to,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"data": rule}
+
+
+@router.patch(
+    "/knowledge/rules/{rule_id}",
+    response_model=KnowledgeRuleResponse,
+)
+def update_knowledge_rule(
+    rule_id: str, body: KnowledgeRulePatch
+) -> dict[str, Any]:
+    _require_entity("rule", rule_id, missing="Knowledge rule not found.")
+    try:
+        rule = dal.update_rule(rule_id, patch=body.model_dump(exclude_unset=True))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if rule is None:
+        raise HTTPException(status_code=404, detail="Knowledge rule not found.")
+    return {"data": rule}
+
+
+@router.delete(
+    "/knowledge/rules/{rule_id}",
+    response_model=KnowledgeDeleteResponse,
+)
+def delete_knowledge_rule(rule_id: str) -> dict[str, Any]:
+    _require_entity("rule", rule_id, missing="Knowledge rule not found.")
+    if not dal.delete_rule(rule_id):
+        raise HTTPException(status_code=404, detail="Knowledge rule not found.")
+    return {"data": {"id": rule_id}}
+
+
+@router.post(
+    "/knowledge/rules/{rule_id}/links",
+    response_model=KnowledgeDeleteResponse,
+)
+def link_knowledge_rule(rule_id: str, body: KnowledgeRuleLink) -> dict[str, Any]:
+    _require_entity("rule", rule_id, missing="Knowledge rule not found.")
+    try:
+        result = dal.link_rule_target(rule_id, body.target_kind, body.target_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"data": result}
+
+
+@router.delete(
+    "/knowledge/rules/{rule_id}/links/{target_kind}/{target_id}",
+    response_model=KnowledgeDeleteResponse,
+)
+def unlink_knowledge_rule(
+    rule_id: str, target_kind: str, target_id: str
+) -> dict[str, Any]:
+    _require_entity("rule", rule_id, missing="Knowledge rule not found.")
+    try:
+        removed = dal.unlink_rule_target(rule_id, target_kind, target_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if not removed:
+        raise HTTPException(status_code=404, detail="Rule link not found.")
+    return {
+        "data": {
+            "rule_id": rule_id,
+            "target_kind": target_kind,
+            "target_id": target_id,
+        }
+    }
 
 
 @router.post(

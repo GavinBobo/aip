@@ -137,6 +137,25 @@ class ExtractedMetric(BaseModel):
     confidence: float = Field(default=0.7, ge=0.0, le=1.0)
 
 
+class ExtractedRule(BaseModel):
+    """A document-grounded business rule, distinct from a metric."""
+
+    name: str = Field(description="Short rule name")
+    statement: str = Field(description="One complete, independently readable rule statement")
+    description: str = Field(default="")
+    scope: str | None = Field(default=None, description="Who/what the rule applies to")
+    condition: str | None = Field(default=None, description="The computable condition, if stated")
+    roles: list[str] = Field(default_factory=list, description="Roles responsible for the rule")
+    exceptions: list[str] = Field(default_factory=list)
+    effective_from: str | None = None
+    effective_to: str | None = None
+    related_concept: str | None = Field(default=None)
+    related_metric: str | None = Field(default=None)
+    related_action: str | None = Field(default=None)
+    evidence_quote: str | None = None
+    confidence: float = Field(default=0.7, ge=0.0, le=1.0)
+
+
 class ExtractedChunk(BaseModel):
     summary: str = Field(default="", description="本片段的一句话摘要")
     concepts: list[ExtractedConcept] = Field(default_factory=list)
@@ -145,6 +164,7 @@ class ExtractedChunk(BaseModel):
     actions: list[ExtractedAction] = Field(default_factory=list)
     risks: list[ExtractedRisk] = Field(default_factory=list)
     metrics: list[ExtractedMetric] = Field(default_factory=list)
+    rules: list[ExtractedRule] = Field(default_factory=list)
 
 
 @dataclass
@@ -156,6 +176,7 @@ class NormalizedExtraction:
     actions: list[dict[str, Any]] = field(default_factory=list)
     risks: list[dict[str, Any]] = field(default_factory=list)
     metrics: list[dict[str, Any]] = field(default_factory=list)
+    rules: list[dict[str, Any]] = field(default_factory=list)
 
 
 SYSTEM_PROMPT = """\
@@ -175,6 +196,12 @@ SYSTEM_PROMPT = """\
 - 一个片段最多 12 个概念、10 条关系、15 条事实、8 个行动、8 个风险、8 个指标。
 - 描述和事实使用原文语言；专有名词保留原文。
 - 如果片段只是目录、页眉页脚、无意义编号，返回空数组。
+"""
+
+SYSTEM_PROMPT += """
+7. rules: document-grounded business rules. A rule is not a metric. Extract
+   the condition, scope, responsible roles, exceptions and effective dates when
+   the passage states them. Every rule must include an exact evidence_quote.
 """
 
 
@@ -499,6 +526,93 @@ def merge_chunks(
             if evidence:
                 record["evidence"].append(evidence)
 
+    rules: dict[str, dict[str, Any]] = {}
+    metric_by_name = {_norm(item["name"]): key for key, item in metrics.items()}
+    action_by_name = {_norm(item["name"]): key for key, item in actions.items()}
+    for chunk, result in results:
+        for rule in result.rules:
+            name = " ".join(rule.name.split()).strip()
+            statement = " ".join(rule.statement.split()).strip()
+            if not name or not statement:
+                continue
+            key = _slug(name, prefix="rule")
+            rule_concept_key = (
+                aliases.get(_norm(rule.related_concept))
+                if rule.related_concept
+                else None
+            )
+            metric_key = (
+                metric_by_name.get(_norm(rule.related_metric))
+                if rule.related_metric
+                else None
+            )
+            action_key = (
+                action_by_name.get(_norm(rule.related_action))
+                if rule.related_action
+                else None
+            )
+            record = rules.setdefault(
+                key,
+                {
+                    "key": key,
+                    "name": name,
+                    "statement": statement,
+                    "description": rule.description.strip(),
+                    "scope": (rule.scope or "").strip() or None,
+                    "condition": (rule.condition or "").strip() or None,
+                    "roles": [],
+                    "exceptions": [],
+                    "effective_from": rule.effective_from,
+                    "effective_to": rule.effective_to,
+                    "concept_key": rule_concept_key,
+                    "metric_key": metric_key,
+                    "action_key": action_key,
+                    "confidence": _clamp(rule.confidence),
+                    "evidence": [],
+                },
+            )
+            record["confidence"] = max(
+                float(record["confidence"]), _clamp(rule.confidence)
+            )
+            if len(statement) > len(record["statement"]):
+                record["statement"] = statement
+            if len(rule.description.strip()) > len(record["description"]):
+                record["description"] = rule.description.strip()
+            record["roles"] = list(
+                dict.fromkeys(
+                    [
+                        *record["roles"],
+                        *[
+                            str(item).strip()
+                            for item in rule.roles
+                            if str(item).strip()
+                        ],
+                    ]
+                )
+            )[:20]
+            record["exceptions"] = list(
+                dict.fromkeys(
+                    [
+                        *record["exceptions"],
+                        *[
+                            str(item).strip()
+                            for item in rule.exceptions
+                            if str(item).strip()
+                        ],
+                    ]
+                )
+            )[:20]
+            if record.get("concept_key") is None and rule_concept_key:
+                record["concept_key"] = rule_concept_key
+            if record.get("metric_key") is None and metric_key:
+                record["metric_key"] = metric_key
+            if record.get("action_key") is None and action_key:
+                record["action_key"] = action_key
+            quote = rule.evidence_quote or _quote_around(chunk.text, name)
+            evidence = _evidence(chunk, quote)
+            if evidence:
+                record["evidence"].append(evidence)
+
     facts: dict[str, dict[str, Any]] = {}
     for chunk, result in results:
         for fact in result.facts:
@@ -533,6 +647,7 @@ def merge_chunks(
     actions = {key: value for key, value in actions.items() if value["evidence"]}
     risks = {key: value for key, value in risks.items() if value["evidence"]}
     metrics = {key: value for key, value in metrics.items() if value["evidence"]}
+    rules = {key: value for key, value in rules.items() if value["evidence"]}
 
     return NormalizedExtraction(
         summary="; ".join(dict.fromkeys(summaries))[:1200],
@@ -542,6 +657,7 @@ def merge_chunks(
         actions=sorted(actions.values(), key=lambda item: item["name"]),
         risks=sorted(risks.values(), key=lambda item: item["name"]),
         metrics=sorted(metrics.values(), key=lambda item: item["name"]),
+        rules=sorted(rules.values(), key=lambda item: item["name"]),
     )
 
 
@@ -625,6 +741,7 @@ def extract_document(
             actions=normalized.actions,
             risks=normalized.risks,
             metrics=normalized.metrics,
+            rules=normalized.rules,
             chunk_count=len(chunks),
         )
     except Exception as exc:
@@ -645,4 +762,5 @@ def extract_document(
         "actions": len(normalized.actions),
         "risks": len(normalized.risks),
         "metrics": len(normalized.metrics),
+        "rules": len(normalized.rules),
     }

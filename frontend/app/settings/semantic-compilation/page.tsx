@@ -13,14 +13,14 @@ const CONFIG_KEY = 'semantic_compilation_enabled';
 const PROBING_CONFIG_KEY = DISTINCT_VALUE_PROBING_ENABLED_KEY;
 
 const SemanticCompilationPage = async () => {
-	await requireAdmin();
+	const session = await requireAdmin();
 	// Fetch on the server so the toggles (and the connected-database hint)
 	// render in the correct state on first paint, with no client-side flash.
 	const [row, probingRow, connections, isEnvSource] = await Promise.all([
 		getPrisma().configuration.findUnique({ where: { key: CONFIG_KEY } }),
 		getPrisma().configuration.findUnique({ where: { key: PROBING_CONFIG_KEY } }),
-		connectionsApi.getAll(),
-		readConnectionsEnvSource(),
+		connectionsApi.getAll(session.user.id),
+		readConnectionsEnvSource(session.user.id),
 	]);
 	// `connections.count` only reflects UI-managed connections (stored on the
 	// catalog database row / Vault) — it's always 0 when connections instead

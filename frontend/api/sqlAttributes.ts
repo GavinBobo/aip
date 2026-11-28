@@ -48,6 +48,8 @@ type SuggestDescriptionResult = { data: string | null };
 type SuggestDescriptionResponse = ResponseWithError<SuggestDescriptionResult>;
 
 export const sqlAttributesApi = {
+	list: (): Promise<ResponseWithError<{ data: SqlAttribute[]; count: number }>> =>
+		requests.get<{ data: SqlAttribute[]; count: number }>('sql-attributes'),
 	get: (id: string): Promise<SingleResponse> =>
 		requests.get<SingleResult>(`sql-attributes/${id}`),
 	validate: (payload: SqlAttributeValidatePayload): Promise<ValidateResponse> =>

@@ -10,6 +10,7 @@ from all_ontology.knowledge.extractor import (
     ExtractedMetric,
     ExtractedRelation,
     ExtractedRisk,
+    ExtractedRule,
     concept_key,
     merge_chunks,
 )
@@ -52,6 +53,52 @@ def test_chunking_keeps_page_and_block_locators() -> None:
     assert chunks[1].page_start == 2
     page, block = chunks[1].locate("金额为 12,480.00 元")
     assert (page, block) == (2, 0)
+
+
+def test_merge_keeps_rules_with_evidence_and_concept_link() -> None:
+    chunk = SourceChunk(
+        text="Purchase orders above 10000 require CFO approval.",
+        page_start=1,
+        page_end=1,
+        blocks=[
+            SourceBlock(
+                page=1,
+                idx=1,
+                type="Text",
+                content="Purchase orders above 10000 require CFO approval.",
+            )
+        ],
+        spans=[
+            (
+                0,
+                SourceBlock(
+                    page=1,
+                    idx=1,
+                    type="Text",
+                    content="Purchase orders above 10000 require CFO approval.",
+                ),
+            )
+        ],
+    )
+    result = ExtractedChunk(
+        concepts=[ExtractedConcept(name="Purchase order", evidence_quote="Purchase order")],
+        rules=[
+            ExtractedRule(
+                name="CFO approval rule",
+                statement="Purchase orders above 10000 require CFO approval.",
+                roles=["CFO"],
+                related_concept="Purchase order",
+                evidence_quote="Purchase orders above 10000 require CFO approval.",
+            )
+        ],
+    )
+
+    merged = merge_chunks([(chunk, result)])
+
+    assert len(merged.rules) == 1
+    assert merged.rules[0]["roles"] == ["CFO"]
+    assert merged.rules[0]["concept_key"] == merged.concepts[0]["key"]
+    assert merged.rules[0]["evidence"][0]["page"] == 1
 
 
 def test_merge_deduplicates_and_keeps_evidence() -> None:

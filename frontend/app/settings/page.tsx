@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { redirect } from 'next/navigation';
+import { requireAdmin } from '@/auth/auth-guards';
 import { readConnectionsEnvSource } from '@/lib/server/connections';
 
 // Settings is admin-only (enforced by layout.tsx). Land on the first section
@@ -12,6 +13,7 @@ import { readConnectionsEnvSource } from '@/lib/server/connections';
 // literally, since the layout rendering around this reads it through the same
 // per-request memo.
 export default async function SettingsPage() {
-	const envManaged = await readConnectionsEnvSource();
+	const session = await requireAdmin();
+	const envManaged = await readConnectionsEnvSource(session.user.id);
 	redirect(envManaged === true ? '/settings/zones' : '/settings/connections');
 }

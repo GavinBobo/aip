@@ -90,6 +90,29 @@ def world():
                 ],
             }
         ],
+        rules=[
+            {
+                "key": "rule_approval",
+                "name": "CFO approval rule",
+                "statement": "Purchase orders above 10,000 require CFO approval.",
+                "description": "Approval threshold.",
+                "scope": "procurement",
+                "condition": "amount > 10000",
+                "roles": ["CFO"],
+                "exceptions": [],
+                "concept_key": "c_purchase_order",
+                "metric_key": None,
+                "action_key": None,
+                "confidence": 0.9,
+                "evidence": [
+                    {
+                        "page": 3,
+                        "block_index": 12,
+                        "quote": "Purchase orders above 10,000 require CFO approval.",
+                    }
+                ],
+            }
+        ],
         chunks=[
             {
                 "chunk_index": 1,
@@ -126,6 +149,7 @@ def test_human_search_returns_chunks_facts_and_citations(world) -> None:
     assert "chunk" in kinds
     assert "fact" in kinds
     assert "concept" in kinds
+    assert "rule" in kinds
     assert result["total"] > 0
     assert result["context"]
     chunk = next(item for item in result["results"] if item["kind"] == "chunk")
@@ -134,6 +158,10 @@ def test_human_search_returns_chunks_facts_and_citations(world) -> None:
     fact = next(item for item in result["results"] if item["kind"] == "fact")
     assert fact["evidence"]
     assert fact["evidence"][0]["page"] == 3
+    rules = dal.list_rules(world["network_id"])
+    assert len(rules) == 1
+    assert rules[0]["roles"] == ["CFO"]
+    assert rules[0]["evidence"][0]["page"] == 3
     chinese = search_knowledge(
         "财务总监审批",
         network_ids=[world["network_id"]],

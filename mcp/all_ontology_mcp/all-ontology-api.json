@@ -9824,6 +9824,63 @@
         "x-all-ontology-proxied": true
       }
     },
+    "/api/knowledge/networks/{network_id}/bridge": {
+      "get": {
+        "description": "knowledgeApi.getBridge — semantic coverage across concepts, metrics and actions.",
+        "operationId": "get_api_knowledge_networks_network_id_bridge",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "network_id",
+            "required": true,
+            "schema": {
+              "title": "Network Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeBridgeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No authenticated caller could be resolved"
+          },
+          "403": {
+            "description": "The caller lacks the required permission"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Knowledge Bridge",
+        "tags": ["knowledge"],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "x-all-ontology-source": "frontend\\app\\api\\knowledge\\networks\\[network_id]\\bridge\\route.ts",
+        "x-all-ontology-permissions": {
+          "catalog": ["read"]
+        },
+        "x-all-ontology-proxied": true
+      }
+    },
     "/api/knowledge/networks/{network_id}/capabilities": {
       "get": {
         "operationId": "get_api_knowledge_networks_network_id_capabilities",
@@ -22265,6 +22322,276 @@
         },
         "required": ["data"],
         "title": "KnowledgeActionResponse",
+        "type": "object"
+      },
+      "KnowledgeBridgeAction": {
+        "additionalProperties": true,
+        "properties": {
+          "capabilities": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "linked": {
+            "default": false,
+            "title": "Linked",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "required": ["id", "name"],
+        "title": "KnowledgeBridgeAction",
+        "type": "object"
+      },
+      "KnowledgeBridgeConcept": {
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "linked": {
+            "default": false,
+            "title": "Linked",
+            "type": "boolean"
+          },
+          "links": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "required": ["id", "name"],
+        "title": "KnowledgeBridgeConcept",
+        "type": "object"
+      },
+      "KnowledgeBridgeData": {
+        "additionalProperties": true,
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeBridgeAction"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "capabilities": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "concepts": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeBridgeConcept"
+            },
+            "title": "Concepts",
+            "type": "array"
+          },
+          "generated_at": {
+            "title": "Generated At",
+            "type": "string"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeBridgeMetric"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
+          "network_id": {
+            "title": "Network Id",
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/KnowledgeBridgeSummary"
+          }
+        },
+        "required": ["network_id", "generated_at", "summary"],
+        "title": "KnowledgeBridgeData",
+        "type": "object"
+      },
+      "KnowledgeBridgeMetric": {
+        "additionalProperties": true,
+        "properties": {
+          "expression": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expression"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "linked": {
+            "default": false,
+            "title": "Linked",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sql_attribute_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sql Attribute Id"
+          },
+          "sql_attribute_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sql Attribute Name"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": ["id", "name"],
+        "title": "KnowledgeBridgeMetric",
+        "type": "object"
+      },
+      "KnowledgeBridgeResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KnowledgeBridgeData"
+          }
+        },
+        "required": ["data"],
+        "title": "KnowledgeBridgeResponse",
+        "type": "object"
+      },
+      "KnowledgeBridgeSummary": {
+        "additionalProperties": true,
+        "properties": {
+          "action_linked": {
+            "title": "Action Linked",
+            "type": "integer"
+          },
+          "action_total": {
+            "title": "Action Total",
+            "type": "integer"
+          },
+          "concept_linked": {
+            "title": "Concept Linked",
+            "type": "integer"
+          },
+          "concept_total": {
+            "title": "Concept Total",
+            "type": "integer"
+          },
+          "coverage": {
+            "title": "Coverage",
+            "type": "number"
+          },
+          "metric_linked": {
+            "title": "Metric Linked",
+            "type": "integer"
+          },
+          "metric_total": {
+            "title": "Metric Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "concept_total",
+          "concept_linked",
+          "metric_total",
+          "metric_linked",
+          "action_total",
+          "action_linked",
+          "coverage"
+        ],
+        "title": "KnowledgeBridgeSummary",
         "type": "object"
       },
       "KnowledgeCapabilityCreate": {

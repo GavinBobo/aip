@@ -25,4 +25,6 @@ import { connectionsApi } from '@/api/connections';
  * caller in the pass is answered from the same read, which is also what stops
  * two of them from disagreeing.
  */
-export const readConnectionsEnvSource = cache(() => connectionsApi.isEnvSource());
+export const readConnectionsEnvSource = cache((userId: string) =>
+	connectionsApi.isEnvSource(userId),
+);

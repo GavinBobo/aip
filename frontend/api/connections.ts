@@ -46,7 +46,8 @@ export const connectionsApi = {
 	getAll: (serverUserId?: string): Promise<ApiResponse<Connection[]>> =>
 		requests.get<ResponseWithCount<Connection[]>>('connections', {}, undefined, serverUserId),
 
-	isEnvSource: () => requests.get<boolean>('connections/source'),
+	isEnvSource: (serverUserId?: string) =>
+		requests.get<boolean>('connections/source', {}, undefined, serverUserId),
 
 	create: (input: ConnectionInput): Promise<CreateResponse> =>
 		requests.post<{ data: Connection }>('connections', { connection: input }),

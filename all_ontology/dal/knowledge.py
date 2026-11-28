@@ -22,6 +22,7 @@ from datetime import datetime, timezone
 from typing import Any, Iterable
 
 from sqlalchemy import delete, func, or_, select, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import aliased
 
 from all_ontology.dal import schema as s
@@ -88,6 +89,19 @@ _METRIC_FIELDS = {
     "status",
     "confidence",
 }
+_RULE_FIELDS = {
+    "name",
+    "statement",
+    "description",
+    "scope",
+    "condition",
+    "roles",
+    "exceptions",
+    "effective_from",
+    "effective_to",
+    "status",
+    "confidence",
+}
 _GROUP_FIELDS = {"name", "description"}
 _CAPABILITY_FIELDS = {"name", "kind", "description", "config", "enabled"}
 
@@ -116,6 +130,7 @@ def _network_counts(network_ids: list[str]) -> dict[str, dict[str, int]]:
             "action_count": 0,
             "risk_count": 0,
             "metric_count": 0,
+            "rule_count": 0,
             "group_count": 0,
             "capability_count": 0,
             "eval_case_count": 0,
@@ -131,6 +146,7 @@ def _network_counts(network_ids: list[str]) -> dict[str, dict[str, int]]:
         ("action_count", s.knowledge_action),
         ("risk_count", s.knowledge_risk),
         ("metric_count", s.knowledge_metric),
+        ("rule_count", s.knowledge_rule),
         ("group_count", s.knowledge_concept_group),
         ("capability_count", s.knowledge_capability),
         ("eval_case_count", s.knowledge_eval_case),
@@ -381,6 +397,7 @@ _NETWORK_ENTITY_TABLES = {
     "action": s.knowledge_action,
     "risk": s.knowledge_risk,
     "metric": s.knowledge_metric,
+    "rule": s.knowledge_rule,
     "concept_group": s.knowledge_concept_group,
     "capability": s.knowledge_capability,
     "eval_case": s.knowledge_eval_case,
@@ -1552,6 +1569,220 @@ def delete_metric(metric_id: str) -> bool:
     return bool(deleted)
 
 
+def list_rules(network_id: str) -> list[dict[str, Any]]:
+    rows = store().query_read(
+        select(s.knowledge_rule)
+        .where(s.knowledge_rule.c.network_id == network_id)
+        .order_by(s.knowledge_rule.c.name)
+    )
+    ids = [str(row["id"]) for row in rows]
+    if not ids:
+        return []
+
+    concepts: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in store().query_read(
+        select(
+            s.knowledge_rule__concept.c.rule_id,
+            s.knowledge_concept.c.id,
+            s.knowledge_concept.c.key,
+            s.knowledge_concept.c.name,
+        )
+        .select_from(
+            s.knowledge_rule__concept.join(
+                s.knowledge_concept,
+                s.knowledge_concept.c.id == s.knowledge_rule__concept.c.concept_id,
+            )
+        )
+        .where(s.knowledge_rule__concept.c.rule_id.in_(ids))
+    ):
+        concepts[str(row["rule_id"])].append(dict(row))
+
+    metrics: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in store().query_read(
+        select(
+            s.knowledge_rule__metric.c.rule_id,
+            s.knowledge_metric.c.id,
+            s.knowledge_metric.c.key,
+            s.knowledge_metric.c.name,
+            s.knowledge_metric.c.expression,
+            s.knowledge_metric.c.unit,
+        )
+        .select_from(
+            s.knowledge_rule__metric.join(
+                s.knowledge_metric,
+                s.knowledge_metric.c.id == s.knowledge_rule__metric.c.metric_id,
+            )
+        )
+        .where(s.knowledge_rule__metric.c.rule_id.in_(ids))
+    ):
+        metrics[str(row["rule_id"])].append(dict(row))
+
+    actions: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in store().query_read(
+        select(
+            s.knowledge_rule__action.c.rule_id,
+            s.knowledge_action.c.id,
+            s.knowledge_action.c.key,
+            s.knowledge_action.c.name,
+            s.knowledge_action.c.action_intent,
+        )
+        .select_from(
+            s.knowledge_rule__action.join(
+                s.knowledge_action,
+                s.knowledge_action.c.id == s.knowledge_rule__action.c.action_id,
+            )
+        )
+        .where(s.knowledge_rule__action.c.rule_id.in_(ids))
+    ):
+        actions[str(row["rule_id"])].append(dict(row))
+
+    evidence = _evidence_for(s.knowledge_evidence.c.rule_id, ids)
+    return [
+        {
+            **dict(row),
+            "concepts": concepts.get(str(row["id"]), []),
+            "metrics": metrics.get(str(row["id"]), []),
+            "actions": actions.get(str(row["id"]), []),
+            "evidence": evidence.get(str(row["id"]), []),
+        }
+        for row in rows
+    ]
+
+
+def create_rule(
+    *,
+    network_id: str,
+    key: str,
+    name: str,
+    statement: str,
+    description: str | None,
+    scope: str | None,
+    condition: str | None,
+    roles: list[Any] | None,
+    exceptions: list[Any] | None,
+    effective_from: Any,
+    effective_to: Any,
+    source_document_id: str | None = None,
+) -> dict[str, Any]:
+    row = store().query_write(
+        s.knowledge_rule.insert()
+        .values(
+            network_id=network_id,
+            key=key,
+            name=name.strip(),
+            statement=statement.strip(),
+            description=(description or "").strip() or None,
+            scope=(scope or "").strip() or None,
+            condition=(condition or "").strip() or None,
+            roles=roles or [],
+            exceptions=exceptions or [],
+            effective_from=effective_from,
+            effective_to=effective_to,
+            source_document_id=source_document_id,
+        )
+        .returning(s.knowledge_rule.c.id)
+    )[0]
+    return next(item for item in list_rules(network_id) if item["id"] == row["id"])
+
+
+def update_rule(rule_id: str, *, patch: dict[str, Any]) -> dict[str, Any] | None:
+    values = {key: value for key, value in patch.items() if key in _RULE_FIELDS}
+    if "name" in values:
+        name = str(values["name"] or "").strip()
+        if not name:
+            raise ValueError("Rule name is required.")
+        values["name"] = name
+    if "statement" in values:
+        statement = str(values["statement"] or "").strip()
+        if not statement:
+            raise ValueError("Rule statement is required.")
+        values["statement"] = statement
+    for key in ("description", "scope", "condition"):
+        if key in values:
+            values[key] = str(values[key] or "").strip() or None
+    if "confidence" in values and values["confidence"] is not None:
+        values["confidence"] = max(0.0, min(1.0, float(values["confidence"])))
+    if not values:
+        return None
+    values["modified"] = func.now()
+    row = next(
+        iter(
+            store().query_write(
+                update(s.knowledge_rule)
+                .where(s.knowledge_rule.c.id == rule_id)
+                .values(**values)
+                .returning(s.knowledge_rule.c.id)
+            )
+        ),
+        None,
+    )
+    if row is None:
+        return None
+    network_id = str(
+        store().query_read(
+            select(s.knowledge_rule.c.network_id).where(
+                s.knowledge_rule.c.id == rule_id
+            )
+        )[0]["network_id"]
+    )
+    return next(
+        (item for item in list_rules(network_id) if item["id"] == rule_id),
+        None,
+    )
+
+
+def delete_rule(rule_id: str) -> bool:
+    deleted = store().query_write(
+        delete(s.knowledge_rule)
+        .where(s.knowledge_rule.c.id == rule_id)
+        .returning(s.knowledge_rule.c.id)
+    )
+    return bool(deleted)
+
+
+def link_rule_target(rule_id: str, kind: str, target_id: str) -> dict[str, Any]:
+    """Link a rule to one concept, metric or action in the same network."""
+    table, link_table, column = {
+        "concept": (s.knowledge_concept, s.knowledge_rule__concept, "concept_id"),
+        "metric": (s.knowledge_metric, s.knowledge_rule__metric, "metric_id"),
+        "action": (s.knowledge_action, s.knowledge_rule__action, "action_id"),
+    }.get(kind, (None, None, None))
+    if table is None or link_table is None:
+        raise ValueError("Unknown rule link kind.")
+    rule = store().query_read(
+        select(s.knowledge_rule.c.network_id).where(s.knowledge_rule.c.id == rule_id)
+    )
+    target = store().query_read(
+        select(table.c.network_id).where(table.c.id == target_id)
+    )
+    if not rule or not target:
+        raise ValueError("Rule or target not found.")
+    if str(rule[0]["network_id"]) != str(target[0]["network_id"]):
+        raise ValueError("The rule and target must belong to the same knowledge network.")
+    store().query_write(
+        insert(link_table)
+        .values({"rule_id": rule_id, column: target_id})
+        .on_conflict_do_nothing()
+    )
+    return {"rule_id": rule_id, "kind": kind, "target_id": target_id}
+
+
+def unlink_rule_target(rule_id: str, kind: str, target_id: str) -> bool:
+    table, column = {
+        "concept": (s.knowledge_rule__concept, "concept_id"),
+        "metric": (s.knowledge_rule__metric, "metric_id"),
+        "action": (s.knowledge_rule__action, "action_id"),
+    }.get(kind, (None, None))
+    if table is None or column is None:
+        raise ValueError("Unknown rule link kind.")
+    rows = store().query_write(
+        delete(table)
+        .where(table.c.rule_id == rule_id, table.c[column] == target_id)
+        .returning(table.c.rule_id)
+    )
+    return bool(rows)
+
+
 def get_metric_context(metric_id: str) -> dict[str, Any] | None:
     """Metric fields plus the data-ontology objects it can be validated against."""
     row = next(
@@ -2419,6 +2650,7 @@ def save_extraction(
     actions: list[dict[str, Any]] | None = None,
     risks: list[dict[str, Any]] | None = None,
     metrics: list[dict[str, Any]] | None = None,
+    rules: list[dict[str, Any]] | None = None,
     chunk_count: int,
 ) -> dict[str, Any]:
     """Replace one document's claims and citations in a single transaction."""
@@ -2464,6 +2696,11 @@ def save_extraction(
         store().query_write(
             delete(s.knowledge_metric).where(
                 s.knowledge_metric.c.source_document_id == document_id
+            )
+        )
+        store().query_write(
+            delete(s.knowledge_rule).where(
+                s.knowledge_rule.c.source_document_id == document_id
             )
         )
 
@@ -2656,6 +2893,7 @@ def save_extraction(
                 )
             )
         }
+        action_ids: dict[str, str] = {}
         for action in actions or []:
             key = str(action["key"])
             bound_id = (
@@ -2691,6 +2929,7 @@ def save_extraction(
                     .where(s.knowledge_action.c.id == action_id)
                     .values(**values, modified=func.now())
                 )
+            action_ids[key] = action_id
             for evidence in action.get("evidence") or []:
                 image_id = _insert_evidence(
                     network_id=network_id,
@@ -2766,6 +3005,7 @@ def save_extraction(
                 )
             )
         }
+        metric_ids: dict[str, str] = {}
         for metric in metrics or []:
             key = str(metric["key"])
             concept_id = (
@@ -2801,11 +3041,84 @@ def save_extraction(
                     .where(s.knowledge_metric.c.id == metric_id)
                     .values(**values, modified=func.now())
                 )
+            metric_ids[key] = metric_id
             for evidence in metric.get("evidence") or []:
                 image_id = _insert_evidence(
                     network_id=network_id,
                     document_id=document_id,
                     metric_id=metric_id,
+                    evidence=evidence,
+                    images_by_page=images_by_page,
+                    source_path=source_path,
+                )
+                if image_id:
+                    learned_images.add(image_id)
+
+        existing_rules = {
+            str(row["key"]): str(row["id"])
+            for row in store().query_read(
+                select(s.knowledge_rule.c.id, s.knowledge_rule.c.key).where(
+                    s.knowledge_rule.c.network_id == network_id
+                )
+            )
+        }
+        for rule in rules or []:
+            key = str(rule["key"])
+            values = {
+                "name": rule["name"],
+                "statement": rule["statement"],
+                "description": rule.get("description") or None,
+                "scope": rule.get("scope") or None,
+                "condition": rule.get("condition") or None,
+                "roles": rule.get("roles") or [],
+                "exceptions": rule.get("exceptions") or [],
+                "effective_from": rule.get("effective_from"),
+                "effective_to": rule.get("effective_to"),
+                "confidence": float(rule.get("confidence") or 0.6),
+            }
+            rule_id = existing_rules.get(key)
+            if rule_id is None:
+                rule_id = str(
+                    store().query_write(
+                        s.knowledge_rule.insert()
+                        .values(
+                            network_id=network_id,
+                            key=key,
+                            source_document_id=document_id,
+                            **values,
+                        )
+                        .returning(s.knowledge_rule.c.id)
+                    )[0]["id"]
+                )
+            else:
+                store().query_write(
+                    update(s.knowledge_rule)
+                    .where(s.knowledge_rule.c.id == rule_id)
+                    .values(**values, modified=func.now())
+                )
+            for link_target, target_id in (
+                (s.knowledge_rule__concept, concept_ids.get(str(rule.get("concept_key") or ""))),
+                (s.knowledge_rule__metric, metric_ids.get(str(rule.get("metric_key") or ""))),
+                (s.knowledge_rule__action, action_ids.get(str(rule.get("action_key") or ""))),
+            ):
+                if target_id:
+                    column = (
+                        "concept_id"
+                        if link_target is s.knowledge_rule__concept
+                        else "metric_id"
+                        if link_target is s.knowledge_rule__metric
+                        else "action_id"
+                    )
+                    store().query_write(
+                        insert(link_target)
+                        .values({"rule_id": rule_id, column: target_id})
+                        .on_conflict_do_nothing()
+                    )
+            for evidence in rule.get("evidence") or []:
+                image_id = _insert_evidence(
+                    network_id=network_id,
+                    document_id=document_id,
+                    rule_id=rule_id,
                     evidence=evidence,
                     images_by_page=images_by_page,
                     source_path=source_path,
@@ -2881,6 +3194,11 @@ def save_extraction(
         .select_from(s.knowledge_metric)
         .where(s.knowledge_metric.c.network_id == network_id)
     )[0]["n"]
+    rule_count = store().query_read(
+        select(func.count().label("n"))
+        .select_from(s.knowledge_rule)
+        .where(s.knowledge_rule.c.network_id == network_id)
+    )[0]["n"]
     return {
         "network_id": network_id,
         "concept_count": int(concept_count),
@@ -2889,6 +3207,7 @@ def save_extraction(
         "action_count": int(action_count),
         "risk_count": int(risk_count),
         "metric_count": int(metric_count),
+        "rule_count": int(rule_count),
     }
 
 
@@ -2903,6 +3222,7 @@ def _insert_evidence(
     action_id: str | None = None,
     risk_id: str | None = None,
     metric_id: str | None = None,
+    rule_id: str | None = None,
     images_by_page: dict[tuple[int | None, int | None], dict[str, Any]] | None = None,
     source_path: str | None = None,
 ) -> str | None:
@@ -2926,6 +3246,7 @@ def _insert_evidence(
             action_id=action_id,
             risk_id=risk_id,
             metric_id=metric_id,
+            rule_id=rule_id,
             image_id=image.get("id") if image else None,
             source_path=source_path,
             image_path=image.get("image_path") if image else None,
